@@ -1,0 +1,38 @@
+# .NET
+bin/
+obj/
+*.user
+.vs/
+.vscode/
+*.suo
+*.ncrunch*
+.DS_Store
+
+# Migrations (generated — keep in repo)
+# src/**/Migrations/ — intentionally NOT ignored
+
+# EF Core tools
+*.db
+*.sqlite
+
+# ASP.NET Core
+logs/
+*.log
+appsettings.Development.json
+
+# Docker / env
+.env
+
+# Test results
+TestResults/
+coverage/
+*.trx
+*.coveragexml
+
+# NuGet
+*.nupkg
+*.snupkg
+nuget.config
+
+# Publish output
+publish/

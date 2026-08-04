@@ -1,0 +1,142 @@
+@page "/register"
+@using Ruptura.Shared.Auth
+@inject IAuthClientService AuthService
+@inject NavigationManager Nav
+
+<PageTitle>Criar Conta — Ruptura</PageTitle>
+
+<div class="auth-container">
+    <div class="auth-card">
+        <h2>Criar Conta</h2>
+
+        <div class="account-type-toggle mb-4">
+            <button class="btn @(!_isPlayer ? "btn-primary" : "btn-outline-primary")"
+                    @onclick="() => _isPlayer = false">
+                Mestre
+            </button>
+            <button class="btn @(_isPlayer ? "btn-primary" : "btn-outline-primary") ms-2"
+                    @onclick="() => _isPlayer = true">
+                Jogador
+            </button>
+        </div>
+
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <div class="alert alert-danger">@_error</div>
+        }
+
+        @if (_isPlayer)
+        {
+            <EditForm Model="_playerModel" OnValidSubmit="HandleRegisterPlayer">
+                <DataAnnotationsValidator />
+
+                <div class="mb-3">
+                    <label class="form-label">Nome de exibição</label>
+                    <InputText class="form-control" @bind-Value="_playerModel.DisplayName" />
+                    <ValidationMessage For="() => _playerModel.DisplayName" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">E-mail</label>
+                    <InputText class="form-control" @bind-Value="_playerModel.Email" type="email" />
+                    <ValidationMessage For="() => _playerModel.Email" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Senha</label>
+                    <InputText class="form-control" @bind-Value="_playerModel.Password" type="password" />
+                    <ValidationMessage For="() => _playerModel.Password" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Confirmar senha</label>
+                    <InputText class="form-control" @bind-Value="_playerModel.ConfirmPassword" type="password" />
+                    <ValidationMessage For="() => _playerModel.ConfirmPassword" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Código de Convite</label>
+                    <InputText class="form-control" @bind-Value="_playerModel.InviteCode"
+                               placeholder="Peça ao seu Mestre" />
+                    <ValidationMessage For="() => _playerModel.InviteCode" />
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100" disabled="@_loading">
+                    @if (_loading) { <span class="spinner-border spinner-border-sm me-2" /> }
+                    Criar Conta de Jogador
+                </button>
+            </EditForm>
+        }
+        else
+        {
+            <EditForm Model="_gmModel" OnValidSubmit="HandleRegisterGM">
+                <DataAnnotationsValidator />
+
+                <div class="mb-3">
+                    <label class="form-label">Nome de exibição</label>
+                    <InputText class="form-control" @bind-Value="_gmModel.DisplayName" />
+                    <ValidationMessage For="() => _gmModel.DisplayName" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">E-mail</label>
+                    <InputText class="form-control" @bind-Value="_gmModel.Email" type="email" />
+                    <ValidationMessage For="() => _gmModel.Email" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Senha</label>
+                    <InputText class="form-control" @bind-Value="_gmModel.Password" type="password" />
+                    <ValidationMessage For="() => _gmModel.Password" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Confirmar senha</label>
+                    <InputText class="form-control" @bind-Value="_gmModel.ConfirmPassword" type="password" />
+                    <ValidationMessage For="() => _gmModel.ConfirmPassword" />
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100" disabled="@_loading">
+                    @if (_loading) { <span class="spinner-border spinner-border-sm me-2" /> }
+                    Criar Conta de Mestre
+                </button>
+            </EditForm>
+        }
+
+        <hr />
+        <p class="text-center mb-0">
+            Já tem conta? <a href="/login">Entrar</a>
+        </p>
+    </div>
+</div>
+
+@code {
+    private bool _isPlayer;
+    private string? _error;
+    private bool _loading;
+    private readonly RegisterRequest _gmModel = new();
+    private readonly RegisterPlayerRequest _playerModel = new();
+
+    private async Task HandleRegisterGM()
+    {
+        _loading = true;
+        _error = null;
+
+        var result = await AuthService.RegisterGameMasterAsync(_gmModel);
+
+        if (result is null)
+            _error = "Não foi possível criar a conta. Verifique os dados e tente novamente.";
+        else
+            Nav.NavigateTo("/dashboard");
+
+        _loading = false;
+    }
+
+    private async Task HandleRegisterPlayer()
+    {
+        _loading = true;
+        _error = null;
+
+        var result = await AuthService.RegisterPlayerAsync(_playerModel);
+
+        if (result is null)
+            _error = "Código de convite inválido ou expirado.";
+        else
+            Nav.NavigateTo("/dashboard");
+
+        _loading = false;
+    }
+}

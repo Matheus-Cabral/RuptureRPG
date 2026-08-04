@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet --version)",
+      "Bash(dotnet --list-sdks)",
+      "Bash(gh --version)",
+      "Bash(git --version)",
+      "Bash(git config *)",
+      "Bash(dotnet new sln *)",
+      "Bash(dotnet new *)",
+      "Bash(dotnet sln add *)",
+      "Bash(dotnet add *)",
+      "Bash(dotnet restore *)",
+      "Bash(dotnet build *)",
+      "Bash(git init *)",
+      "Bash(git add *)"
+    ]
+  }
+}

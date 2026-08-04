@@ -1,0 +1,6 @@
+@Ruptura.API_HostAddress = http://localhost:5167
+
+GET {{Ruptura.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

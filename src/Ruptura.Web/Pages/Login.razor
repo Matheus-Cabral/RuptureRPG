@@ -1,0 +1,64 @@
+@page "/login"
+@using Ruptura.Shared.Auth
+@inject IAuthClientService AuthService
+@inject NavigationManager Nav
+
+<PageTitle>Entrar — Ruptura</PageTitle>
+
+<div class="auth-container">
+    <div class="auth-card">
+        <h2>Entrar</h2>
+
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <div class="alert alert-danger">@_error</div>
+        }
+
+        <EditForm Model="_model" OnValidSubmit="HandleLogin">
+            <DataAnnotationsValidator />
+
+            <div class="mb-3">
+                <label class="form-label">E-mail</label>
+                <InputText class="form-control" @bind-Value="_model.Email" type="email" />
+                <ValidationMessage For="() => _model.Email" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Senha</label>
+                <InputText class="form-control" @bind-Value="_model.Password" type="password" />
+                <ValidationMessage For="() => _model.Password" />
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100" disabled="@_loading">
+                @if (_loading) { <span class="spinner-border spinner-border-sm me-2" /> }
+                Entrar
+            </button>
+        </EditForm>
+
+        <hr />
+        <p class="text-center mb-0">
+            Não tem conta? <a href="/register">Criar conta</a>
+        </p>
+    </div>
+</div>
+
+@code {
+    private readonly LoginRequest _model = new();
+    private string? _error;
+    private bool _loading;
+
+    private async Task HandleLogin()
+    {
+        _loading = true;
+        _error = null;
+
+        var result = await AuthService.LoginAsync(_model);
+
+        if (result is null)
+            _error = "E-mail ou senha inválidos.";
+        else
+            Nav.NavigateTo("/dashboard");
+
+        _loading = false;
+    }
+}
