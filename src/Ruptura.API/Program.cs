@@ -49,7 +49,10 @@ try
                 ValidateAudience = true,
                 ValidAudience = jwtSettings.Audience,
                 ValidateLifetime = true,
-                ClockSkew = TimeSpan.Zero
+                ClockSkew = TimeSpan.Zero,
+                // Use short claim names ("role", "name") instead of long URI forms
+                RoleClaimType = "role",
+                NameClaimType = "name"
             };
         });
 

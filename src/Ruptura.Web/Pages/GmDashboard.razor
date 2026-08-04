@@ -1,0 +1,178 @@
+@using Microsoft.Extensions.Localization
+@using Ruptura.Shared.Invites
+@using Ruptura.Web.Resources
+@inject IStringLocalizer<AppStrings> L
+@inject IInviteClientService InviteService
+@inject IJSRuntime JS
+
+<!-- Stat cards -->
+<div class="stat-cards">
+    <div class="stat-card total">
+        <div class="stat-card-value">@_codes.Count</div>
+        <div class="stat-card-label">@L["Gm.Invites.Total"]</div>
+    </div>
+    <div class="stat-card active">
+        <div class="stat-card-value">@ActiveCount</div>
+        <div class="stat-card-label">@L["Gm.Invites.Active"]</div>
+    </div>
+    <div class="stat-card used">
+        <div class="stat-card-value">@UsedCount</div>
+        <div class="stat-card-label">@L["Gm.Invites.Used"]</div>
+    </div>
+    <div class="stat-card expired">
+        <div class="stat-card-value">@ExpiredCount</div>
+        <div class="stat-card-label">@L["Gm.Invites.Expired"]</div>
+    </div>
+</div>
+
+<!-- New code banner -->
+@if (_newCode is not null)
+{
+    <div class="new-code-banner">
+        <div>
+            <div class="label">@L["Gm.Invites.NewCode"]</div>
+            <div class="newcode">@_newCode.Code</div>
+        </div>
+        <button class="btn btn-sm btn-outline-secondary" @onclick="CopyNewCodeAsync">
+            @(_copied ? "✓ " + L["Gm.Invites.Copied"] : "📋 " + L["Gm.Invites.Copy"])
+        </button>
+        <small class="text-muted">@L["Gm.Invites.ExpiresIn", "48h"]</small>
+    </div>
+}
+
+<!-- Invite codes list -->
+<div class="section-header">
+    <h2 class="section-title">@L["Gm.Invites.Title"]</h2>
+    <button class="btn btn-primary btn-sm" @onclick="GenerateAsync" disabled="@_generating">
+        @if (_generating) { <span class="spinner-border spinner-border-sm me-1"></span> }
+        @L["Gm.Invites.Generate"]
+    </button>
+</div>
+
+@if (_loading)
+{
+    <div class="text-center py-4 text-muted">
+        <span class="spinner-border spinner-border-sm me-2"></span>@L["Common.Loading"]
+    </div>
+}
+else if (_codes.Count == 0)
+{
+    <div class="card p-4 text-center">
+        <p class="text-muted mb-2">@L["Gm.Invites.Empty"]</p>
+        <button class="btn btn-primary btn-sm" @onclick="GenerateAsync">
+            @L["Gm.Invites.GenerateFirst"]
+        </button>
+    </div>
+}
+else
+{
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>@L["Gm.Invites.Col.Code"]</th>
+                        <th>@L["Gm.Invites.Col.Status"]</th>
+                        <th>@L["Gm.Invites.Col.Created"]</th>
+                        <th>@L["Gm.Invites.Col.Expires"]</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in _codes)
+                    {
+                        var itemCode = item.Code;
+                        <tr>
+                            <td>
+                                <span class="code-chip" @onclick="() => CopyAsync(itemCode)"
+                                      title="@L["Gm.Invites.Copy"]">
+                                    @item.Code <small>📋</small>
+                                </span>
+                            </td>
+                            <td><StatusBadge Code="item" /></td>
+                            <td class="text-muted" style="font-size:.85rem">
+                                @item.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                            </td>
+                            <td class="text-muted" style="font-size:.85rem">
+                                @item.ExpiresAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                            </td>
+                            <td>
+                                @if (!item.IsUsed && item.ExpiresAt > DateTime.UtcNow)
+                                {
+                                    <button class="btn btn-outline-secondary btn-sm"
+                                            @onclick="() => CopyAsync(itemCode)">
+                                        📋
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@if (_errorMessage is not null)
+{
+    <div class="alert alert-danger mt-3">@_errorMessage</div>
+}
+
+@code {
+    private List<InviteCodeResponse> _codes = [];
+    private InviteCodeResponse? _newCode;
+    private bool _loading = true;
+    private bool _generating;
+    private bool _copied;
+    private string? _errorMessage;
+
+    private int ActiveCount  => _codes.Count(i => !i.IsUsed && i.ExpiresAt > DateTime.UtcNow);
+    private int UsedCount    => _codes.Count(i => i.IsUsed);
+    private int ExpiredCount => _codes.Count(i => !i.IsUsed && i.ExpiresAt <= DateTime.UtcNow);
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        var result = await InviteService.GetAllAsync();
+        _codes = result?.Data?.ToList() ?? [];
+        _loading = false;
+    }
+
+    private async Task GenerateAsync()
+    {
+        _generating = true;
+        _errorMessage = null;
+        _newCode = null;
+        _copied = false;
+
+        var result = await InviteService.GenerateAsync();
+        if (result?.Data is not null)
+        {
+            _newCode = result.Data;
+            _codes.Insert(0, result.Data);
+        }
+        else
+        {
+            _errorMessage = L["Common.Error"];
+        }
+
+        _generating = false;
+    }
+
+    private async Task CopyNewCodeAsync()
+    {
+        if (_newCode is not null)
+            await CopyAsync(_newCode.Code);
+    }
+
+    private async Task CopyAsync(string text)
+    {
+        await JS.InvokeVoidAsync("ruptura.copyToClipboard", text);
+        _copied = true;
+        StateHasChanged();
+        await Task.Delay(2000);
+        _copied = false;
+    }
+}

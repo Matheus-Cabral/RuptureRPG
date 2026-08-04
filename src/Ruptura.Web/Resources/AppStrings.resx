@@ -82,4 +82,37 @@
   <!-- Not Found -->
   <data name="NotFound.Title"><value>Page not found</value></data>
   <data name="NotFound.Back"><value>Back to home</value></data>
+
+  <!-- Navigation extras -->
+  <data name="Nav.Home"><value>Home</value></data>
+  <data name="Nav.Invites"><value>Invites</value></data>
+
+  <!-- GM Dashboard — Invite Management -->
+  <data name="Gm.Invites.Title"><value>Invite Codes</value></data>
+  <data name="Gm.Invites.Generate"><value>Generate Code</value></data>
+  <data name="Gm.Invites.GenerateFirst"><value>Generate your first code</value></data>
+  <data name="Gm.Invites.Total"><value>Total</value></data>
+  <data name="Gm.Invites.Active"><value>Active</value></data>
+  <data name="Gm.Invites.Used"><value>Used</value></data>
+  <data name="Gm.Invites.Expired"><value>Expired</value></data>
+  <data name="Gm.Invites.Empty"><value>No invite codes yet.</value></data>
+  <data name="Gm.Invites.NewCode"><value>New invite code generated</value></data>
+  <data name="Gm.Invites.Copy"><value>Copy</value></data>
+  <data name="Gm.Invites.Copied"><value>Copied!</value></data>
+  <data name="Gm.Invites.ExpiresIn"><value>Expires in {0}</value></data>
+  <data name="Gm.Invites.Col.Code"><value>Code</value></data>
+  <data name="Gm.Invites.Col.Status"><value>Status</value></data>
+  <data name="Gm.Invites.Col.Created"><value>Created</value></data>
+  <data name="Gm.Invites.Col.Expires"><value>Expires</value></data>
+  <data name="Gm.Invites.Status.Active"><value>Active</value></data>
+  <data name="Gm.Invites.Status.Used"><value>Used</value></data>
+  <data name="Gm.Invites.Status.Expired"><value>Expired</value></data>
+
+  <!-- Player Dashboard -->
+  <data name="Dashboard.Player.Title"><value>My Character</value></data>
+  <data name="Dashboard.Player.Subtitle"><value>Your character sheet will appear here once assigned by the Game Master.</value></data>
+
+  <!-- Common -->
+  <data name="Common.Loading"><value>Loading…</value></data>
+  <data name="Common.Error"><value>Something went wrong. Please try again.</value></data>
 </root>

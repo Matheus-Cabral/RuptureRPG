@@ -5,6 +5,7 @@ using Ruptura.API.Resources;
 using Ruptura.Application.Interfaces;
 using Ruptura.Shared.Common;
 using Ruptura.Shared.Invites;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
 namespace Ruptura.API.Controllers;
@@ -20,7 +21,7 @@ public class InviteController(
     [ProducesResponseType(typeof(ApiResponse<InviteCodeResponse>), StatusCodes.Status201Created)]
     public async Task<IActionResult> Generate(CancellationToken ct)
     {
-        var gameMasterId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var gameMasterId = Guid.Parse(User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
         var result = await inviteService.GenerateAsync(gameMasterId, ct);
 
         return StatusCode(StatusCodes.Status201Created,
@@ -31,7 +32,7 @@ public class InviteController(
     [ProducesResponseType(typeof(ApiResponse<IEnumerable<InviteCodeResponse>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> List(CancellationToken ct)
     {
-        var gameMasterId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var gameMasterId = Guid.Parse(User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
         var result = await inviteService.GetByGameMasterAsync(gameMasterId, ct);
 
         return Ok(ApiResponse<IEnumerable<InviteCodeResponse>>.Ok(result.Value!));

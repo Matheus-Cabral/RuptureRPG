@@ -1,39 +1,61 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">Ruptura.Web</a>
-        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-    </div>
-</div>
+@using Microsoft.Extensions.Localization
+@using Ruptura.Web.Resources
+@inject IStringLocalizer<AppStrings> L
+@inject IAuthClientService AuthService
+@inject NavigationManager Nav
+@inject AuthenticationStateProvider AuthStateProvider
 
-<div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
-    <nav class="flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="counter">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="weather">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather
-            </NavLink>
-        </div>
-    </nav>
-</div>
+<nav class="sidebar-nav">
+    <AuthorizeView>
+        <Authorized>
+            <span class="nav-label">@L["Nav.Dashboard"]</span>
+            <div class="nav-item">
+                <NavLink class="nav-link" href="/dashboard" Match="NavLinkMatch.All">
+                    🏠 @L["Nav.Dashboard"]
+                </NavLink>
+            </div>
+
+            <AuthorizeView Roles="GameMaster">
+                <Authorized Context="gmCtx">
+                    <span class="nav-label">Game Master</span>
+                    <div class="nav-item">
+                        <NavLink class="nav-link" href="/gm/invites">
+                            🎫 @L["Nav.Invites"]
+                        </NavLink>
+                    </div>
+                </Authorized>
+            </AuthorizeView>
+
+            <div class="nav-item mt-auto">
+                <button class="nav-link btn btn-link w-100 text-start" @onclick="LogoutAsync">
+                    🚪 @L["Nav.Logout"]
+                </button>
+            </div>
+        </Authorized>
+        <NotAuthorized>
+            <div class="nav-item">
+                <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">
+                    🏠 @L["Nav.Home"]
+                </NavLink>
+            </div>
+            <div class="nav-item">
+                <NavLink class="nav-link" href="/login">
+                    🔑 @L["Nav.Login"]
+                </NavLink>
+            </div>
+            <div class="nav-item">
+                <NavLink class="nav-link" href="/register">
+                    ✨ @L["Nav.Register"]
+                </NavLink>
+            </div>
+        </NotAuthorized>
+    </AuthorizeView>
+</nav>
 
 @code {
-    private bool collapseNavMenu = true;
-
-    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
-
-    private void ToggleNavMenu()
+    private async Task LogoutAsync()
     {
-        collapseNavMenu = !collapseNavMenu;
+        await AuthService.LogoutAsync();
+        Nav.NavigateTo("/login");
     }
 }

@@ -12,7 +12,7 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-// Load runtime config (ApiBaseUrl) injected by nginx entrypoint via envsubst
+// Runtime config (ApiBaseUrl replaced by nginx entrypoint via envsubst)
 var bootstrapHttp = new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) };
 var appConfig = await bootstrapHttp.GetFromJsonAsync<AppConfig>("config.json") ?? new AppConfig();
 builder.Services.AddSingleton(appConfig);
@@ -20,30 +20,30 @@ builder.Services.AddSingleton(appConfig);
 // Localization
 builder.Services.AddLocalization();
 
-// Auth
+// Storage + Auth
 builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddAuthorizationCore();
 builder.Services.AddScoped<AuthenticationStateProvider, JwtAuthStateProvider>();
 
-// Services
-builder.Services.AddScoped<IAuthClientService, AuthClientService>();
-builder.Services.AddScoped<LanguageService>();
+// Theme
+builder.Services.AddScoped<ThemeService>();
 
-// Named HttpClient that sends Accept-Language header automatically
-builder.Services.AddScoped(sp =>
-{
-    var culture = CultureInfo.CurrentUICulture.Name;
-    var client = new HttpClient { BaseAddress = new Uri(appConfig.ApiBaseUrl) };
-    client.DefaultRequestHeaders.AcceptLanguage.ParseAdd(culture);
-    return client;
-});
+// HTTP client with JWT handler
+builder.Services.AddTransient<JwtAuthorizationHandler>();
+builder.Services.AddHttpClient("RupturaApi", client =>
+    client.BaseAddress = new Uri(appConfig.ApiBaseUrl))
+    .AddHttpMessageHandler<JwtAuthorizationHandler>();
+
+// Application services
+builder.Services.AddScoped<IAuthClientService, AuthClientService>();
+builder.Services.AddScoped<IInviteClientService, InviteClientService>();
 
 var host = builder.Build();
 
-// Apply stored culture BEFORE running the app
+// Apply stored culture before running
 var storage = host.Services.GetRequiredService<ILocalStorageService>();
-var stored = await storage.GetItemAsync<string>("ruptura_culture") ?? "en";
-var ci = new CultureInfo(stored);
+var culture = await storage.GetItemAsync<string>("ruptura_culture") ?? "en";
+var ci = new CultureInfo(culture);
 CultureInfo.DefaultThreadCurrentCulture = ci;
 CultureInfo.DefaultThreadCurrentUICulture = ci;
 

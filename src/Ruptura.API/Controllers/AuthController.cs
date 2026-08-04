@@ -6,6 +6,7 @@ using Ruptura.API.Resources;
 using Ruptura.Application.Interfaces;
 using Ruptura.Shared.Auth;
 using Ruptura.Shared.Common;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
 namespace Ruptura.API.Controllers;
@@ -119,10 +120,10 @@ public class AuthController(
     {
         var user = new UserInfo
         {
-            Id = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!),
-            DisplayName = User.FindFirstValue(ClaimTypes.Name)!,
-            Email = User.FindFirstValue(ClaimTypes.Email)!,
-            Role = User.FindFirstValue(ClaimTypes.Role)!
+            Id = Guid.Parse(User.FindFirstValue(JwtRegisteredClaimNames.Sub)!),
+            DisplayName = User.FindFirstValue("name")!,
+            Email = User.FindFirstValue(JwtRegisteredClaimNames.Email)!,
+            Role = User.FindFirstValue("role")!
         };
 
         return Ok(ApiResponse<UserInfo>.Ok(user));

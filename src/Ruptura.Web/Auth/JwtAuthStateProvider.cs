@@ -7,35 +7,38 @@ namespace Ruptura.Web.Auth;
 
 public class JwtAuthStateProvider(ILocalStorageService localStorage) : AuthenticationStateProvider
 {
-    private const string AccessTokenKey = "access_token";
+    private const string AccessKey = "access_token";
     private static readonly AuthenticationState Anonymous =
         new(new ClaimsPrincipal(new ClaimsIdentity()));
 
     public override async Task<AuthenticationState> GetAuthenticationStateAsync()
     {
-        var token = await localStorage.GetItemAsync<string>(AccessTokenKey);
-
+        var token = await localStorage.GetItemAsync<string>(AccessKey);
         if (string.IsNullOrWhiteSpace(token))
             return Anonymous;
 
-        var claims = ParseClaimsFromJwt(token);
-        var expiry = claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Exp)?.Value;
+        var claims = ParseClaims(token);
 
+        var expiry = claims.FirstOrDefault(c =>
+            c.Type == JwtRegisteredClaimNames.Exp)?.Value;
         if (expiry is not null && long.TryParse(expiry, out var exp))
         {
-            var expiresAt = DateTimeOffset.FromUnixTimeSeconds(exp).UtcDateTime;
-            if (expiresAt <= DateTime.UtcNow)
+            if (DateTimeOffset.FromUnixTimeSeconds(exp).UtcDateTime <= DateTime.UtcNow)
                 return Anonymous;
         }
 
-        var identity = new ClaimsIdentity(claims, "jwt");
+        // Use "role" as roleClaimType so [Authorize(Roles="GameMaster")] works
+        var identity = new ClaimsIdentity(claims, "jwt",
+            nameType: JwtRegisteredClaimNames.Name,
+            roleType: "role");
+
         return new AuthenticationState(new ClaimsPrincipal(identity));
     }
 
     public void NotifyAuthStateChanged() =>
         NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
 
-    private static IEnumerable<Claim> ParseClaimsFromJwt(string jwt)
+    private static IEnumerable<Claim> ParseClaims(string jwt)
     {
         var handler = new JwtSecurityTokenHandler();
         var token = handler.ReadJwtToken(jwt);

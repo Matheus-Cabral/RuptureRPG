@@ -82,4 +82,37 @@
   <!-- Não encontrado -->
   <data name="NotFound.Title"><value>Página não encontrada</value></data>
   <data name="NotFound.Back"><value>Voltar ao início</value></data>
+
+  <!-- Navegação extra -->
+  <data name="Nav.Home"><value>Início</value></data>
+  <data name="Nav.Invites"><value>Convites</value></data>
+
+  <!-- Dashboard do Mestre — Gestão de Convites -->
+  <data name="Gm.Invites.Title"><value>Códigos de Convite</value></data>
+  <data name="Gm.Invites.Generate"><value>Gerar Código</value></data>
+  <data name="Gm.Invites.GenerateFirst"><value>Gerar seu primeiro código</value></data>
+  <data name="Gm.Invites.Total"><value>Total</value></data>
+  <data name="Gm.Invites.Active"><value>Ativos</value></data>
+  <data name="Gm.Invites.Used"><value>Usados</value></data>
+  <data name="Gm.Invites.Expired"><value>Expirados</value></data>
+  <data name="Gm.Invites.Empty"><value>Nenhum código de convite ainda.</value></data>
+  <data name="Gm.Invites.NewCode"><value>Novo código de convite gerado</value></data>
+  <data name="Gm.Invites.Copy"><value>Copiar</value></data>
+  <data name="Gm.Invites.Copied"><value>Copiado!</value></data>
+  <data name="Gm.Invites.ExpiresIn"><value>Expira em {0}</value></data>
+  <data name="Gm.Invites.Col.Code"><value>Código</value></data>
+  <data name="Gm.Invites.Col.Status"><value>Status</value></data>
+  <data name="Gm.Invites.Col.Created"><value>Criado em</value></data>
+  <data name="Gm.Invites.Col.Expires"><value>Expira em</value></data>
+  <data name="Gm.Invites.Status.Active"><value>Ativo</value></data>
+  <data name="Gm.Invites.Status.Used"><value>Usado</value></data>
+  <data name="Gm.Invites.Status.Expired"><value>Expirado</value></data>
+
+  <!-- Dashboard do Jogador -->
+  <data name="Dashboard.Player.Title"><value>Meu Personagem</value></data>
+  <data name="Dashboard.Player.Subtitle"><value>Sua ficha de personagem aparecerá aqui quando o Mestre a atribuir.</value></data>
+
+  <!-- Comum -->
+  <data name="Common.Loading"><value>Carregando…</value></data>
+  <data name="Common.Error"><value>Algo deu errado. Por favor, tente novamente.</value></data>
 </root>

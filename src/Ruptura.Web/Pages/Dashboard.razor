@@ -1,8 +1,20 @@
 @page "/dashboard"
 @attribute [Authorize]
+@using Microsoft.Extensions.Localization
+@using Ruptura.Shared.Invites
+@using Ruptura.Web.Resources
+@inject IStringLocalizer<AppStrings> L
+@inject IInviteClientService InviteService
+@inject IJSRuntime JS
+@inject AuthenticationStateProvider AuthStateProvider
 
-<PageTitle>Dashboard — Ruptura</PageTitle>
+<PageTitle>@L["Dashboard.Title"] — RUPTURA</PageTitle>
 
-<h1>Dashboard</h1>
-<p>Bem-vindo ao painel de controle da Guilda.</p>
-<p class="text-muted">As funcionalidades serão adicionadas nas próximas iterações.</p>
+<AuthorizeView Roles="GameMaster">
+    <Authorized>
+        <GmDashboard />
+    </Authorized>
+    <NotAuthorized>
+        <PlayerDashboard />
+    </NotAuthorized>
+</AuthorizeView>
