@@ -36,7 +36,7 @@ restart:
 	docker compose restart
 
 restart-api:
-	docker compose up -d api
+	docker compose up -d --force-recreate api
 
 build:
 	docker compose build --no-cache
