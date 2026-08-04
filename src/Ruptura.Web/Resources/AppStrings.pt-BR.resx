@@ -87,6 +87,7 @@
   <!-- Navegação extra -->
   <data name="Nav.Home"><value>Início</value></data>
   <data name="Nav.Invites"><value>Convites</value></data>
+  <data name="Nav.Players"><value>Jogadores</value></data>
 
   <!-- Dashboard do Mestre — Gestão de Convites -->
   <data name="Gm.Invites.Title"><value>Códigos de Convite</value></data>
@@ -108,6 +109,13 @@
   <data name="Gm.Invites.Status.Active"><value>Ativo</value></data>
   <data name="Gm.Invites.Status.Used"><value>Usado</value></data>
   <data name="Gm.Invites.Status.Expired"><value>Expirado</value></data>
+
+  <!-- Dashboard do Mestre — Roster de Jogadores -->
+  <data name="Gm.Players.Title"><value>Roster de Jogadores</value></data>
+  <data name="Gm.Players.Empty"><value>Nenhum jogador recrutado ainda. Gere um código de convite para começar.</value></data>
+  <data name="Gm.Players.Col.Name"><value>Nome</value></data>
+  <data name="Gm.Players.Col.Email"><value>E-mail</value></data>
+  <data name="Gm.Players.Col.RecruitedAt"><value>Ingressou</value></data>
 
   <!-- Dashboard do Jogador -->
   <data name="Dashboard.Player.Title"><value>Meu Personagem</value></data>

@@ -87,6 +87,7 @@
   <!-- Navigation extras -->
   <data name="Nav.Home"><value>Home</value></data>
   <data name="Nav.Invites"><value>Invites</value></data>
+  <data name="Nav.Players"><value>Players</value></data>
 
   <!-- GM Dashboard — Invite Management -->
   <data name="Gm.Invites.Title"><value>Invite Codes</value></data>
@@ -108,6 +109,13 @@
   <data name="Gm.Invites.Status.Active"><value>Active</value></data>
   <data name="Gm.Invites.Status.Used"><value>Used</value></data>
   <data name="Gm.Invites.Status.Expired"><value>Expired</value></data>
+
+  <!-- GM Dashboard — Player Roster -->
+  <data name="Gm.Players.Title"><value>Player Roster</value></data>
+  <data name="Gm.Players.Empty"><value>No players recruited yet. Generate an invite code to get started.</value></data>
+  <data name="Gm.Players.Col.Name"><value>Name</value></data>
+  <data name="Gm.Players.Col.Email"><value>Email</value></data>
+  <data name="Gm.Players.Col.RecruitedAt"><value>Joined</value></data>
 
   <!-- Player Dashboard -->
   <data name="Dashboard.Player.Title"><value>My Character</value></data>
