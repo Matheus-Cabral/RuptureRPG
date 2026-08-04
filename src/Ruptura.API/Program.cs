@@ -59,10 +59,15 @@ try
     builder.Services.AddAuthorization();
 
     // ── CORS ─────────────────────────────────────────────────────────────────
+    // Cors:AllowedOrigin supports comma-separated origins for multi-environment use.
+    // Example: "http://localhost:80,http://localhost:5186"
+    var allowedOrigins = (builder.Configuration["Cors:AllowedOrigin"] ?? "http://localhost")
+        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
     builder.Services.AddCors(opts =>
         opts.AddPolicy("BlazorClient", policy =>
             policy
-                .WithOrigins(builder.Configuration["Cors:AllowedOrigin"] ?? "http://localhost")
+                .WithOrigins(allowedOrigins)
                 .AllowAnyHeader()
                 .AllowAnyMethod()
                 .AllowCredentials()));

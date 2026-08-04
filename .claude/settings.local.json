@@ -21,7 +21,17 @@
       "Bash(git commit -m 'docs: update CLAUDE.md with full project stack and architecture *)",
       "Bash(dotnet test *)",
       "Bash(dotnet tool *)",
-      "Bash(dotnet ef migrations *)"
+      "Bash(dotnet ef migrations *)",
+      "Bash(git commit -m 'fix: remove --no-restore from Docker publish to fix NETSDK1064 analyzer error *)",
+      "Bash(docker compose *)",
+      "Bash(docker exec *)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\" http://localhost:81/)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\" http://localhost:5000/api/auth/me)",
+      "Bash(curl -s -I -H \"Origin: http://localhost:81\" http://localhost:5000/api/auth/login)",
+      "Bash(curl -s -X OPTIONS -H \"Origin: http://localhost:81\" -H \"Access-Control-Request-Method: POST\" http://localhost:5000/api/auth/login -v)",
+      "Bash(curl -s -X OPTIONS -H 'Origin: http://localhost:81' -H 'Access-Control-Request-Method: POST' -H 'Access-Control-Request-Headers: Content-Type,Authorization' http://localhost:5000/api/auth/login)",
+      "Bash(git commit -m 'fix: document CORS_ALLOWED_ORIGIN must match WEB_PORT in .env.example *)",
+      "Bash(git commit *)"
     ]
   }
 }
