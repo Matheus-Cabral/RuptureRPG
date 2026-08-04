@@ -1,0 +1,27 @@
+@using Blazored.LocalStorage
+@inject ILocalStorageService LocalStorage
+@inject NavigationManager Nav
+
+<div class="language-switcher">
+    <button class="lang-btn @(_current == "en" ? "active" : "")"
+            @onclick='() => SwitchAsync("en")'>EN</button>
+    <span class="lang-sep">|</span>
+    <button class="lang-btn @(_current == "pt-BR" ? "active" : "")"
+            @onclick='() => SwitchAsync("pt-BR")'>PT</button>
+</div>
+
+@code {
+    private string _current = "en";
+
+    protected override async Task OnInitializedAsync()
+    {
+        _current = await LocalStorage.GetItemAsync<string>("ruptura_culture") ?? "en";
+    }
+
+    private async Task SwitchAsync(string culture)
+    {
+        if (_current == culture) return;
+        await LocalStorage.SetItemAsync("ruptura_culture", culture);
+        Nav.NavigateTo(Nav.Uri, forceLoad: true);
+    }
+}

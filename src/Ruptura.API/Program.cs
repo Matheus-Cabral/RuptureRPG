@@ -1,8 +1,12 @@
+using System.Globalization;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Localization;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Ruptura.API.Middleware;
+using Ruptura.Infrastructure.Data;
 using Ruptura.Infrastructure.Extensions;
 using Ruptura.Infrastructure.Settings;
 using Serilog;
@@ -15,6 +19,7 @@ try
 {
     var builder = WebApplication.CreateBuilder(args);
 
+    // ── Logging ───────────────────────────────────────────────────────────────
     builder.Host.UseSerilog((ctx, services, cfg) => cfg
         .ReadFrom.Configuration(ctx.Configuration)
         .ReadFrom.Services(services)
@@ -22,10 +27,14 @@ try
         .WriteTo.Console()
         .WriteTo.File("logs/ruptura-.log", rollingInterval: RollingInterval.Day));
 
+    // ── Controllers + Localization ────────────────────────────────────────────
     builder.Services.AddControllers();
+    builder.Services.AddLocalization(opts => opts.ResourcesPath = "Resources");
 
+    // ── Infrastructure (EF, Identity, JWT settings, services, repos, validators)
     builder.Services.AddInfrastructure(builder.Configuration);
 
+    // ── Authentication: JWT Bearer ────────────────────────────────────────────
     var jwtSettings = builder.Configuration.GetSection(nameof(JwtSettings)).Get<JwtSettings>()!;
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(opts =>
@@ -46,6 +55,7 @@ try
 
     builder.Services.AddAuthorization();
 
+    // ── CORS ─────────────────────────────────────────────────────────────────
     builder.Services.AddCors(opts =>
         opts.AddPolicy("BlazorClient", policy =>
             policy
@@ -54,6 +64,7 @@ try
                 .AllowAnyMethod()
                 .AllowCredentials()));
 
+    // ── Swagger ───────────────────────────────────────────────────────────────
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen(opts =>
     {
@@ -63,15 +74,13 @@ try
             Version = "v1",
             Description = "API for managing Ruptura RPG campaigns and character sheets."
         });
-
         opts.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
         {
             Type = SecuritySchemeType.Http,
             Scheme = "bearer",
             BearerFormat = "JWT",
-            Description = "Enter JWT token"
+            Description = "Enter JWT access token"
         });
-
         opts.AddSecurityRequirement(new OpenApiSecurityRequirement
         {
             {
@@ -87,9 +96,23 @@ try
 
     var app = builder.Build();
 
-    app.UseMiddleware<ExceptionMiddleware>();
+    // ── Auto-migrate on startup ───────────────────────────────────────────────
+    using (var scope = app.Services.CreateScope())
+    {
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await db.Database.MigrateAsync();
+    }
 
+    // ── Middleware pipeline ───────────────────────────────────────────────────
+    app.UseMiddleware<ExceptionMiddleware>();
     app.UseSerilogRequestLogging();
+
+    var supportedCultures = new[] { "en", "pt-BR" };
+    app.UseRequestLocalization(opts =>
+        opts.SetDefaultCulture("en")
+            .AddSupportedCultures(supportedCultures)
+            .AddSupportedUICultures(supportedCultures)
+            .SetDefaultCulture("en"));
 
     if (app.Environment.IsDevelopment())
     {
@@ -113,5 +136,4 @@ finally
     Log.CloseAndFlush();
 }
 
-// Allows integration tests to reference Program
 public partial class Program;

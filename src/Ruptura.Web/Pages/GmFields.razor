@@ -1,0 +1,29 @@
+@using Microsoft.Extensions.Localization
+@using Ruptura.Shared.Auth
+@using Ruptura.Web.Resources
+
+<div class="mb-3">
+    <label class="form-label">@L["Register.DisplayName"]</label>
+    <InputText class="form-control" @bind-Value="Model.DisplayName" />
+    <ValidationMessage For="() => Model.DisplayName" />
+</div>
+<div class="mb-3">
+    <label class="form-label">@L["Register.Email"]</label>
+    <InputText class="form-control" @bind-Value="Model.Email" type="email" />
+    <ValidationMessage For="() => Model.Email" />
+</div>
+<div class="mb-3">
+    <label class="form-label">@L["Register.Password"]</label>
+    <InputText class="form-control" @bind-Value="Model.Password" type="password" />
+    <ValidationMessage For="() => Model.Password" />
+</div>
+<div class="mb-3">
+    <label class="form-label">@L["Register.ConfirmPassword"]</label>
+    <InputText class="form-control" @bind-Value="Model.ConfirmPassword" type="password" />
+    <ValidationMessage For="() => Model.ConfirmPassword" />
+</div>
+
+@code {
+    [Parameter, EditorRequired] public RegisterRequest Model { get; set; } = null!;
+    [Parameter, EditorRequired] public IStringLocalizer<AppStrings> L { get; set; } = null!;
+}

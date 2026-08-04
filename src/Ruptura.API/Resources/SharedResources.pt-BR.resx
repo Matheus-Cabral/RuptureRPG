@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter</value></resheader>
+
+  <!-- Auth -->
+  <data name="Auth.InvalidCredentials"><value>E-mail ou senha inválidos.</value></data>
+  <data name="Auth.EmailAlreadyExists"><value>Já existe uma conta com este e-mail.</value></data>
+  <data name="Auth.InvalidInviteCode"><value>Código de convite inválido ou expirado.</value></data>
+  <data name="Auth.InvalidRefreshToken"><value>Token de atualização inválido ou expirado.</value></data>
+  <data name="Auth.UserNotFound"><value>Usuário não encontrado.</value></data>
+  <data name="Auth.GameMasterRegistered"><value>Conta de Mestre criada com sucesso.</value></data>
+  <data name="Auth.PlayerRegistered"><value>Conta de Jogador criada com sucesso.</value></data>
+  <data name="Auth.LoggedIn"><value>Login realizado com sucesso.</value></data>
+  <data name="Auth.LoggedOut"><value>Logout realizado com sucesso.</value></data>
+
+  <!-- Invite -->
+  <data name="Invite.NotFound"><value>Código de convite não encontrado.</value></data>
+  <data name="Invite.AlreadyUsed"><value>Este código de convite já foi utilizado.</value></data>
+  <data name="Invite.Expired"><value>Este código de convite expirou.</value></data>
+  <data name="Invite.Forbidden"><value>Você não tem permissão para gerenciar este código de convite.</value></data>
+  <data name="Invite.Generated"><value>Código de convite gerado com sucesso.</value></data>
+
+  <!-- Generic -->
+  <data name="Error.Unexpected"><value>Ocorreu um erro inesperado. Por favor, tente novamente mais tarde.</value></data>
+  <data name="Error.Forbidden"><value>Você não tem permissão para realizar esta ação.</value></data>
+  <data name="Error.ValidationFailed"><value>Um ou mais erros de validação ocorreram.</value></data>
+</root>

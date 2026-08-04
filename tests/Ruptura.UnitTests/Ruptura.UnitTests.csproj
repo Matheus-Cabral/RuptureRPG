@@ -28,6 +28,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Ruptura.Domain\Ruptura.Domain.csproj" />
     <ProjectReference Include="..\..\src\Ruptura.Application\Ruptura.Application.csproj" />
+    <ProjectReference Include="..\..\src\Ruptura.Infrastructure\Ruptura.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

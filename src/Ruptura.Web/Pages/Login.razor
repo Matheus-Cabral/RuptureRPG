@@ -1,13 +1,16 @@
 @page "/login"
+@using Microsoft.Extensions.Localization
 @using Ruptura.Shared.Auth
+@using Ruptura.Web.Resources
+@inject IStringLocalizer<AppStrings> L
 @inject IAuthClientService AuthService
 @inject NavigationManager Nav
 
-<PageTitle>Entrar — Ruptura</PageTitle>
+<PageTitle>@L["Login.Title"] — RUPTURA</PageTitle>
 
 <div class="auth-container">
     <div class="auth-card">
-        <h2>Entrar</h2>
+        <h2>@L["Login.Title"]</h2>
 
         @if (!string.IsNullOrEmpty(_error))
         {
@@ -18,26 +21,33 @@
             <DataAnnotationsValidator />
 
             <div class="mb-3">
-                <label class="form-label">E-mail</label>
+                <label class="form-label">@L["Login.Email"]</label>
                 <InputText class="form-control" @bind-Value="_model.Email" type="email" />
                 <ValidationMessage For="() => _model.Email" />
             </div>
 
             <div class="mb-3">
-                <label class="form-label">Senha</label>
+                <label class="form-label">@L["Login.Password"]</label>
                 <InputText class="form-control" @bind-Value="_model.Password" type="password" />
                 <ValidationMessage For="() => _model.Password" />
             </div>
 
             <button type="submit" class="btn btn-primary w-100" disabled="@_loading">
-                @if (_loading) { <span class="spinner-border spinner-border-sm me-2" /> }
-                Entrar
+                @if (_loading)
+                {
+                    <span class="spinner-border spinner-border-sm me-2" />
+                    @L["Login.Loading"]
+                }
+                else
+                {
+                    @L["Login.Submit"]
+                }
             </button>
         </EditForm>
 
         <hr />
         <p class="text-center mb-0">
-            Não tem conta? <a href="/register">Criar conta</a>
+            @L["Login.NoAccount"] <a href="/register">@L["Nav.Register"]</a>
         </p>
     </div>
 </div>
@@ -47,6 +57,9 @@
     private string? _error;
     private bool _loading;
 
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
     private async Task HandleLogin()
     {
         _loading = true;
@@ -55,9 +68,9 @@
         var result = await AuthService.LoginAsync(_model);
 
         if (result is null)
-            _error = "E-mail ou senha inválidos.";
+            _error = L["Login.Error"];
         else
-            Nav.NavigateTo("/dashboard");
+            Nav.NavigateTo(ReturnUrl ?? "/dashboard");
 
         _loading = false;
     }

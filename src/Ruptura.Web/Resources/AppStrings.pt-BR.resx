@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter</value></resheader>
+
+  <!-- Navegação -->
+  <data name="Nav.Login"><value>Entrar</value></data>
+  <data name="Nav.Register"><value>Criar Conta</value></data>
+  <data name="Nav.Logout"><value>Sair</value></data>
+  <data name="Nav.Dashboard"><value>Painel</value></data>
+
+  <!-- Login -->
+  <data name="Login.Title"><value>Entrar</value></data>
+  <data name="Login.Email"><value>E-mail</value></data>
+  <data name="Login.Password"><value>Senha</value></data>
+  <data name="Login.Submit"><value>Entrar</value></data>
+  <data name="Login.NoAccount"><value>Não tem conta?</value></data>
+  <data name="Login.Error"><value>E-mail ou senha inválidos.</value></data>
+  <data name="Login.Loading"><value>Entrando…</value></data>
+
+  <!-- Registro -->
+  <data name="Register.Title"><value>Criar Conta</value></data>
+  <data name="Register.GameMaster"><value>Mestre</value></data>
+  <data name="Register.Player"><value>Jogador</value></data>
+  <data name="Register.DisplayName"><value>Nome de exibição</value></data>
+  <data name="Register.Email"><value>E-mail</value></data>
+  <data name="Register.Password"><value>Senha</value></data>
+  <data name="Register.ConfirmPassword"><value>Confirmar senha</value></data>
+  <data name="Register.InviteCode"><value>Código de Convite</value></data>
+  <data name="Register.InviteCodePlaceholder"><value>Peça ao seu Mestre</value></data>
+  <data name="Register.SubmitGM"><value>Criar Conta de Mestre</value></data>
+  <data name="Register.SubmitPlayer"><value>Criar Conta de Jogador</value></data>
+  <data name="Register.AlreadyHaveAccount"><value>Já tem conta?</value></data>
+  <data name="Register.Error.Generic"><value>Não foi possível criar a conta. Verifique os dados e tente novamente.</value></data>
+  <data name="Register.Error.InvalidInviteCode"><value>Código de convite inválido ou expirado.</value></data>
+  <data name="Register.Loading"><value>Criando conta…</value></data>
+
+  <!-- Landing -->
+  <data name="Landing.Hero.Subtitle"><value>RPG Dungeon Crawler Hardcore</value></data>
+  <data name="Landing.Hero.Concept"><value>Administre, como Conselho, uma Guilda permanente de exploradores a serviço de uma divindade. A Guilda é a verdadeira protagonista. Os personagens que descem à Dungeon são recursos valiosos — porém descartáveis.</value></data>
+  <data name="Landing.Hero.SignIn"><value>Entrar</value></data>
+  <data name="Landing.Hero.GetStarted"><value>Começar</value></data>
+  <data name="Landing.Pillars.Title"><value>Pilares do Sistema</value></data>
+  <data name="Landing.Pillars.Lethality.Title"><value>Alta Letalidade</value></data>
+  <data name="Landing.Pillars.Lethality.Desc"><value>A morte é definitiva e faz parte do jogo. Cada expedição é uma aposta real.</value></data>
+  <data name="Landing.Pillars.Persistent.Title"><value>Mundo Persistente</value></data>
+  <data name="Landing.Pillars.Persistent.Desc"><value>O tempo passa e o mundo muda mesmo sem sessão. Inatividade tem um custo.</value></data>
+  <data name="Landing.Pillars.Guild.Title"><value>Guilda Permanente</value></data>
+  <data name="Landing.Pillars.Guild.Desc"><value>A organização nunca retrocede completamente. O personagem é substituível; a Guilda não.</value></data>
+  <data name="Landing.Pillars.NoXP.Title"><value>Sem XP Genérico</value></data>
+  <data name="Landing.Pillars.NoXP.Desc"><value>Toda evolução é consequência direta da atividade praticada.</value></data>
+  <data name="Landing.Pillars.Interlude.Title"><value>Interlúdio Estratégico</value></data>
+  <data name="Landing.Pillars.Interlude.Desc"><value>O período entre expedições é tão importante quanto a expedição em si.</value></data>
+  <data name="Landing.Pillars.Info.Title"><value>Informação é Poder</value></data>
+  <data name="Landing.Pillars.Info.Desc"><value>Exploração recompensadora. Conhecer a Dungeon vale tanto quanto força bruta.</value></data>
+  <data name="Landing.CTA.Title"><value>Pronto para administrar sua Guilda?</value></data>
+  <data name="Landing.CTA.Desc"><value>Cadastre-se como Mestre ou peça um código de convite ao seu Mestre.</value></data>
+  <data name="Landing.CTA.Button"><value>Começar</value></data>
+
+  <!-- Dashboard -->
+  <data name="Dashboard.Title"><value>Painel</value></data>
+  <data name="Dashboard.Welcome"><value>Bem-vindo ao painel de controle da Guilda.</value></data>
+
+  <!-- Não encontrado -->
+  <data name="NotFound.Title"><value>Página não encontrada</value></data>
+  <data name="NotFound.Back"><value>Voltar ao início</value></data>
+</root>
