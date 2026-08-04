@@ -174,7 +174,6 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 400; color: var(--te
 
 /* ── App Shell ─────────────────────────────────────────────────────────────── */
 .app-shell {
-    display: flex;
     min-height: 100vh;
 }
 
@@ -275,11 +274,11 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 400; color: var(--te
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    flex: 1;
 }
 
 /* ── Top Bar ────────────────────────────────────────────────────────────────── */
 .top-bar {
+    width: 100%;
     height: var(--topbar-h);
     background: var(--bg);
     border-bottom: 1px solid var(--border);
