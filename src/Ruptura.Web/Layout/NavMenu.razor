@@ -15,6 +15,12 @@
             <AuthorizeView Roles="GameMaster">
                 <Authorized Context="gmCtx">
                     <span class="nav-section-label" style="margin-top:.75rem">Mestre</span>
+                    <NavLink class="nav-link" href="/gm/players">
+                        @L["Nav.Players"]
+                    </NavLink>
+                    <NavLink class="nav-link" href="/gm/campaigns">
+                        @L["Nav.Campaigns"]
+                    </NavLink>
                     <NavLink class="nav-link" href="/gm/invites">
                         @L["Nav.Invites"]
                     </NavLink>
