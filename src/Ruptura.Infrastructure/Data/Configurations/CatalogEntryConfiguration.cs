@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Ruptura.Domain.Entities;
+using Ruptura.Infrastructure.Data.Seed;
 
 namespace Ruptura.Infrastructure.Data.Configurations;
 
@@ -19,5 +20,8 @@ public class CatalogEntryConfiguration : IEntityTypeConfiguration<CatalogEntry>
             .IsUnique()
             .HasFilter("\"CampaignId\" IS NOT NULL")
             .HasDatabaseName("ux_catalog_entries_scoped_type_campaign_name");
+
+        builder.HasData(CatalogSeedData.Origins);
+        builder.HasData(CatalogSeedData.Backgrounds);
     }
 }
