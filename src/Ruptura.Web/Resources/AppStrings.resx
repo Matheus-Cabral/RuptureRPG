@@ -147,6 +147,5 @@
   <data name="Gm.CampaignDetail.Col.AssignedAt"><value>Assigned</value></data>
   <data name="Gm.CampaignDetail.AssignPlayer"><value>Assign Player</value></data>
   <data name="Gm.CampaignDetail.NoAvailablePlayers"><value>All roster players are already members of this campaign.</value></data>
-  <data name="Gm.CampaignDetail.SelectPlayer"><value>Select a player…</value></data>
   <data name="Gm.CampaignDetail.SearchPlaceholder"><value>Search by nickname or email…</value></data>
 </root>

@@ -23,15 +23,23 @@
         @if (_availablePlayers.Count > 0)
         {
             <div style="display:flex;gap:.5rem">
-                <input class="form-control" style="width:200px" placeholder="@L["Gm.CampaignDetail.SearchPlaceholder"]"
-                       @bind="_playerSearch" @bind:event="oninput" />
-                <select class="form-select" style="width:240px" @bind="_selectedPlayerId">
-                    <option value="">@L["Gm.CampaignDetail.SelectPlayer"]</option>
-                    @foreach (var player in FilteredAvailablePlayers)
+                <div class="autocomplete" style="position:relative;width:260px">
+                    <input class="form-control" placeholder="@L["Gm.CampaignDetail.SearchPlaceholder"]"
+                           value="@_playerSearch"
+                           @oninput="OnSearchInput" @onfocus="() => _showSuggestions = true"
+                           @onfocusout="() => _showSuggestions = false" />
+                    @if (_showSuggestions && FilteredAvailablePlayers.Any())
                     {
-                        <option value="@player.Id">@player.DisplayName (@player.Email)</option>
+                        <div class="autocomplete-list">
+                            @foreach (var player in FilteredAvailablePlayers)
+                            {
+                                <div class="autocomplete-item" @onmousedown="() => SelectPlayer(player)" @onmousedown:preventDefault>
+                                    @player.DisplayName (@player.Email)
+                                </div>
+                            }
+                        </div>
                     }
-                </select>
+                </div>
                 <button class="btn btn-primary btn-sm" @onclick="AssignAsync"
                         disabled="@(_assigning || _selectedPlayerId == Guid.Empty)">
                     @if (_assigning) { <span class="spinner-border spinner-border-sm me-1"></span> }
@@ -95,6 +103,7 @@
     private List<PlayerRosterResponse> _availablePlayers = [];
     private bool _loading = true;
     private bool _assigning;
+    private bool _showSuggestions;
     private Guid _selectedPlayerId;
     private string _playerSearch = string.Empty;
     private string? _errorMessage;
@@ -105,6 +114,20 @@
             : _availablePlayers.Where(p =>
                 p.DisplayName.Contains(_playerSearch, StringComparison.OrdinalIgnoreCase) ||
                 p.Email.Contains(_playerSearch, StringComparison.OrdinalIgnoreCase));
+
+    private void OnSearchInput(ChangeEventArgs e)
+    {
+        _playerSearch = e.Value?.ToString() ?? string.Empty;
+        _selectedPlayerId = Guid.Empty;
+        _showSuggestions = true;
+    }
+
+    private void SelectPlayer(PlayerRosterResponse player)
+    {
+        _selectedPlayerId = player.Id;
+        _playerSearch = $"{player.DisplayName} ({player.Email})";
+        _showSuggestions = false;
+    }
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
@@ -137,6 +160,7 @@
         {
             _selectedPlayerId = Guid.Empty;
             _playerSearch = string.Empty;
+            _showSuggestions = false;
             await LoadAsync();
         }
         else

@@ -160,6 +160,29 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 400; color: var(--te
 }
 .form-control::placeholder { color: var(--text-faint) !important; }
 
+/* Type-ahead autocomplete dropdown (single searchable input, no external component) */
+.autocomplete-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 2px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    max-height: 220px;
+    overflow-y: auto;
+    z-index: 50;
+}
+.autocomplete-item {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+    color: var(--text);
+    cursor: pointer;
+}
+.autocomplete-item:hover {
+    background: var(--bg);
+}
+
 .validation-message { color: var(--primary); font-size: 0.75rem; margin-top: 0.3rem; }
 .valid.modified:not([type=checkbox]) { border-bottom-color: #2e7d32 !important; }
 .invalid { border-bottom-color: var(--primary) !important; }
