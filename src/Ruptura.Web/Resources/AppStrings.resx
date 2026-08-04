@@ -87,6 +87,7 @@
   <!-- Navigation extras -->
   <data name="Nav.Home"><value>Home</value></data>
   <data name="Nav.Invites"><value>Invites</value></data>
+  <data name="Nav.Players"><value>Players</value></data>
 
   <!-- GM Dashboard — Invite Management -->
   <data name="Gm.Invites.Title"><value>Invite Codes</value></data>
@@ -109,6 +110,13 @@
   <data name="Gm.Invites.Status.Used"><value>Used</value></data>
   <data name="Gm.Invites.Status.Expired"><value>Expired</value></data>
 
+  <!-- GM Dashboard — Player Roster -->
+  <data name="Gm.Players.Title"><value>Player Roster</value></data>
+  <data name="Gm.Players.Empty"><value>No players recruited yet. Generate an invite code to get started.</value></data>
+  <data name="Gm.Players.Col.Name"><value>Name</value></data>
+  <data name="Gm.Players.Col.Email"><value>Email</value></data>
+  <data name="Gm.Players.Col.RecruitedAt"><value>Joined</value></data>
+
   <!-- Player Dashboard -->
   <data name="Dashboard.Player.Title"><value>My Character</value></data>
   <data name="Dashboard.Player.Subtitle"><value>Your character sheet will appear here once assigned by the Game Master.</value></data>
@@ -119,4 +127,24 @@
   <!-- Common -->
   <data name="Common.Loading"><value>Loading…</value></data>
   <data name="Common.Error"><value>Something went wrong. Please try again.</value></data>
+
+  <!-- GM Campaigns -->
+  <data name="Nav.Campaigns"><value>Campaigns</value></data>
+  <data name="Gm.Campaigns.Title"><value>Campaigns</value></data>
+  <data name="Gm.Campaigns.NamePlaceholder"><value>Campaign name</value></data>
+  <data name="Gm.Campaigns.Create"><value>Create Campaign</value></data>
+  <data name="Gm.Campaigns.Empty"><value>No campaigns yet.</value></data>
+  <data name="Gm.Campaigns.Col.Name"><value>Name</value></data>
+  <data name="Gm.Campaigns.Col.CreatedAt"><value>Created</value></data>
+  <data name="Gm.Campaigns.View"><value>View</value></data>
+
+  <!-- GM Campaign Detail -->
+  <data name="Gm.CampaignDetail.Members"><value>Members</value></data>
+  <data name="Gm.CampaignDetail.Empty"><value>No members yet.</value></data>
+  <data name="Gm.CampaignDetail.Col.Name"><value>Name</value></data>
+  <data name="Gm.CampaignDetail.Col.Email"><value>Email</value></data>
+  <data name="Gm.CampaignDetail.Col.AssignedAt"><value>Assigned</value></data>
+  <data name="Gm.CampaignDetail.AssignPlayer"><value>Assign Player</value></data>
+  <data name="Gm.CampaignDetail.NoAvailablePlayers"><value>All roster players are already members of this campaign.</value></data>
+  <data name="Gm.CampaignDetail.SelectPlayer"><value>Select a player…</value></data>
 </root>

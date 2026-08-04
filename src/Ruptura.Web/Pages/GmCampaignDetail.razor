@@ -1,0 +1,138 @@
+@page "/gm/campaigns/{Id:guid}"
+@attribute [Authorize(Roles = "GameMaster")]
+@using Microsoft.Extensions.Localization
+@using Ruptura.Web.Resources
+@using Ruptura.Shared.Campaigns
+@inject IStringLocalizer<AppStrings> L
+@inject ICampaignClientService CampaignService
+
+<PageTitle>@L["Gm.CampaignDetail.Members"] — RUPTURA</PageTitle>
+
+<div class="page-content">
+    <div class="page-heading">
+        <h1>@L["Gm.CampaignDetail.Members"]</h1>
+    </div>
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <div class="alert-danger mb-4">@_errorMessage</div>
+    }
+
+    <div class="section-header">
+        <span class="section-title">@L["Gm.CampaignDetail.Members"]</span>
+        @if (_availablePlayers.Count > 0)
+        {
+            <div style="display:flex;gap:.5rem">
+                <select class="form-select" style="width:240px" @bind="_selectedPlayerId">
+                    <option value="">@L["Gm.CampaignDetail.SelectPlayer"]</option>
+                    @foreach (var player in _availablePlayers)
+                    {
+                        <option value="@player.Id">@player.DisplayName (@player.Email)</option>
+                    }
+                </select>
+                <button class="btn btn-primary btn-sm" @onclick="AssignAsync"
+                        disabled="@(_assigning || _selectedPlayerId == Guid.Empty)">
+                    @if (_assigning) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                    @L["Gm.CampaignDetail.AssignPlayer"]
+                </button>
+            </div>
+        }
+    </div>
+
+    @if (_loading)
+    {
+        <div class="ledger-empty">
+            <span class="spinner-border spinner-border-sm me-2"></span>@L["Common.Loading"]
+        </div>
+    }
+    else if (_members.Count == 0)
+    {
+        <div class="ledger-empty">
+            <p>@L["Gm.CampaignDetail.Empty"]</p>
+        </div>
+    }
+    else
+    {
+        <div class="ledger-table-wrap">
+            <table class="ledger-table">
+                <thead>
+                    <tr>
+                        <th>@L["Gm.CampaignDetail.Col.Name"]</th>
+                        <th>@L["Gm.CampaignDetail.Col.Email"]</th>
+                        <th>@L["Gm.CampaignDetail.Col.AssignedAt"]</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var member in _members)
+                    {
+                        <tr>
+                            <td>@member.DisplayName</td>
+                            <td>@member.Email</td>
+                            <td style="color:var(--text-muted);font-size:.78rem;white-space:nowrap">
+                                @member.AssignedAt.ToLocalTime().ToString("dd/MM/yy HH:mm")
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+
+    @if (!_loading && _members.Count > 0 && _availablePlayers.Count == 0)
+    {
+        <p style="color:var(--text-muted);font-size:.8rem;margin-top:1rem">
+            @L["Gm.CampaignDetail.NoAvailablePlayers"]
+        </p>
+    }
+</div>
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private List<CampaignMemberResponse> _members = [];
+    private List<PlayerRosterResponse> _availablePlayers = [];
+    private bool _loading = true;
+    private bool _assigning;
+    private Guid _selectedPlayerId;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+
+        var membersResult = await CampaignService.GetMembersAsync(Id);
+        _members = membersResult?.Data?.ToList() ?? [];
+
+        var rosterResult = await CampaignService.GetRosterAsync();
+        var roster = rosterResult?.Data?.ToList() ?? [];
+        var memberIds = _members.Select(m => m.PlayerId).ToHashSet();
+        _availablePlayers = roster.Where(p => !memberIds.Contains(p.Id)).ToList();
+
+        _loading = false;
+    }
+
+    private async Task AssignAsync()
+    {
+        if (_selectedPlayerId == Guid.Empty) return;
+
+        _assigning = true;
+        _errorMessage = null;
+
+        var result = await CampaignService.AssignMemberAsync(
+            Id, new AssignMemberRequest { PlayerId = _selectedPlayerId });
+
+        if (result?.Data is not null)
+        {
+            _selectedPlayerId = Guid.Empty;
+            await LoadAsync();
+        }
+        else
+        {
+            _errorMessage = result?.Message ?? L["Common.Error"];
+        }
+
+        _assigning = false;
+    }
+}

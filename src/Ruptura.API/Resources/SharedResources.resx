@@ -39,6 +39,13 @@
   <data name="Invite.Forbidden"><value>You do not have permission to manage this invite code.</value></data>
   <data name="Invite.Generated"><value>Invite code generated successfully.</value></data>
 
+  <!-- Campaign -->
+  <data name="Campaign.NotFound"><value>Campaign not found.</value></data>
+  <data name="Campaign.PlayerNotInRoster"><value>This player is not in your roster.</value></data>
+  <data name="Campaign.AlreadyMember"><value>This player is already a member of this campaign.</value></data>
+  <data name="Campaign.Created"><value>Campaign created successfully.</value></data>
+  <data name="Campaign.MemberAssigned"><value>Player assigned to campaign successfully.</value></data>
+
   <!-- Generic -->
   <data name="Error.Unexpected"><value>An unexpected error occurred. Please try again later.</value></data>
   <data name="Error.Forbidden"><value>You do not have permission to perform this action.</value></data>

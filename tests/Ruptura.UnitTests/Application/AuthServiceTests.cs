@@ -180,6 +180,45 @@ public class AuthServiceTests
     }
 
     [Fact]
+    public async Task RegisterPlayerAsync_WithValidInviteCode_SetsRecruitingGameMaster()
+    {
+        var gmId = Guid.NewGuid();
+        var invite = new InviteCode
+        {
+            Code = "VALID123",
+            CreatedByGameMasterId = gmId,
+            ExpiresAt = DateTime.UtcNow.AddDays(1)
+        };
+
+        _inviteRepoMock.Setup(r => r.GetByCodeAsync("VALID123", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(invite);
+        _userManagerMock.Setup(m => m.FindByEmailAsync(It.IsAny<string>()))
+            .ReturnsAsync((ApplicationUser?)null);
+
+        ApplicationUser? createdUser = null;
+        _userManagerMock.Setup(m => m.CreateAsync(It.IsAny<ApplicationUser>(), It.IsAny<string>()))
+            .Callback<ApplicationUser, string>((u, _) => createdUser = u)
+            .ReturnsAsync(IdentityResult.Success);
+        _userManagerMock.Setup(m => m.UpdateAsync(It.IsAny<ApplicationUser>()))
+            .ReturnsAsync(IdentityResult.Success);
+        _inviteRepoMock.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(1);
+
+        var result = await _sut.RegisterPlayerAsync(new RegisterPlayerRequest
+        {
+            DisplayName = "Brave Hero",
+            Email = "hero2@example.com",
+            Password = "ValidPass1",
+            ConfirmPassword = "ValidPass1",
+            InviteCode = "VALID123"
+        });
+
+        result.IsSuccess.Should().BeTrue();
+        createdUser.Should().NotBeNull();
+        createdUser!.RecruitedByGameMasterId.Should().Be(gmId);
+    }
+
+    [Fact]
     public async Task RegisterPlayerAsync_WithInvalidInviteCode_ReturnsFailure()
     {
         _inviteRepoMock.Setup(r => r.GetByCodeAsync("INVALID", It.IsAny<CancellationToken>()))

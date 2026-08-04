@@ -1,0 +1,118 @@
+@page "/gm/campaigns"
+@attribute [Authorize(Roles = "GameMaster")]
+@using Microsoft.Extensions.Localization
+@using Ruptura.Web.Resources
+@using Ruptura.Shared.Campaigns
+@inject IStringLocalizer<AppStrings> L
+@inject ICampaignClientService CampaignService
+@inject NavigationManager Nav
+
+<PageTitle>@L["Gm.Campaigns.Title"] — RUPTURA</PageTitle>
+
+<div class="page-content">
+    <div class="page-heading">
+        <h1>@L["Gm.Campaigns.Title"]</h1>
+    </div>
+
+    <div class="section-header">
+        <span class="section-title">@L["Gm.Campaigns.Title"]</span>
+        <div style="display:flex;gap:.5rem">
+            <input class="form-control" style="width:220px" placeholder="@L["Gm.Campaigns.NamePlaceholder"]"
+                   @bind="_newName" @bind:event="oninput" />
+            <button class="btn btn-primary btn-sm" @onclick="CreateAsync" disabled="@(_creating || string.IsNullOrWhiteSpace(_newName))">
+                @if (_creating) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                @L["Gm.Campaigns.Create"]
+            </button>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <div class="alert-danger mb-4">@_errorMessage</div>
+    }
+
+    @if (_loading)
+    {
+        <div class="ledger-empty">
+            <span class="spinner-border spinner-border-sm me-2"></span>@L["Common.Loading"]
+        </div>
+    }
+    else if (_campaigns.Count == 0)
+    {
+        <div class="ledger-empty">
+            <p>@L["Gm.Campaigns.Empty"]</p>
+        </div>
+    }
+    else
+    {
+        <div class="ledger-table-wrap">
+            <table class="ledger-table">
+                <thead>
+                    <tr>
+                        <th>@L["Gm.Campaigns.Col.Name"]</th>
+                        <th>@L["Gm.Campaigns.Col.CreatedAt"]</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var campaign in _campaigns)
+                    {
+                        <tr>
+                            <td>@campaign.Name</td>
+                            <td style="color:var(--text-muted);font-size:.78rem;white-space:nowrap">
+                                @campaign.CreatedAt.ToLocalTime().ToString("dd/MM/yy HH:mm")
+                            </td>
+                            <td>
+                                <button class="btn btn-outline-secondary btn-sm"
+                                        @onclick="() => NavigateToCampaign(campaign.Id)">
+                                    @L["Gm.Campaigns.View"]
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    private List<CampaignResponse> _campaigns = [];
+    private bool _loading = true;
+    private bool _creating;
+    private string _newName = string.Empty;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        var result = await CampaignService.GetAllAsync();
+        _campaigns = result?.Data?.ToList() ?? [];
+        _loading = false;
+    }
+
+    private async Task CreateAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_newName)) return;
+
+        _creating = true;
+        _errorMessage = null;
+
+        var result = await CampaignService.CreateAsync(new CreateCampaignRequest { Name = _newName });
+        if (result?.Data is not null)
+        {
+            _campaigns.Insert(0, result.Data);
+            _newName = string.Empty;
+        }
+        else
+        {
+            _errorMessage = L["Common.Error"];
+        }
+
+        _creating = false;
+    }
+
+    private void NavigateToCampaign(Guid id) => Nav.NavigateTo($"/gm/campaigns/{id}");
+}

@@ -28,7 +28,8 @@ try
         .WriteTo.File("logs/ruptura-.log", rollingInterval: RollingInterval.Day));
 
     // ── Controllers + Localization ────────────────────────────────────────────
-    builder.Services.AddControllers();
+    builder.Services.AddControllers()
+        .ConfigureApiBehaviorOptions(opts => opts.SuppressModelStateInvalidFilter = true);
     builder.Services.AddLocalization(opts => opts.ResourcesPath = "Resources");
 
     // ── Infrastructure (EF, Identity, JWT settings, services, repos, validators)
