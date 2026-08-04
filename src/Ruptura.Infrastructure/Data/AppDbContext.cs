@@ -13,6 +13,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<CharacterSheet> CharacterSheets => Set<CharacterSheet>();
     public DbSet<GuildSheet> GuildSheets => Set<GuildSheet>();
     public DbSet<GuildMembership> GuildMemberships => Set<GuildMembership>();
+    public DbSet<Campaign> Campaigns => Set<Campaign>();
+    public DbSet<CampaignMembership> CampaignMemberships => Set<CampaignMembership>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
