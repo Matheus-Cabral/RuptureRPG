@@ -94,7 +94,34 @@ public class CatalogEntryServiceTests
         result.Error.Should().Be(ErrorCodes.Catalog.NotFound);
     }
 
+    [Fact]
+    public async Task GetByTypeAsync_WhenCampaignDoesNotExist_ReturnsNotFound()
+    {
+        var callerId = Guid.NewGuid();
+        var campaignId = Guid.NewGuid();
+
+        _campaignRepoMock.Setup(r => r.GetByIdAsync(campaignId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Campaign?)null);
+
+        var result = await _sut.GetByTypeAsync(callerId, "Skill", campaignId);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(ErrorCodes.Catalog.NotFound);
+    }
+
     // ── CreateAsync ──────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task CreateAsync_WithInvalidType_ReturnsFailure()
+    {
+        var result = await _sut.CreateAsync(Guid.NewGuid(), new CreateCatalogEntryRequest
+        {
+            CampaignId = Guid.NewGuid(), Type = "NotARealType", Name = "X", DataJson = "{}"
+        });
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(ErrorCodes.Catalog.InvalidType);
+    }
 
     [Fact]
     public async Task CreateAsync_WithValidData_CreatesHomebrewEntry()
@@ -226,6 +253,44 @@ public class CatalogEntryServiceTests
     }
 
     [Fact]
+    public async Task UpdateAsync_WithDuplicateName_ReturnsAlreadyExists()
+    {
+        var gmId = Guid.NewGuid();
+        var campaignId = Guid.NewGuid();
+        var entry = new CatalogEntry { Id = Guid.NewGuid(), Type = CatalogEntryType.Talent, CampaignId = campaignId, Name = "Old" };
+        var campaign = new Campaign { Id = campaignId, GameMasterId = gmId };
+
+        _catalogRepoMock.Setup(r => r.GetByIdAsync(entry.Id, It.IsAny<CancellationToken>())).ReturnsAsync(entry);
+        _campaignRepoMock.Setup(r => r.GetByIdAsync(campaignId, It.IsAny<CancellationToken>())).ReturnsAsync(campaign);
+        _catalogRepoMock.Setup(r => r.ExistsAsync(CatalogEntryType.Talent, campaignId, "Duplicado", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var result = await _sut.UpdateAsync(gmId, entry.Id, new UpdateCatalogEntryRequest
+        {
+            Name = "Duplicado", DataJson = "{}"
+        });
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(ErrorCodes.Catalog.AlreadyExists);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_WhenEntryNotFound_ReturnsNotFound()
+    {
+        var entryId = Guid.NewGuid();
+        _catalogRepoMock.Setup(r => r.GetByIdAsync(entryId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((CatalogEntry?)null);
+
+        var result = await _sut.UpdateAsync(Guid.NewGuid(), entryId, new UpdateCatalogEntryRequest
+        {
+            Name = "Y", DataJson = "{}"
+        });
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(ErrorCodes.Catalog.NotFound);
+    }
+
+    [Fact]
     public async Task DeleteAsync_OnGlobalEntry_ReturnsCannotModifyGlobalEntry()
     {
         var entry = new CatalogEntry { Id = Guid.NewGuid(), Type = CatalogEntryType.Skill, CampaignId = null, Name = "Espadas" };
@@ -253,5 +318,18 @@ public class CatalogEntryServiceTests
 
         result.IsSuccess.Should().BeTrue();
         _catalogRepoMock.Verify(r => r.Remove(entry), Times.Once);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_WhenEntryNotFound_ReturnsNotFound()
+    {
+        var entryId = Guid.NewGuid();
+        _catalogRepoMock.Setup(r => r.GetByIdAsync(entryId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((CatalogEntry?)null);
+
+        var result = await _sut.DeleteAsync(Guid.NewGuid(), entryId);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(ErrorCodes.Catalog.NotFound);
     }
 }
