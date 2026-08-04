@@ -70,7 +70,8 @@ public class AuthService(
             UserName = request.Email,
             Email = request.Email,
             DisplayName = request.DisplayName,
-            Role = UserRole.Player
+            Role = UserRole.Player,
+            RecruitedByGameMasterId = invite.CreatedByGameMasterId
         };
 
         var created = await userManager.CreateAsync(user, request.Password);
