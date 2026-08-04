@@ -25,4 +25,12 @@ public static class ErrorCodes
         public const string PlayerNotInRoster = "Campaign.PlayerNotInRoster";
         public const string AlreadyMember = "Campaign.AlreadyMember";
     }
+
+    public static class Catalog
+    {
+        public const string NotFound = "Catalog.NotFound";
+        public const string InvalidType = "Catalog.InvalidType";
+        public const string AlreadyExists = "Catalog.AlreadyExists";
+        public const string CannotModifyGlobalEntry = "Catalog.CannotModifyGlobalEntry";
+    }
 }

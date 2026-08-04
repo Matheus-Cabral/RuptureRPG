@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Ruptura.Application.Interfaces;
 using Ruptura.Application.Validators.Auth;
+using Ruptura.Application.Validators.Catalog;
 using Ruptura.Application.Validators.Campaigns;
 using Ruptura.Infrastructure.Data;
 using Ruptura.Infrastructure.Identity;
@@ -12,6 +13,7 @@ using Ruptura.Infrastructure.Repositories;
 using Ruptura.Infrastructure.Services;
 using Ruptura.Infrastructure.Settings;
 using Ruptura.Shared.Auth;
+using Ruptura.Shared.Catalog;
 using Ruptura.Shared.Campaigns;
 
 namespace Ruptura.Infrastructure.Extensions;
@@ -63,6 +65,8 @@ public static class InfrastructureExtensions
         services.AddScoped<IValidator<RegisterPlayerRequest>, RegisterPlayerRequestValidator>();
         services.AddScoped<IValidator<CreateCampaignRequest>, CreateCampaignRequestValidator>();
         services.AddScoped<IValidator<AssignMemberRequest>, AssignMemberRequestValidator>();
+        services.AddScoped<IValidator<CreateCatalogEntryRequest>, CreateCatalogEntryRequestValidator>();
+        services.AddScoped<IValidator<UpdateCatalogEntryRequest>, UpdateCatalogEntryRequestValidator>();
 
         return services;
     }
