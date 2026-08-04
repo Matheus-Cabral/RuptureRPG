@@ -64,7 +64,7 @@
                             </td>
                             <td>
                                 <button class="btn btn-outline-secondary btn-sm"
-                                        @onclick="() => Nav.NavigateTo($"/gm/campaigns/{campaign.Id}")">
+                                        @onclick="() => NavigateToCampaign(campaign.Id)">
                                     @L["Gm.Campaigns.View"]
                                 </button>
                             </td>
@@ -113,4 +113,6 @@
 
         _creating = false;
     }
+
+    private void NavigateToCampaign(Guid id) => Nav.NavigateTo($"/gm/campaigns/{id}");
 }
