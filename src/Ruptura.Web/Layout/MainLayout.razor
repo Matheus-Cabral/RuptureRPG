@@ -26,33 +26,32 @@
         </div>
     </aside>
 
-    <!-- Main -->
-    <div class="main-wrapper">
-        <header class="top-bar">
-            <button class="hamburger" @onclick="() => _sidebarOpen = !_sidebarOpen"
-                    aria-label="Menu">
-                <span></span><span></span><span></span>
-            </button>
-            <span class="top-bar-title">@_pageTitle</span>
-            <div class="top-bar-controls">
-                <ThemeSwitcher />
-                @if (!string.IsNullOrEmpty(_displayName))
-                {
-                    <div class="user-chip">
-                        <span class="user-chip-name">@_displayName</span>
-                        @if (!string.IsNullOrEmpty(_role))
-                        {
-                            <span class="user-role-badge">@_role</span>
-                        }
-                    </div>
-                }
-            </div>
-        </header>
+    <!-- Topbar (sibling of sidebar, both fixed) -->
+    <header class="top-bar">
+        <button class="hamburger" @onclick="() => _sidebarOpen = !_sidebarOpen"
+                aria-label="Menu">
+            <span></span><span></span><span></span>
+        </button>
+        <span class="top-bar-title">@_pageTitle</span>
+        <div class="top-bar-controls">
+            <ThemeSwitcher />
+            @if (!string.IsNullOrEmpty(_displayName))
+            {
+                <div class="user-chip">
+                    <span class="user-chip-name">@_displayName</span>
+                    @if (!string.IsNullOrEmpty(_role))
+                    {
+                        <span class="user-role-badge">@_role</span>
+                    }
+                </div>
+            }
+        </div>
+    </header>
 
-        <main>
-            @Body
-        </main>
-    </div>
+    <!-- Scrollable content area -->
+    <main class="main-wrapper">
+        @Body
+    </main>
 
 </div>
 
