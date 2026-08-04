@@ -8,47 +8,49 @@
 
 <PageTitle>@L["Login.Title"] — RUPTURA</PageTitle>
 
-<div class="auth-container">
-    <div class="auth-card">
-        <h2>@L["Login.Title"]</h2>
+<div class="auth-wrapper">
+    <div class="auth-container">
+        <div class="auth-card">
+            <h2>@L["Login.Title"]</h2>
 
-        @if (!string.IsNullOrEmpty(_error))
-        {
-            <div class="alert alert-danger">@_error</div>
-        }
+            @if (!string.IsNullOrEmpty(_error))
+            {
+                <div class="alert alert-danger">@_error</div>
+            }
 
-        <EditForm Model="_model" OnValidSubmit="HandleLogin">
-            <DataAnnotationsValidator />
+            <EditForm Model="_model" OnValidSubmit="HandleLogin">
+                <DataAnnotationsValidator />
 
-            <div class="mb-3">
-                <label class="form-label">@L["Login.Email"]</label>
-                <InputText class="form-control" @bind-Value="_model.Email" type="email" />
-                <ValidationMessage For="() => _model.Email" />
-            </div>
+                <div class="mb-3">
+                    <label class="form-label">@L["Login.Email"]</label>
+                    <InputText class="form-control" @bind-Value="_model.Email" type="email" />
+                    <ValidationMessage For="() => _model.Email" />
+                </div>
 
-            <div class="mb-3">
-                <label class="form-label">@L["Login.Password"]</label>
-                <InputText class="form-control" @bind-Value="_model.Password" type="password" />
-                <ValidationMessage For="() => _model.Password" />
-            </div>
+                <div class="mb-3">
+                    <label class="form-label">@L["Login.Password"]</label>
+                    <InputText class="form-control" @bind-Value="_model.Password" type="password" />
+                    <ValidationMessage For="() => _model.Password" />
+                </div>
 
-            <button type="submit" class="btn btn-primary w-100" disabled="@_loading">
-                @if (_loading)
-                {
-                    <span class="spinner-border spinner-border-sm me-2" />
-                    @L["Login.Loading"]
-                }
-                else
-                {
-                    @L["Login.Submit"]
-                }
-            </button>
-        </EditForm>
+                <button type="submit" class="btn btn-primary w-100" disabled="@_loading">
+                    @if (_loading)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2" />
+                        @L["Login.Loading"]
+                    }
+                    else
+                    {
+                        @L["Login.Submit"]
+                    }
+                </button>
+            </EditForm>
 
-        <hr />
-        <p class="text-center mb-0">
-            @L["Login.NoAccount"] <a href="/register">@L["Nav.Register"]</a>
-        </p>
+            <hr />
+            <p class="text-center mb-0">
+                @L["Login.NoAccount"] <a href="/register">@L["Nav.Register"]</a>
+            </p>
+        </div>
     </div>
 </div>
 
@@ -67,10 +69,10 @@
 
         var result = await AuthService.LoginAsync(_model);
 
-        if (result is null)
-            _error = L["Login.Error"];
-        else
+        if (result?.Data is not null)
             Nav.NavigateTo(ReturnUrl ?? "/dashboard");
+        else
+            _error = result?.Message ?? L["Login.Error"];
 
         _loading = false;
     }

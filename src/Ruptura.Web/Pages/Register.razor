@@ -8,59 +8,77 @@
 
 <PageTitle>@L["Register.Title"] — RUPTURA</PageTitle>
 
-<div class="auth-container">
-    <div class="auth-card">
-        <h2>@L["Register.Title"]</h2>
+<div class="auth-wrapper">
+    <div class="auth-container">
+        <div class="auth-card">
+            <h2>@L["Register.Title"]</h2>
 
-        <div class="account-type-toggle mb-4">
-            <button class="btn @(!_isPlayer ? "btn-primary" : "btn-outline-primary")"
-                    @onclick="() => _isPlayer = false">
-                @L["Register.GameMaster"]
-            </button>
-            <button class="btn @(_isPlayer ? "btn-primary" : "btn-outline-primary") ms-2"
-                    @onclick="() => _isPlayer = true">
-                @L["Register.Player"]
-            </button>
+            <div class="account-type-toggle mb-4">
+                <button class="btn @(!_isPlayer ? "btn-primary" : "btn-outline-primary")"
+                        @onclick="() => _isPlayer = false">
+                    @L["Register.GameMaster"]
+                </button>
+                <button class="btn @(_isPlayer ? "btn-primary" : "btn-outline-primary") ms-2"
+                        @onclick="() => _isPlayer = true">
+                    @L["Register.Player"]
+                </button>
+            </div>
+
+            @if (!string.IsNullOrEmpty(_error))
+            {
+                <div class="alert alert-danger">
+                    <div>@_error</div>
+                    @if (_validationErrors.Length > 0)
+                    {
+                        <ul class="mb-0 mt-1">
+                            @foreach (var err in _validationErrors)
+                            {
+                                <li>@err</li>
+                            }
+                        </ul>
+                    }
+                </div>
+            }
+
+            @if (_isPlayer)
+            {
+                <EditForm Model="_playerModel" OnValidSubmit="HandleRegisterPlayer">
+                    <DataAnnotationsValidator />
+                    <PlayerFields Model="_playerModel" L="L" />
+                    <button type="submit" class="btn btn-primary w-100" disabled="@_loading">
+                        @if (_loading) { <span class="spinner-border spinner-border-sm me-2" /> @L["Register.Loading"] }
+                        else { @L["Register.SubmitPlayer"] }
+                    </button>
+                </EditForm>
+            }
+            else
+            {
+                <EditForm Model="_gmModel" OnValidSubmit="HandleRegisterGM">
+                    <DataAnnotationsValidator />
+                    <GmFields Model="_gmModel" L="L" />
+                    <button type="submit" class="btn btn-primary w-100" disabled="@_loading">
+                        @if (_loading) { <span class="spinner-border spinner-border-sm me-2" /> @L["Register.Loading"] }
+                        else { @L["Register.SubmitGM"] }
+                    </button>
+                </EditForm>
+            }
+
+            <hr />
+            <p class="text-center mb-0 mt-2">
+                @L["Register.AlreadyHaveAccount"] <a href="/login">@L["Nav.Login"]</a>
+            </p>
+
+            <p class="text-center text-muted mt-3" style="font-size:.8rem">
+                @L["Register.PasswordHint"]
+            </p>
         </div>
-
-        @if (!string.IsNullOrEmpty(_error))
-        {
-            <div class="alert alert-danger">@_error</div>
-        }
-
-        @if (_isPlayer)
-        {
-            <EditForm Model="_playerModel" OnValidSubmit="HandleRegisterPlayer">
-                <DataAnnotationsValidator />
-                <PlayerFields Model="_playerModel" L="L" />
-                <button type="submit" class="btn btn-primary w-100" disabled="@_loading">
-                    @if (_loading) { <span class="spinner-border spinner-border-sm me-2" /> @L["Register.Loading"] }
-                    else { @L["Register.SubmitPlayer"] }
-                </button>
-            </EditForm>
-        }
-        else
-        {
-            <EditForm Model="_gmModel" OnValidSubmit="HandleRegisterGM">
-                <DataAnnotationsValidator />
-                <GmFields Model="_gmModel" L="L" />
-                <button type="submit" class="btn btn-primary w-100" disabled="@_loading">
-                    @if (_loading) { <span class="spinner-border spinner-border-sm me-2" /> @L["Register.Loading"] }
-                    else { @L["Register.SubmitGM"] }
-                </button>
-            </EditForm>
-        }
-
-        <hr />
-        <p class="text-center mb-0">
-            @L["Register.AlreadyHaveAccount"] <a href="/login">@L["Nav.Login"]</a>
-        </p>
     </div>
 </div>
 
 @code {
     private bool _isPlayer;
     private string? _error;
+    private string[] _validationErrors = [];
     private bool _loading;
     private readonly RegisterRequest _gmModel = new();
     private readonly RegisterPlayerRequest _playerModel = new();
@@ -69,9 +87,18 @@
     {
         _loading = true;
         _error = null;
+        _validationErrors = [];
+
         var result = await AuthService.RegisterGameMasterAsync(_gmModel);
-        if (result is null) _error = L["Register.Error.Generic"];
-        else Nav.NavigateTo("/dashboard");
+
+        if (result?.Data is not null)
+            Nav.NavigateTo("/dashboard");
+        else
+        {
+            _error = result?.Message ?? L["Register.Error.Generic"];
+            _validationErrors = result?.Errors ?? [];
+        }
+
         _loading = false;
     }
 
@@ -79,9 +106,18 @@
     {
         _loading = true;
         _error = null;
+        _validationErrors = [];
+
         var result = await AuthService.RegisterPlayerAsync(_playerModel);
-        if (result is null) _error = L["Register.Error.InvalidInviteCode"];
-        else Nav.NavigateTo("/dashboard");
+
+        if (result?.Data is not null)
+            Nav.NavigateTo("/dashboard");
+        else
+        {
+            _error = result?.Message ?? L["Register.Error.Generic"];
+            _validationErrors = result?.Errors ?? [];
+        }
+
         _loading = false;
     }
 }

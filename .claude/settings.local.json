@@ -31,7 +31,10 @@
       "Bash(curl -s -X OPTIONS -H \"Origin: http://localhost:81\" -H \"Access-Control-Request-Method: POST\" http://localhost:5000/api/auth/login -v)",
       "Bash(curl -s -X OPTIONS -H 'Origin: http://localhost:81' -H 'Access-Control-Request-Method: POST' -H 'Access-Control-Request-Headers: Content-Type,Authorization' http://localhost:5000/api/auth/login)",
       "Bash(git commit -m 'fix: document CORS_ALLOWED_ORIGIN must match WEB_PORT in .env.example *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(curl -s -X OPTIONS -H 'Origin: http://192.168.80.16:81' -H 'Access-Control-Request-Method: POST' -H 'Access-Control-Request-Headers: Content-Type' http://192.168.80.16:5000/api/auth/register/gamemaster -v)",
+      "Bash(curl -s -X POST http://192.168.80.16:5000/api/auth/register/player -H 'Content-Type: application/json' -H 'Accept-Language: en' -d '{ *)",
+      "Bash(python3 -m json.tool)"
     ]
   }
 }

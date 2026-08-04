@@ -112,6 +112,9 @@
   <data name="Dashboard.Player.Title"><value>My Character</value></data>
   <data name="Dashboard.Player.Subtitle"><value>Your character sheet will appear here once assigned by the Game Master.</value></data>
 
+  <!-- Password hint -->
+  <data name="Register.PasswordHint"><value>Password: min. 8 characters, with uppercase, lowercase and a number.</value></data>
+
   <!-- Common -->
   <data name="Common.Loading"><value>Loading…</value></data>
   <data name="Common.Error"><value>Something went wrong. Please try again.</value></data>

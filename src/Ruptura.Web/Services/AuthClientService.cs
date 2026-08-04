@@ -2,6 +2,7 @@ using System.Net.Http.Json;
 using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components.Authorization;
 using Ruptura.Shared.Auth;
+using Ruptura.Shared.Common;
 using Ruptura.Web.Auth;
 
 namespace Ruptura.Web.Services;
@@ -15,40 +16,31 @@ public class AuthClientService(
     private const string AccessKey = "access_token";
     private const string RefreshKey = "refresh_token";
 
-    public async Task<AuthResponse?> LoginAsync(LoginRequest request)
+    public async Task<ApiResponse<AuthResponse>?> LoginAsync(LoginRequest request)
     {
         var response = await Http.PostAsJsonAsync("api/auth/login", request);
-        if (!response.IsSuccessStatusCode) return null;
-
-        var result = await response.Content.ReadFromJsonAsync<Ruptura.Shared.Common.ApiResponse<AuthResponse>>();
-        if (result?.Data is null) return null;
-
-        await PersistAsync(result.Data);
-        return result.Data;
+        var result = await response.Content.ReadFromJsonAsync<ApiResponse<AuthResponse>>();
+        if (result?.Data is not null)
+            await PersistAsync(result.Data);
+        return result;
     }
 
-    public async Task<AuthResponse?> RegisterGameMasterAsync(RegisterRequest request)
+    public async Task<ApiResponse<AuthResponse>?> RegisterGameMasterAsync(RegisterRequest request)
     {
         var response = await Http.PostAsJsonAsync("api/auth/register/gamemaster", request);
-        if (!response.IsSuccessStatusCode) return null;
-
-        var result = await response.Content.ReadFromJsonAsync<Ruptura.Shared.Common.ApiResponse<AuthResponse>>();
-        if (result?.Data is null) return null;
-
-        await PersistAsync(result.Data);
-        return result.Data;
+        var result = await response.Content.ReadFromJsonAsync<ApiResponse<AuthResponse>>();
+        if (result?.Data is not null)
+            await PersistAsync(result.Data);
+        return result;
     }
 
-    public async Task<AuthResponse?> RegisterPlayerAsync(RegisterPlayerRequest request)
+    public async Task<ApiResponse<AuthResponse>?> RegisterPlayerAsync(RegisterPlayerRequest request)
     {
         var response = await Http.PostAsJsonAsync("api/auth/register/player", request);
-        if (!response.IsSuccessStatusCode) return null;
-
-        var result = await response.Content.ReadFromJsonAsync<Ruptura.Shared.Common.ApiResponse<AuthResponse>>();
-        if (result?.Data is null) return null;
-
-        await PersistAsync(result.Data);
-        return result.Data;
+        var result = await response.Content.ReadFromJsonAsync<ApiResponse<AuthResponse>>();
+        if (result?.Data is not null)
+            await PersistAsync(result.Data);
+        return result;
     }
 
     public async Task LogoutAsync()

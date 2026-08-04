@@ -112,6 +112,9 @@
   <data name="Dashboard.Player.Title"><value>Meu Personagem</value></data>
   <data name="Dashboard.Player.Subtitle"><value>Sua ficha de personagem aparecerá aqui quando o Mestre a atribuir.</value></data>
 
+  <!-- Dica de senha -->
+  <data name="Register.PasswordHint"><value>Senha: mín. 8 caracteres, com maiúscula, minúscula e número.</value></data>
+
   <!-- Comum -->
   <data name="Common.Loading"><value>Carregando…</value></data>
   <data name="Common.Error"><value>Algo deu errado. Por favor, tente novamente.</value></data>
