@@ -9,7 +9,7 @@ COPY ["src/Ruptura.API/Ruptura.API.csproj", "src/Ruptura.API/"]
 RUN dotnet restore "src/Ruptura.API/Ruptura.API.csproj"
 
 COPY src/ src/
-RUN dotnet publish "src/Ruptura.API/Ruptura.API.csproj" -c Release -o /app/publish --no-restore
+RUN dotnet publish "src/Ruptura.API/Ruptura.API.csproj" -c Release -o /app/publish
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
