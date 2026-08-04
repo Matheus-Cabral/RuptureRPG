@@ -52,6 +52,7 @@ public static class InfrastructureExtensions
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IInviteCodeService, InviteCodeService>();
         services.AddScoped<ICampaignService, CampaignService>();
+        services.AddScoped<ICatalogEntryService, CatalogEntryService>();
 
         // Repositories
         services.AddScoped<IInviteCodeRepository, InviteCodeRepository>();
