@@ -6,6 +6,7 @@ public class InviteCode
     public string Code { get; set; } = string.Empty;
     public Guid CreatedByGameMasterId { get; set; }
     public Guid? UsedByPlayerId { get; set; }
+    public DateTime? UsedAt { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime ExpiresAt { get; set; }
     public bool IsUsed => UsedByPlayerId.HasValue;

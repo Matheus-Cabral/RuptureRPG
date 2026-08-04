@@ -80,6 +80,7 @@ public class AuthService(
                 string.Join("; ", created.Errors.Select(e => e.Description)));
 
         invite.UsedByPlayerId = user.Id;
+        invite.UsedAt = DateTime.UtcNow;
         inviteRepo.Update(invite);
         await inviteRepo.SaveChangesAsync(ct);
 

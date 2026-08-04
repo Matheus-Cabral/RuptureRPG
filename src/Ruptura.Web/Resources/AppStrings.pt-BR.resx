@@ -107,6 +107,8 @@
   <data name="Gm.Invites.Col.Status"><value>Status</value></data>
   <data name="Gm.Invites.Col.Created"><value>Criado em</value></data>
   <data name="Gm.Invites.Col.Expires"><value>Expira em</value></data>
+  <data name="Gm.Invites.Col.RedeemedAt"><value>Resgatado em</value></data>
+  <data name="Gm.Invites.Col.RedeemedBy"><value>Resgatado por</value></data>
   <data name="Gm.Invites.Status.Active"><value>Ativo</value></data>
   <data name="Gm.Invites.Status.Used"><value>Usado</value></data>
   <data name="Gm.Invites.Status.Expired"><value>Expirado</value></data>

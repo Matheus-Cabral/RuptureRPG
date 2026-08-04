@@ -80,6 +80,8 @@ else
                     <th>@L["Gm.Invites.Col.Status"]</th>
                     <th>@L["Gm.Invites.Col.Created"]</th>
                     <th>@L["Gm.Invites.Col.Expires"]</th>
+                    <th>@L["Gm.Invites.Col.RedeemedAt"]</th>
+                    <th>@L["Gm.Invites.Col.RedeemedBy"]</th>
                     <th></th>
                 </tr>
             </thead>
@@ -99,7 +101,13 @@ else
                             @item.CreatedAt.ToLocalTime().ToString("dd/MM/yy HH:mm")
                         </td>
                         <td style="color:var(--text-muted);font-size:.78rem;white-space:nowrap">
-                            @item.ExpiresAt.ToLocalTime().ToString("dd/MM/yy HH:mm")
+                            @(item.IsUsed ? "—" : item.ExpiresAt.ToLocalTime().ToString("dd/MM/yy HH:mm"))
+                        </td>
+                        <td style="color:var(--text-muted);font-size:.78rem;white-space:nowrap">
+                            @(item.UsedAt is { } usedAt ? usedAt.ToLocalTime().ToString("dd/MM/yy HH:mm") : "—")
+                        </td>
+                        <td style="color:var(--text-muted);font-size:.78rem;white-space:nowrap">
+                            @(item.IsUsed ? $"{item.RedeemedByDisplayName} ({item.RedeemedByEmail})" : "—")
                         </td>
                         <td>
                             @if (!item.IsUsed && item.ExpiresAt > DateTime.UtcNow)

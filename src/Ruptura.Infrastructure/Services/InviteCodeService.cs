@@ -1,12 +1,16 @@
 using System.Security.Cryptography;
+using Microsoft.AspNetCore.Identity;
 using Ruptura.Application.Common;
 using Ruptura.Application.Interfaces;
 using Ruptura.Domain.Entities;
+using Ruptura.Infrastructure.Identity;
 using Ruptura.Shared.Invites;
 
 namespace Ruptura.Infrastructure.Services;
 
-public class InviteCodeService(IInviteCodeRepository repo) : IInviteCodeService
+public class InviteCodeService(
+    IInviteCodeRepository repo,
+    UserManager<ApplicationUser> userManager) : IInviteCodeService
 {
     private const int CodeLength = 10;
     private const int ExpirationHours = 48;
@@ -46,7 +50,26 @@ public class InviteCodeService(IInviteCodeRepository repo) : IInviteCodeService
         CancellationToken ct = default)
     {
         var codes = await repo.GetByGameMasterAsync(gameMasterId, ct);
-        return Result.Success(codes.Select(MapToResponse));
+
+        var responses = new List<InviteCodeResponse>();
+        foreach (var code in codes)
+        {
+            var response = MapToResponse(code);
+
+            if (code.UsedByPlayerId is { } playerId)
+            {
+                var player = await userManager.FindByIdAsync(playerId.ToString());
+                if (player is not null)
+                {
+                    response.RedeemedByDisplayName = player.DisplayName;
+                    response.RedeemedByEmail = player.Email;
+                }
+            }
+
+            responses.Add(response);
+        }
+
+        return Result.Success(responses.AsEnumerable());
     }
 
     // ── Private helpers ───────────────────────────────────────────────────────
@@ -64,6 +87,7 @@ public class InviteCodeService(IInviteCodeRepository repo) : IInviteCodeService
         Code = c.Code,
         IsUsed = c.IsUsed,
         ExpiresAt = c.ExpiresAt,
-        CreatedAt = c.CreatedAt
+        CreatedAt = c.CreatedAt,
+        UsedAt = c.UsedAt
     };
 }
