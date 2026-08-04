@@ -127,4 +127,14 @@
   <!-- Common -->
   <data name="Common.Loading"><value>Loading…</value></data>
   <data name="Common.Error"><value>Something went wrong. Please try again.</value></data>
+
+  <!-- GM Campaigns -->
+  <data name="Nav.Campaigns"><value>Campaigns</value></data>
+  <data name="Gm.Campaigns.Title"><value>Campaigns</value></data>
+  <data name="Gm.Campaigns.NamePlaceholder"><value>Campaign name</value></data>
+  <data name="Gm.Campaigns.Create"><value>Create Campaign</value></data>
+  <data name="Gm.Campaigns.Empty"><value>No campaigns yet.</value></data>
+  <data name="Gm.Campaigns.Col.Name"><value>Name</value></data>
+  <data name="Gm.Campaigns.Col.CreatedAt"><value>Created</value></data>
+  <data name="Gm.Campaigns.View"><value>View</value></data>
 </root>

@@ -127,4 +127,14 @@
   <!-- Comum -->
   <data name="Common.Loading"><value>Carregando…</value></data>
   <data name="Common.Error"><value>Algo deu errado. Por favor, tente novamente.</value></data>
+
+  <!-- Campanhas do Mestre -->
+  <data name="Nav.Campaigns"><value>Campanhas</value></data>
+  <data name="Gm.Campaigns.Title"><value>Campanhas</value></data>
+  <data name="Gm.Campaigns.NamePlaceholder"><value>Nome da campanha</value></data>
+  <data name="Gm.Campaigns.Create"><value>Criar Campanha</value></data>
+  <data name="Gm.Campaigns.Empty"><value>Nenhuma campanha ainda.</value></data>
+  <data name="Gm.Campaigns.Col.Name"><value>Nome</value></data>
+  <data name="Gm.Campaigns.Col.CreatedAt"><value>Criada em</value></data>
+  <data name="Gm.Campaigns.View"><value>Ver</value></data>
 </root>
