@@ -39,6 +39,13 @@
   <data name="Invite.Forbidden"><value>Você não tem permissão para gerenciar este código de convite.</value></data>
   <data name="Invite.Generated"><value>Código de convite gerado com sucesso.</value></data>
 
+  <!-- Campaign -->
+  <data name="Campaign.NotFound"><value>Campanha não encontrada.</value></data>
+  <data name="Campaign.PlayerNotInRoster"><value>Este jogador não está no seu roster.</value></data>
+  <data name="Campaign.AlreadyMember"><value>Este jogador já é membro desta campanha.</value></data>
+  <data name="Campaign.Created"><value>Campanha criada com sucesso.</value></data>
+  <data name="Campaign.MemberAssigned"><value>Jogador atribuído à campanha com sucesso.</value></data>
+
   <!-- Generic -->
   <data name="Error.Unexpected"><value>Ocorreu um erro inesperado. Por favor, tente novamente mais tarde.</value></data>
   <data name="Error.Forbidden"><value>Você não tem permissão para realizar esta ação.</value></data>

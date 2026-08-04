@@ -25,6 +25,27 @@ public static class AuthHelper
         return result!.Data!;
     }
 
+    public static async Task<AuthResponse> RegisterPlayerAsync(
+        HttpClient client,
+        string inviteCode,
+        string email,
+        string password = "TestPass1",
+        string displayName = "Test Player")
+    {
+        var response = await client.PostAsJsonAsync("api/auth/register/player", new RegisterPlayerRequest
+        {
+            DisplayName = displayName,
+            Email = email,
+            Password = password,
+            ConfirmPassword = password,
+            InviteCode = inviteCode
+        });
+
+        response.EnsureSuccessStatusCode();
+        var result = await response.Content.ReadFromJsonAsync<ApiResponse<AuthResponse>>();
+        return result!.Data!;
+    }
+
     public static void SetBearerToken(HttpClient client, string token) =>
         client.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
