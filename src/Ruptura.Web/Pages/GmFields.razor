@@ -2,24 +2,24 @@
 @using Ruptura.Shared.Auth
 @using Ruptura.Web.Resources
 
-<div class="mb-3">
+<div class="auth-field">
     <label class="form-label">@L["Register.DisplayName"]</label>
-    <InputText class="form-control" @bind-Value="Model.DisplayName" />
+    <InputText class="form-control" @bind-Value="Model.DisplayName" autocomplete="name" />
     <ValidationMessage For="() => Model.DisplayName" />
 </div>
-<div class="mb-3">
+<div class="auth-field">
     <label class="form-label">@L["Register.Email"]</label>
-    <InputText class="form-control" @bind-Value="Model.Email" type="email" />
+    <InputText class="form-control" @bind-Value="Model.Email" type="email" autocomplete="email" />
     <ValidationMessage For="() => Model.Email" />
 </div>
-<div class="mb-3">
+<div class="auth-field">
     <label class="form-label">@L["Register.Password"]</label>
-    <InputText class="form-control" @bind-Value="Model.Password" type="password" />
+    <InputText class="form-control" @bind-Value="Model.Password" type="password" autocomplete="new-password" />
     <ValidationMessage For="() => Model.Password" />
 </div>
-<div class="mb-3">
+<div class="auth-field">
     <label class="form-label">@L["Register.ConfirmPassword"]</label>
-    <InputText class="form-control" @bind-Value="Model.ConfirmPassword" type="password" />
+    <InputText class="form-control" @bind-Value="Model.ConfirmPassword" type="password" autocomplete="new-password" />
     <ValidationMessage For="() => Model.ConfirmPassword" />
 </div>
 

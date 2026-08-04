@@ -9,12 +9,13 @@
             <FocusOnNavigate RouteData="@routeData" Selector="h1" />
         </Found>
         <NotFound>
-            <PageTitle>Página não encontrada — Ruptura</PageTitle>
+            <PageTitle>404 — RUPTURA</PageTitle>
             <LayoutView Layout="@typeof(MainLayout)">
-                <div class="text-center mt-5">
-                    <h2>404 — Página não encontrada</h2>
-                    <a href="/">Voltar ao início</a>
+                <div class="page-heading">
+                    <h1>404</h1>
+                    <p>Page not found.</p>
                 </div>
+                <a href="/" class="btn btn-outline-secondary btn-sm">Back to home</a>
             </LayoutView>
         </NotFound>
     </Router>
