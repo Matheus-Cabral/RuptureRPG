@@ -664,7 +664,7 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 400; color: var(--te
 
 /* Hero */
 .landing-hero {
-    min-height: 100vh;
+    min-height: calc(100vh - var(--topbar-h));
     display: flex;
     align-items: center;
     justify-content: center;

@@ -6,11 +6,13 @@
 
 <PageTitle>@L["Dashboard.Title"] — RUPTURA</PageTitle>
 
-<div class="page-heading">
-    <h1>@L["Dashboard.Title"]</h1>
-</div>
+<div class="page-content">
+    <div class="page-heading">
+        <h1>@L["Dashboard.Title"]</h1>
+    </div>
 
-<AuthorizeView Roles="GameMaster">
-    <Authorized><GmDashboard /></Authorized>
-    <NotAuthorized><PlayerDashboard /></NotAuthorized>
-</AuthorizeView>
+    <AuthorizeView Roles="GameMaster">
+        <Authorized><GmDashboard /></Authorized>
+        <NotAuthorized><PlayerDashboard /></NotAuthorized>
+    </AuthorizeView>
+</div>
