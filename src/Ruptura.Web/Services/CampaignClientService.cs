@@ -40,7 +40,6 @@ public class CampaignClientService(IHttpClientFactory factory) : ICampaignClient
         Guid campaignId, AssignMemberRequest request)
     {
         var response = await Http.PostAsJsonAsync($"api/campaigns/{campaignId}/members", request);
-        if (!response.IsSuccessStatusCode) return null;
         return await response.Content.ReadFromJsonAsync<ApiResponse<CampaignMemberResponse>>();
     }
 }

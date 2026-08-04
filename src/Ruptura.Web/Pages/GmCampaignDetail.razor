@@ -130,7 +130,7 @@
         }
         else
         {
-            _errorMessage = L["Common.Error"];
+            _errorMessage = result?.Message ?? L["Common.Error"];
         }
 
         _assigning = false;

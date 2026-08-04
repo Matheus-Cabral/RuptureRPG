@@ -148,6 +148,26 @@ public class CampaignControllerTests(IntegrationTestFactory factory)
     }
 
     [Fact]
+    public async Task Members_ForCampaignNotOwnedByCaller_Returns404()
+    {
+        var (client1, gm1Token, invite1) = await SetupGameMasterWithInviteAsync();
+        AuthHelper.SetBearerToken(client1, gm1Token);
+        var campaignResponse = await client1.PostAsJsonAsync("api/campaigns", new CreateCampaignRequest
+        {
+            Name = "GM1's Campaign"
+        });
+        var campaignId = (await campaignResponse.Content
+            .ReadFromJsonAsync<ApiResponse<CampaignResponse>>())!.Data!.Id;
+
+        var (client2, gm2Token, _) = await SetupGameMasterWithInviteAsync();
+        AuthHelper.SetBearerToken(client2, gm2Token);
+
+        var response = await client2.GetAsync($"api/campaigns/{campaignId}/members");
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
     public async Task CampaignEndpoints_WithoutGameMasterRole_Return403()
     {
         var (client, _, inviteCode) = await SetupGameMasterWithInviteAsync();
