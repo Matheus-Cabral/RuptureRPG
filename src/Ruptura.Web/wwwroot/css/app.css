@@ -271,8 +271,6 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 400; color: var(--te
 /* ── Main Wrapper ───────────────────────────────────────────────────────────── */
 .main-wrapper {
     margin-left: var(--nav-width);
-    display: flex;
-    flex-direction: column;
     min-height: 100vh;
 }
 
@@ -324,7 +322,6 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 400; color: var(--te
 
 .page-content {
     padding: 2rem 2.25rem;
-    flex: 1;
     max-width: 960px;
 }
 
@@ -565,7 +562,7 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 400; color: var(--te
 
 /* ── Auth Pages (no card — ledger form on bare background) ──────────────────── */
 .auth-scene {
-    min-height: 100vh;
+    min-height: calc(100vh - var(--topbar-h));
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -898,9 +895,10 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 400; color: var(--te
 @media (max-width: 768px) {
     .sidebar { transform: translateX(-100%); }
     .sidebar.open { transform: translateX(0); }
-    .main-wrapper { margin-left: 0; }
+    .main-wrapper { margin-left: 0; min-height: 100vh; }
     .hamburger { display: flex; }
     .page-content { padding: 1.25rem 1rem; }
+    .auth-scene { min-height: calc(100vh - var(--topbar-h)); }
     .hero-title { letter-spacing: 0.15em; }
     .ledger-stats { gap: 1.5rem; }
     .pillars-grid { grid-template-columns: 1fr; }
