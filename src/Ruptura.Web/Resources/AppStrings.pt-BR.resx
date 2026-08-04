@@ -71,6 +71,7 @@
   <data name="Landing.Pillars.Interlude.Desc"><value>O período entre expedições é tão importante quanto a expedição em si.</value></data>
   <data name="Landing.Pillars.Info.Title"><value>Informação é Poder</value></data>
   <data name="Landing.Pillars.Info.Desc"><value>Exploração recompensadora. Conhecer a Dungeon vale tanto quanto força bruta.</value></data>
+  <data name="Landing.Quote"><value>A Guilda é a verdadeira protagonista da campanha, e os personagens que descem à Dungeon são recursos valiosos — porém descartáveis.</value></data>
   <data name="Landing.CTA.Title"><value>Pronto para administrar sua Guilda?</value></data>
   <data name="Landing.CTA.Desc"><value>Cadastre-se como Mestre ou peça um código de convite ao seu Mestre.</value></data>
   <data name="Landing.CTA.Button"><value>Começar</value></data>

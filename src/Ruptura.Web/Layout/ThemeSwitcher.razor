@@ -1,15 +1,12 @@
 @inject ThemeService ThemeService
 
 <div class="theme-switcher" title="Theme">
-    <button class="theme-btn @(ThemeService.Current == ThemeMode.Light ? "active" : "")"
-            @onclick='() => SetAsync(ThemeMode.Light)'
-            title="Light">☀️</button>
+    <button class="theme-btn @(ThemeService.Current == ThemeMode.Light  ? "active" : "")"
+            @onclick='() => SetAsync(ThemeMode.Light)' title="Light">L</button>
     <button class="theme-btn @(ThemeService.Current == ThemeMode.System ? "active" : "")"
-            @onclick='() => SetAsync(ThemeMode.System)'
-            title="System">💻</button>
-    <button class="theme-btn @(ThemeService.Current == ThemeMode.Dark ? "active" : "")"
-            @onclick='() => SetAsync(ThemeMode.Dark)'
-            title="Dark">🌙</button>
+            @onclick='() => SetAsync(ThemeMode.System)' title="System">S</button>
+    <button class="theme-btn @(ThemeService.Current == ThemeMode.Dark   ? "active" : "")"
+            @onclick='() => SetAsync(ThemeMode.Dark)' title="Dark">D</button>
 </div>
 
 @code {

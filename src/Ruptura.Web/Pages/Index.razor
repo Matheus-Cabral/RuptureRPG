@@ -1,4 +1,5 @@
 @page "/"
+@attribute [AllowAnonymous]
 @using Microsoft.Extensions.Localization
 @using Ruptura.Web.Resources
 @inject IStringLocalizer<AppStrings> L
@@ -6,67 +7,66 @@
 <PageTitle>RUPTURA</PageTitle>
 
 <div class="landing">
-    <header class="landing-hero">
-        <div class="hero-content">
-            <h1>RUPTURA</h1>
+
+    <!-- Hero -->
+    <section class="landing-hero">
+        <div class="hero-inner">
+            <span class="hero-rule"></span>
+            <h1 class="hero-title">RUPTURA</h1>
+            <span class="hero-rule"></span>
             <p class="hero-subtitle">@L["Landing.Hero.Subtitle"]</p>
-            <p class="hero-concept">@L["Landing.Hero.Concept"]</p>
-            <div class="hero-actions">
-                <a href="/login" class="btn btn-primary btn-lg">@L["Landing.Hero.SignIn"]</a>
-                <a href="/register" class="btn btn-outline-light btn-lg ms-3">@L["Landing.Hero.GetStarted"]</a>
-            </div>
-        </div>
-    </header>
-
-    <section class="pillars">
-        <div class="container">
-            <h2>@L["Landing.Pillars.Title"]</h2>
-            <div class="row g-4 mt-2">
-                <div class="col-md-4">
-                    <div class="pillar-card">
-                        <h3>@L["Landing.Pillars.Lethality.Title"]</h3>
-                        <p>@L["Landing.Pillars.Lethality.Desc"]</p>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="pillar-card">
-                        <h3>@L["Landing.Pillars.Persistent.Title"]</h3>
-                        <p>@L["Landing.Pillars.Persistent.Desc"]</p>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="pillar-card">
-                        <h3>@L["Landing.Pillars.Guild.Title"]</h3>
-                        <p>@L["Landing.Pillars.Guild.Desc"]</p>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="pillar-card">
-                        <h3>@L["Landing.Pillars.NoXP.Title"]</h3>
-                        <p>@L["Landing.Pillars.NoXP.Desc"]</p>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="pillar-card">
-                        <h3>@L["Landing.Pillars.Interlude.Title"]</h3>
-                        <p>@L["Landing.Pillars.Interlude.Desc"]</p>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="pillar-card">
-                        <h3>@L["Landing.Pillars.Info.Title"]</h3>
-                        <p>@L["Landing.Pillars.Info.Desc"]</p>
-                    </div>
-                </div>
+            <p class="hero-desc">@L["Landing.Hero.Concept"]</p>
+            <div class="hero-links">
+                <a href="/register" class="hero-link primary">@L["Landing.Hero.GetStarted"]</a>
+                <a href="/login" class="hero-link">@L["Landing.Hero.SignIn"]</a>
             </div>
         </div>
     </section>
 
-    <section class="cta">
-        <div class="container text-center">
-            <h2>@L["Landing.CTA.Title"]</h2>
-            <p class="lead">@L["Landing.CTA.Desc"]</p>
-            <a href="/register" class="btn btn-primary btn-lg mt-3">@L["Landing.CTA.Button"]</a>
+    <!-- Pillars -->
+    <section class="landing-pillars">
+        <div class="pillars-header">
+            <span class="pillars-eyebrow">Sistema</span>
+            <h2 class="pillars-heading">@L["Landing.Pillars.Title"]</h2>
+        </div>
+        <div class="pillars-grid">
+            <div class="pillar-item">
+                <div class="pillar-title">@L["Landing.Pillars.Lethality.Title"]</div>
+                <p class="pillar-desc">@L["Landing.Pillars.Lethality.Desc"]</p>
+            </div>
+            <div class="pillar-item">
+                <div class="pillar-title">@L["Landing.Pillars.Persistent.Title"]</div>
+                <p class="pillar-desc">@L["Landing.Pillars.Persistent.Desc"]</p>
+            </div>
+            <div class="pillar-item">
+                <div class="pillar-title">@L["Landing.Pillars.Guild.Title"]</div>
+                <p class="pillar-desc">@L["Landing.Pillars.Guild.Desc"]</p>
+            </div>
+            <div class="pillar-item">
+                <div class="pillar-title">@L["Landing.Pillars.NoXP.Title"]</div>
+                <p class="pillar-desc">@L["Landing.Pillars.NoXP.Desc"]</p>
+            </div>
+            <div class="pillar-item">
+                <div class="pillar-title">@L["Landing.Pillars.Interlude.Title"]</div>
+                <p class="pillar-desc">@L["Landing.Pillars.Interlude.Desc"]</p>
+            </div>
+            <div class="pillar-item">
+                <div class="pillar-title">@L["Landing.Pillars.Info.Title"]</div>
+                <p class="pillar-desc">@L["Landing.Pillars.Info.Desc"]</p>
+            </div>
         </div>
     </section>
+
+    <!-- Quote -->
+    <section class="landing-quote">
+        <blockquote>@L["Landing.Quote"]</blockquote>
+    </section>
+
+    <!-- CTA -->
+    <section class="landing-cta">
+        <h2>@L["Landing.CTA.Title"]</h2>
+        <p>@L["Landing.CTA.Desc"]</p>
+        <a href="/register" class="btn btn-primary">@L["Landing.CTA.Button"]</a>
+    </section>
+
 </div>

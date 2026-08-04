@@ -1,20 +1,16 @@
 @page "/dashboard"
 @attribute [Authorize]
 @using Microsoft.Extensions.Localization
-@using Ruptura.Shared.Invites
 @using Ruptura.Web.Resources
 @inject IStringLocalizer<AppStrings> L
-@inject IInviteClientService InviteService
-@inject IJSRuntime JS
-@inject AuthenticationStateProvider AuthStateProvider
 
 <PageTitle>@L["Dashboard.Title"] — RUPTURA</PageTitle>
 
+<div class="page-heading">
+    <h1>@L["Dashboard.Title"]</h1>
+</div>
+
 <AuthorizeView Roles="GameMaster">
-    <Authorized>
-        <GmDashboard />
-    </Authorized>
-    <NotAuthorized>
-        <PlayerDashboard />
-    </NotAuthorized>
+    <Authorized><GmDashboard /></Authorized>
+    <NotAuthorized><PlayerDashboard /></NotAuthorized>
 </AuthorizeView>

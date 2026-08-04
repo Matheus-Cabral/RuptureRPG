@@ -5,15 +5,15 @@
 
 @if (Code.IsUsed)
 {
-    <span class="badge badge-used">@L["Gm.Invites.Status.Used"]</span>
+    <span class="badge-status badge-used">@L["Gm.Invites.Status.Used"]</span>
 }
 else if (Code.ExpiresAt <= DateTime.UtcNow)
 {
-    <span class="badge badge-expired">@L["Gm.Invites.Status.Expired"]</span>
+    <span class="badge-status badge-expired">@L["Gm.Invites.Status.Expired"]</span>
 }
 else
 {
-    <span class="badge badge-active">@L["Gm.Invites.Status.Active"]</span>
+    <span class="badge-status badge-active">@L["Gm.Invites.Status.Active"]</span>
 }
 
 @code {

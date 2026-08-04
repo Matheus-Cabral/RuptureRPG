@@ -6,10 +6,19 @@
 @inject AuthenticationStateProvider AuthStateProvider
 
 <div class="app-shell">
+
+    <!-- Sidebar overlay (mobile) -->
+    @if (_sidebarOpen)
+    {
+        <div style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:199"
+             @onclick="() => _sidebarOpen = false"></div>
+    }
+
     <!-- Sidebar -->
     <aside class="sidebar @(_sidebarOpen ? "open" : "")">
         <a class="sidebar-brand" href="/">
-            <span class="sidebar-brand-title">RUP<span>TURA</span></span>
+            <span class="brand-name">RUPTURA</span>
+            <span class="brand-tagline">Campaign Registry</span>
         </a>
         <NavMenu />
         <div class="sidebar-footer">
@@ -17,26 +26,26 @@
         </div>
     </aside>
 
-    <!-- Main area -->
+    <!-- Main -->
     <div class="main-wrapper">
         <header class="top-bar">
-            <!-- Mobile hamburger -->
-            <div class="navbar-toggler-icon-custom" @onclick="ToggleSidebar">
+            <button class="hamburger" @onclick="() => _sidebarOpen = !_sidebarOpen"
+                    aria-label="Menu">
                 <span></span><span></span><span></span>
-            </div>
-
+            </button>
             <span class="top-bar-title">@_pageTitle</span>
-
             <div class="top-bar-controls">
                 <ThemeSwitcher />
-                <AuthorizeView>
-                    <Authorized>
-                        <div class="user-chip">
-                            <strong>@_displayName</strong>
-                            <span class="role-badge">@_role</span>
-                        </div>
-                    </Authorized>
-                </AuthorizeView>
+                @if (!string.IsNullOrEmpty(_displayName))
+                {
+                    <div class="user-chip">
+                        <span class="user-chip-name">@_displayName</span>
+                        @if (!string.IsNullOrEmpty(_role))
+                        {
+                            <span class="user-role-badge">@_role</span>
+                        }
+                    </div>
+                }
             </div>
         </header>
 
@@ -44,22 +53,20 @@
             @Body
         </article>
     </div>
+
 </div>
 
 @code {
     private bool _sidebarOpen;
-    private string _pageTitle = "RUPTURA";
-    private string _displayName = "";
-    private string _role = "";
+    private string _pageTitle = string.Empty;
+    private string _displayName = string.Empty;
+    private string _role = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
         await ThemeService.InitAsync();
-
         var state = await AuthStateProvider.GetAuthenticationStateAsync();
-        _displayName = state.User.FindFirst("name")?.Value ?? "";
-        _role = state.User.FindFirst("role")?.Value ?? "";
+        _displayName = state.User.FindFirst("name")?.Value ?? string.Empty;
+        _role        = state.User.FindFirst("role")?.Value ?? string.Empty;
     }
-
-    private void ToggleSidebar() => _sidebarOpen = !_sidebarOpen;
 }

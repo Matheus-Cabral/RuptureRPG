@@ -1,4 +1,5 @@
 @page "/register"
+@attribute [AllowAnonymous]
 @using Microsoft.Extensions.Localization
 @using Ruptura.Shared.Auth
 @using Ruptura.Web.Resources
@@ -8,70 +9,76 @@
 
 <PageTitle>@L["Register.Title"] — RUPTURA</PageTitle>
 
-<div class="auth-wrapper">
-    <div class="auth-container">
-        <div class="auth-card">
-            <h2>@L["Register.Title"]</h2>
+<div class="auth-scene">
+    <div class="auth-form-wrap">
 
-            <div class="account-type-toggle mb-4">
-                <button class="btn @(!_isPlayer ? "btn-primary" : "btn-outline-primary")"
-                        @onclick="() => _isPlayer = false">
-                    @L["Register.GameMaster"]
-                </button>
-                <button class="btn @(_isPlayer ? "btn-primary" : "btn-outline-primary") ms-2"
-                        @onclick="() => _isPlayer = true">
-                    @L["Register.Player"]
-                </button>
-            </div>
-
-            @if (!string.IsNullOrEmpty(_error))
-            {
-                <div class="alert alert-danger">
-                    <div>@_error</div>
-                    @if (_validationErrors.Length > 0)
-                    {
-                        <ul class="mb-0 mt-1">
-                            @foreach (var err in _validationErrors)
-                            {
-                                <li>@err</li>
-                            }
-                        </ul>
-                    }
-                </div>
-            }
-
-            @if (_isPlayer)
-            {
-                <EditForm Model="_playerModel" OnValidSubmit="HandleRegisterPlayer">
-                    <DataAnnotationsValidator />
-                    <PlayerFields Model="_playerModel" L="L" />
-                    <button type="submit" class="btn btn-primary w-100" disabled="@_loading">
-                        @if (_loading) { <span class="spinner-border spinner-border-sm me-2" /> @L["Register.Loading"] }
-                        else { @L["Register.SubmitPlayer"] }
-                    </button>
-                </EditForm>
-            }
-            else
-            {
-                <EditForm Model="_gmModel" OnValidSubmit="HandleRegisterGM">
-                    <DataAnnotationsValidator />
-                    <GmFields Model="_gmModel" L="L" />
-                    <button type="submit" class="btn btn-primary w-100" disabled="@_loading">
-                        @if (_loading) { <span class="spinner-border spinner-border-sm me-2" /> @L["Register.Loading"] }
-                        else { @L["Register.SubmitGM"] }
-                    </button>
-                </EditForm>
-            }
-
-            <hr />
-            <p class="text-center mb-0 mt-2">
-                @L["Register.AlreadyHaveAccount"] <a href="/login">@L["Nav.Login"]</a>
-            </p>
-
-            <p class="text-center text-muted mt-3" style="font-size:.8rem">
-                @L["Register.PasswordHint"]
-            </p>
+        <div class="auth-logo">
+            <span class="auth-logo-name">RUPTURA</span>
+            <span class="auth-logo-rule"></span>
+            <span class="auth-logo-sub">@L["Register.Title"]</span>
         </div>
+
+        <!-- Role toggle -->
+        <div class="auth-toggle">
+            <button class="auth-toggle-btn @(!_isPlayer ? "active" : "")"
+                    @onclick="() => _isPlayer = false">
+                @L["Register.GameMaster"]
+            </button>
+            <button class="auth-toggle-btn @(_isPlayer ? "active" : "")"
+                    @onclick="() => _isPlayer = true">
+                @L["Register.Player"]
+            </button>
+        </div>
+
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <div class="alert-danger mb-4">
+                <div>@_error</div>
+                @if (_validationErrors.Length > 0)
+                {
+                    <ul class="mb-0 mt-1 ps-3" style="font-size:.8rem">
+                        @foreach (var err in _validationErrors)
+                        {
+                            <li>@err</li>
+                        }
+                    </ul>
+                }
+            </div>
+        }
+
+        @if (_isPlayer)
+        {
+            <EditForm Model="_playerModel" OnValidSubmit="HandleRegisterPlayer">
+                <DataAnnotationsValidator />
+                <PlayerFields Model="_playerModel" L="L" />
+                <div class="auth-actions">
+                    <button type="submit" class="btn btn-primary" disabled="@_loading">
+                        @if (_loading) { <span class="spinner-border spinner-border-sm me-2"></span> }
+                        @L["Register.SubmitPlayer"]
+                    </button>
+                </div>
+            </EditForm>
+        }
+        else
+        {
+            <EditForm Model="_gmModel" OnValidSubmit="HandleRegisterGM">
+                <DataAnnotationsValidator />
+                <GmFields Model="_gmModel" L="L" />
+                <div class="auth-actions">
+                    <button type="submit" class="btn btn-primary" disabled="@_loading">
+                        @if (_loading) { <span class="spinner-border spinner-border-sm me-2"></span> }
+                        @L["Register.SubmitGM"]
+                    </button>
+                </div>
+            </EditForm>
+        }
+
+        <p class="password-hint">@L["Register.PasswordHint"]</p>
+
+        <div class="auth-footer">
+            @L["Register.AlreadyHaveAccount"] <a href="/login">@L["Nav.Login"]</a>
+        </div>
+
     </div>
 </div>
 
@@ -88,9 +95,7 @@
         _loading = true;
         _error = null;
         _validationErrors = [];
-
         var result = await AuthService.RegisterGameMasterAsync(_gmModel);
-
         if (result?.Data is not null)
             Nav.NavigateTo("/dashboard");
         else
@@ -98,7 +103,6 @@
             _error = result?.Message ?? L["Register.Error.Generic"];
             _validationErrors = result?.Errors ?? [];
         }
-
         _loading = false;
     }
 
@@ -107,9 +111,7 @@
         _loading = true;
         _error = null;
         _validationErrors = [];
-
         var result = await AuthService.RegisterPlayerAsync(_playerModel);
-
         if (result?.Data is not null)
             Nav.NavigateTo("/dashboard");
         else
@@ -117,7 +119,6 @@
             _error = result?.Message ?? L["Register.Error.Generic"];
             _validationErrors = result?.Errors ?? [];
         }
-
         _loading = false;
     }
 }

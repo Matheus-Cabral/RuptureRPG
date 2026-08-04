@@ -5,23 +5,23 @@
 @inject IInviteClientService InviteService
 @inject IJSRuntime JS
 
-<!-- Stat cards -->
-<div class="stat-cards">
-    <div class="stat-card total">
-        <div class="stat-card-value">@_codes.Count</div>
-        <div class="stat-card-label">@L["Gm.Invites.Total"]</div>
+<!-- Stats -->
+<div class="ledger-stats">
+    <div class="stat">
+        <div class="stat-num">@_codes.Count</div>
+        <div class="stat-label">@L["Gm.Invites.Total"]</div>
     </div>
-    <div class="stat-card active">
-        <div class="stat-card-value">@ActiveCount</div>
-        <div class="stat-card-label">@L["Gm.Invites.Active"]</div>
+    <div class="stat s-active">
+        <div class="stat-num">@ActiveCount</div>
+        <div class="stat-label">@L["Gm.Invites.Active"]</div>
     </div>
-    <div class="stat-card used">
-        <div class="stat-card-value">@UsedCount</div>
-        <div class="stat-card-label">@L["Gm.Invites.Used"]</div>
+    <div class="stat s-used">
+        <div class="stat-num">@UsedCount</div>
+        <div class="stat-label">@L["Gm.Invites.Used"]</div>
     </div>
-    <div class="stat-card expired">
-        <div class="stat-card-value">@ExpiredCount</div>
-        <div class="stat-card-label">@L["Gm.Invites.Expired"]</div>
+    <div class="stat s-expired">
+        <div class="stat-num">@ExpiredCount</div>
+        <div class="stat-label">@L["Gm.Invites.Expired"]</div>
     </div>
 </div>
 
@@ -30,35 +30,41 @@
 {
     <div class="new-code-banner">
         <div>
-            <div class="label">@L["Gm.Invites.NewCode"]</div>
-            <div class="newcode">@_newCode.Code</div>
+            <div class="banner-label">@L["Gm.Invites.NewCode"]</div>
+            <div class="banner-code">@_newCode.Code</div>
         </div>
-        <button class="btn btn-sm btn-outline-secondary" @onclick="CopyNewCodeAsync">
-            @(_copied ? "✓ " + L["Gm.Invites.Copied"] : "📋 " + L["Gm.Invites.Copy"])
+        <button class="btn btn-outline-secondary btn-sm" @onclick="CopyNewCodeAsync">
+            @(_copied ? L["Gm.Invites.Copied"] : L["Gm.Invites.Copy"])
         </button>
-        <small class="text-muted">@L["Gm.Invites.ExpiresIn", "48h"]</small>
+        <span class="banner-note">@L["Gm.Invites.ExpiresIn", "48h"]</span>
     </div>
 }
 
-<!-- Invite codes list -->
+@if (!string.IsNullOrEmpty(_errorMessage))
+{
+    <div class="alert-danger mb-4">@_errorMessage</div>
+}
+
+<!-- Section header -->
 <div class="section-header">
-    <h2 class="section-title">@L["Gm.Invites.Title"]</h2>
+    <span class="section-title">@L["Gm.Invites.Title"]</span>
     <button class="btn btn-primary btn-sm" @onclick="GenerateAsync" disabled="@_generating">
         @if (_generating) { <span class="spinner-border spinner-border-sm me-1"></span> }
         @L["Gm.Invites.Generate"]
     </button>
 </div>
 
+<!-- Table -->
 @if (_loading)
 {
-    <div class="text-center py-4 text-muted">
+    <div class="ledger-empty">
         <span class="spinner-border spinner-border-sm me-2"></span>@L["Common.Loading"]
     </div>
 }
 else if (_codes.Count == 0)
 {
-    <div class="card p-4 text-center">
-        <p class="text-muted mb-2">@L["Gm.Invites.Empty"]</p>
+    <div class="ledger-empty">
+        <p>@L["Gm.Invites.Empty"]</p>
         <button class="btn btn-primary btn-sm" @onclick="GenerateAsync">
             @L["Gm.Invites.GenerateFirst"]
         </button>
@@ -66,56 +72,47 @@ else if (_codes.Count == 0)
 }
 else
 {
-    <div class="card">
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead>
+    <div class="ledger-table-wrap">
+        <table class="ledger-table">
+            <thead>
+                <tr>
+                    <th>@L["Gm.Invites.Col.Code"]</th>
+                    <th>@L["Gm.Invites.Col.Status"]</th>
+                    <th>@L["Gm.Invites.Col.Created"]</th>
+                    <th>@L["Gm.Invites.Col.Expires"]</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in _codes)
+                {
+                    var itemCode = item.Code;
                     <tr>
-                        <th>@L["Gm.Invites.Col.Code"]</th>
-                        <th>@L["Gm.Invites.Col.Status"]</th>
-                        <th>@L["Gm.Invites.Col.Created"]</th>
-                        <th>@L["Gm.Invites.Col.Expires"]</th>
-                        <th></th>
+                        <td>
+                            <span class="code-chip" @onclick="() => CopyAsync(itemCode)"
+                                  title="@L["Gm.Invites.Copy"]">
+                                @item.Code
+                            </span>
+                        </td>
+                        <td><StatusBadge Code="item" /></td>
+                        <td style="color:var(--text-muted);font-size:.78rem;white-space:nowrap">
+                            @item.CreatedAt.ToLocalTime().ToString("dd/MM/yy HH:mm")
+                        </td>
+                        <td style="color:var(--text-muted);font-size:.78rem;white-space:nowrap">
+                            @item.ExpiresAt.ToLocalTime().ToString("dd/MM/yy HH:mm")
+                        </td>
+                        <td>
+                            @if (!item.IsUsed && item.ExpiresAt > DateTime.UtcNow)
+                            {
+                                <button class="copy-btn" @onclick="() => CopyAsync(itemCode)"
+                                        title="@L["Gm.Invites.Copy"]">⎘</button>
+                            }
+                        </td>
                     </tr>
-                </thead>
-                <tbody>
-                    @foreach (var item in _codes)
-                    {
-                        var itemCode = item.Code;
-                        <tr>
-                            <td>
-                                <span class="code-chip" @onclick="() => CopyAsync(itemCode)"
-                                      title="@L["Gm.Invites.Copy"]">
-                                    @item.Code <small>📋</small>
-                                </span>
-                            </td>
-                            <td><StatusBadge Code="item" /></td>
-                            <td class="text-muted" style="font-size:.85rem">
-                                @item.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
-                            </td>
-                            <td class="text-muted" style="font-size:.85rem">
-                                @item.ExpiresAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
-                            </td>
-                            <td>
-                                @if (!item.IsUsed && item.ExpiresAt > DateTime.UtcNow)
-                                {
-                                    <button class="btn btn-outline-secondary btn-sm"
-                                            @onclick="() => CopyAsync(itemCode)">
-                                        📋
-                                    </button>
-                                }
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
+                }
+            </tbody>
+        </table>
     </div>
-}
-
-@if (_errorMessage is not null)
-{
-    <div class="alert alert-danger mt-3">@_errorMessage</div>
 }
 
 @code {
@@ -157,14 +154,12 @@ else
         {
             _errorMessage = L["Common.Error"];
         }
-
         _generating = false;
     }
 
     private async Task CopyNewCodeAsync()
     {
-        if (_newCode is not null)
-            await CopyAsync(_newCode.Code);
+        if (_newCode is not null) await CopyAsync(_newCode.Code);
     }
 
     private async Task CopyAsync(string text)

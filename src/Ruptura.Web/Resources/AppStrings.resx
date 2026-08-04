@@ -71,6 +71,7 @@
   <data name="Landing.Pillars.Interlude.Desc"><value>The period between expeditions matters as much as the expedition itself.</value></data>
   <data name="Landing.Pillars.Info.Title"><value>Information is Power</value></data>
   <data name="Landing.Pillars.Info.Desc"><value>Rewarding exploration. Knowing the Dungeon is worth as much as brute strength.</value></data>
+  <data name="Landing.Quote"><value>The Guild is the true protagonist of the campaign, and the characters who descend into the Dungeon are valuable resources — but expendable.</value></data>
   <data name="Landing.CTA.Title"><value>Ready to manage your Guild?</value></data>
   <data name="Landing.CTA.Desc"><value>Register as a Game Master or ask your GM for an invite code.</value></data>
   <data name="Landing.CTA.Button"><value>Get Started</value></data>
