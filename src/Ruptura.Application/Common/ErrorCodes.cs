@@ -18,4 +18,11 @@ public static class ErrorCodes
         public const string Expired = "Invite.Expired";
         public const string Forbidden = "Invite.Forbidden";
     }
+
+    public static class Campaign
+    {
+        public const string NotFound = "Campaign.NotFound";
+        public const string PlayerNotInRoster = "Campaign.PlayerNotInRoster";
+        public const string AlreadyMember = "Campaign.AlreadyMember";
+    }
 }
