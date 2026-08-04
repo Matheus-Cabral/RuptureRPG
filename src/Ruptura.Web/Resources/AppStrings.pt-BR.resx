@@ -137,4 +137,14 @@
   <data name="Gm.Campaigns.Col.Name"><value>Nome</value></data>
   <data name="Gm.Campaigns.Col.CreatedAt"><value>Criada em</value></data>
   <data name="Gm.Campaigns.View"><value>Ver</value></data>
+
+  <!-- Detalhe da Campanha do Mestre -->
+  <data name="Gm.CampaignDetail.Members"><value>Membros</value></data>
+  <data name="Gm.CampaignDetail.Empty"><value>Nenhum membro ainda.</value></data>
+  <data name="Gm.CampaignDetail.Col.Name"><value>Nome</value></data>
+  <data name="Gm.CampaignDetail.Col.Email"><value>E-mail</value></data>
+  <data name="Gm.CampaignDetail.Col.AssignedAt"><value>Atribuído em</value></data>
+  <data name="Gm.CampaignDetail.AssignPlayer"><value>Atribuir Jogador</value></data>
+  <data name="Gm.CampaignDetail.NoAvailablePlayers"><value>Todos os jogadores do roster já são membros desta campanha.</value></data>
+  <data name="Gm.CampaignDetail.SelectPlayer"><value>Selecione um jogador…</value></data>
 </root>

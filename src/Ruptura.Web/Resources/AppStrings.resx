@@ -137,4 +137,14 @@
   <data name="Gm.Campaigns.Col.Name"><value>Name</value></data>
   <data name="Gm.Campaigns.Col.CreatedAt"><value>Created</value></data>
   <data name="Gm.Campaigns.View"><value>View</value></data>
+
+  <!-- GM Campaign Detail -->
+  <data name="Gm.CampaignDetail.Members"><value>Members</value></data>
+  <data name="Gm.CampaignDetail.Empty"><value>No members yet.</value></data>
+  <data name="Gm.CampaignDetail.Col.Name"><value>Name</value></data>
+  <data name="Gm.CampaignDetail.Col.Email"><value>Email</value></data>
+  <data name="Gm.CampaignDetail.Col.AssignedAt"><value>Assigned</value></data>
+  <data name="Gm.CampaignDetail.AssignPlayer"><value>Assign Player</value></data>
+  <data name="Gm.CampaignDetail.NoAvailablePlayers"><value>All roster players are already members of this campaign.</value></data>
+  <data name="Gm.CampaignDetail.SelectPlayer"><value>Select a player…</value></data>
 </root>
