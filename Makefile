@@ -1,4 +1,4 @@
-.PHONY: help up down restart logs build migrate test test-unit test-integration clean
+.PHONY: help up down restart logs build migrate test test-unit test-int clean cors-check
 
 # Default target
 help:
@@ -15,7 +15,14 @@ help:
 	@echo "  make test            Run all tests"
 	@echo "  make test-unit       Run unit tests only"
 	@echo "  make test-int        Run integration tests only"
+	@echo "  make cors-check      Show current CORS_ALLOWED_ORIGIN in running API"
 	@echo "  make clean           Remove containers, volumes, and images"
+	@echo ""
+	@echo "  VS Code remote dev tip:"
+	@echo "  If the browser shows a CORS error, the VS Code port-forwarding port"
+	@echo "  does not match CORS_ALLOWED_ORIGIN in .env."
+	@echo "  Fix: pin the forwarded port in the Ports tab, then update .env and"
+	@echo "  run 'make restart-api'."
 	@echo ""
 
 up:
@@ -27,6 +34,9 @@ down:
 
 restart:
 	docker compose restart
+
+restart-api:
+	docker compose up -d api
 
 build:
 	docker compose build --no-cache
@@ -41,6 +51,10 @@ migrate:
 	docker compose exec api dotnet ef database update \
 		--project src/Ruptura.Infrastructure \
 		--startup-project src/Ruptura.API
+
+cors-check:
+	@docker exec ruptura_api printenv Cors__AllowedOrigin 2>/dev/null \
+		|| echo "API container is not running."
 
 test:
 	dotnet test --logger "console;verbosity=normal"
