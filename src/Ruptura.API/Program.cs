@@ -39,6 +39,10 @@ try
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(opts =>
         {
+            // Prevent the handler from renaming "role" → long URI claim type,
+            // so [Authorize(Roles = "GameMaster")] matches the short-form claim.
+            opts.MapInboundClaims = false;
+
             opts.TokenValidationParameters = new TokenValidationParameters
             {
                 ValidateIssuerSigningKey = true,
