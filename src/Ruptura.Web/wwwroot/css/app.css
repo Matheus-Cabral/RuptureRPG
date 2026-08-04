@@ -348,6 +348,7 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 400; color: var(--te
 .page-content {
     padding: 2rem 2.25rem;
     max-width: 960px;
+    margin: 0 auto;
 }
 
 /* ── Page Headings ──────────────────────────────────────────────────────────── */
