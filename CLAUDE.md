@@ -2,98 +2,164 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project Overview
+## Project
 
-**Ruptura** is a tabletop RPG system (dungeon crawler hardcore), fully documented in Brazilian Portuguese. This is a pure documentation repository — there is no code, build system, or test suite. All files are Markdown documents and PDF character sheets.
+**RuptureRPG** — web app for managing Ruptura RPG campaigns and character sheets.
+GitHub: https://github.com/Matheus-Cabral/RuptureRPG
 
-> Core concept: *Um dungeon crawler hardcore onde os jogadores administram, como Conselho, uma Guilda permanente de exploradores a serviço de uma divindade; a Guilda é a verdadeira protagonista da campanha, e os personagens que descem à Dungeon são recursos valiosos, porém descartáveis.*
+Two goals: (1) a reliable, responsive, visually pleasant campaign management system; (2) a portfolio project demonstrating clean .NET architecture.
 
-## Document Structure
+---
 
-```
-docs/
-  GDD_Ruptura.md          ← Master reference (authoritative; 1,500+ lines)
-  manuais/
-    Manual_do_Jogador.md  ← Player-facing rules (references GDD, never repeats it)
-    Manual_do_Mestre.md   ← GM-facing tools (references GDD, never repeats it)
-  fichas/
-    Ficha_de_Personagem.pdf
-    Ficha_de_NPC.pdf
-    Ficha_de_Criatura.pdf
-    Ficha_da_Guilda.pdf
-```
+## Commands
 
-**Source of truth hierarchy**: GDD > Manuais. When the manuals conflict with the GDD, the GDD wins. When making changes, update the GDD first and propagate to the manuals.
+```bash
+# Development (local, no Docker)
+dotnet build                         # build all projects
+dotnet test                          # run all tests
+dotnet test tests/Ruptura.UnitTests  # unit tests only
+dotnet test tests/Ruptura.IntegrationTests  # integration tests only
 
-## Design Filter
+# Docker (production-like)
+make up        # build images and start all containers
+make down      # stop and remove containers
+make restart   # restart containers
+make build     # rebuild images without cache
+make logs      # tail all container logs
+make logs-api  # tail API logs only
+make migrate   # apply EF Core migrations inside container
+make test      # run all tests (dotnet test)
+make clean     # remove containers, volumes, and local images
 
-Every rule addition or modification must pass this filter: *does it strengthen the identity of a hardcore dungeon crawler where the Guild — not individual characters — is the true protagonist?* If not, it probably doesn't belong.
+# EF Core migrations (local)
+dotnet ef migrations add <Name> \
+  --project src/Ruptura.Infrastructure \
+  --startup-project src/Ruptura.API
 
-## The 16 Design Principles (must not be violated)
-
-1. **Dominância da Dungeon** — progress outside the Dungeon never exceeds what exploring gives. `Dungeon >>> Interlúdio >>> Inatividade.`
-2. **Especialização** — all evolution comes from the activity practiced; no universal XP.
-3. **Origem dos Modificadores** — every bonus/penalty needs an identifiable source.
-4. **Regra de Ouro** — no activity generates unlimited progress without consuming a limited resource.
-5. **Simetria** — the same rules apply to players and the world (NPCs, factions, creatures).
-6. **Progressão Linear** — base progress is fixed; bonuses modify, never scale with Ranking.
-7. **Fracassos como Consequência** — failure never blocks the campaign, it generates consequences.
-8. **Coerência Narrativa** — narrative justifies mechanics, never replaces them.
-9. **Instituição Permanente** — the Guild never fully retreats; the character is replaceable, the organization is not.
-10. **Marcos** — evolution is perceptible at clear milestones.
-11. **Limite Natural** — every attribute/skill has a natural cap (Grau V); exceeding it requires Transcendência.
-12. **Escala de Conflito** — mass conflicts follow the same fundamental rules, at different scale.
-13. **Automatização/Fronteira da Exploração** — NPCs and mercenaries never replace players; they only act in already-conquered areas.
-14. **Mundo Vivo** — the world evolves on its own during player absence.
-15. **Progressão Irreversível** — completed floors are not replayed by player characters.
-16. **Domínio** — true victory is permanent influence (Ativos Estratégicos), not just survival.
-
-## Closed Lists (treat as final unless explicitly reopening)
-
-Several lists are explicitly marked **FECHADA** (closed) in the GDD and should not be expanded without deliberate design discussion:
-
-- **Origens** (20 official) — GDD §6.1.2
-- **Históricos** (20 official) — GDD §6.1.4
-- **Aptidões** (6 official) — GDD §6.1.5
-- **Talentos Iniciais** (20 official) — GDD §6.1.6
-- **Linhagens** (10 official) — GDD §6.1.7
-- **Escolas de Magia** (8 official) — GDD §6.6.1
-- **Perícias Fundamentais** — GDD §6.4 (personalized skills exist but require GM validation)
-- **Facções** — GDD §13
-
-## Key Mechanical Relationships
-
-- **Atributo** = capacity ("can they?") — never grants skills automatically.
-- **Perícia** = experience ("do they know how?") — trained separately, drives test bonuses.
-- **Talento** = binary (have or don't have); rare and meaningful, never a generic accumulation.
-- **NP (Nível de Poder)** = behind-the-scenes balance number; players consult but never use directly.
-- **Ranking** = character's guild rank (Bronze→Lendário); advances by achievements, never by XP accumulation.
-- **CG (Capacidade da Guilda)** = institutional power; deliberately decoupled from combat calculations (never added to PG or OA).
-
-## Homebrew Validation Checklists
-
-Each content type has a mandatory checklist in the GDD. When drafting new content, always apply the relevant one:
-
-- **Nova Origem** — §6.1.1: exactly 15+10 skill points, 1 light mechanical benefit, Regra do Não-Superior.
-- **Novo Histórico** — §6.1.3: benefit and complication must be equivalent weight; complication must be a viable narrative hook.
-- **Nova Linhagem** — §6.1.7: net +1/−1 on exactly one pair of attributes; exactly 1 racial trait (weight = Talento menor, NP=1); never grants skills.
-- **Nova Magia** — §6.6.4: one well-defined effect per spell (Regra do Efeito Único); scaling Area/Duration/Range beyond the Complexity standard costs +1 PA or forces a higher Complexity tier.
-- **Nova Técnica** — §6.6.7: one defined effect; Supremas always limited to 1×/combat or expedition; only compatible with the corresponding weapon category.
-- **Nova Criatura** — §5.8: 1 mandatory weakness; 1 primary function; NP total must not exceed the category ceiling by more than 15%.
-
-## Encounter Balancing Quick Reference
-
-```
-PG = Σ NP(personagens) × Fator de Sinergia
-PE = Σ NP(criaturas) × Quantidade × Inteligência × Terreno × Objetivo
-R  = PE / PG   →  ≤0.5 trivial | 1.0 balanced | 1.5 very hard | ≥3 probable death
-
-FCE (Fator de Compressão): Bronze–Ferro 0.40 | Aço–Prata 0.25 | Ouro–Mithril 0.15 | Adamante–Lendário 0.10
-Multiplicador Real = 1 + (R − 1) × FCE
+dotnet ef database update \
+  --project src/Ruptura.Infrastructure \
+  --startup-project src/Ruptura.API
 ```
 
-The FCE is validated by Monte Carlo simulation (500 combats/cell, 8 Rankings, heterogeneous groups). Do not adjust it without re-running the simulation.
+**First-time setup:**
+```bash
+cp .env.example .env   # fill in secrets before running make up
+make up                # starts db + api + web containers
+```
 
-## Language
+---
 
-All game content and documentation is written in **Brazilian Portuguese**. Maintain this when editing or adding to any document in `docs/`.
+## Architecture
+
+**Clean Architecture** — strict dependency rule: outer layers depend on inner, never the reverse.
+
+```
+Ruptura.Domain          ← pure entities, no framework dependencies
+Ruptura.Application     ← use cases, interfaces, Result<T>, FluentValidation
+Ruptura.Infrastructure  ← EF Core, Identity, JWT, repositories (implements Application interfaces)
+Ruptura.Shared          ← DTOs shared between API and Web (requests/responses)
+Ruptura.API             ← ASP.NET Core controllers, middleware, Program.cs
+Ruptura.Web             ← Blazor WASM standalone (served by nginx)
+```
+
+**Dependency graph:**
+```
+Domain ← Application ← Infrastructure ← API
+                                       ↗
+                         Shared ←─────
+                                  ↘
+                                   Web
+```
+
+`Ruptura.Infrastructure` has a `<FrameworkReference Include="Microsoft.AspNetCore.App" />` because it uses ASP.NET Core Identity in a class library.
+
+---
+
+## Key Design Decisions
+
+**Authentication flow:**
+- JWT access token (15 min) + Refresh token (7 days) stored in `ApplicationUser`
+- `JwtService` (Infrastructure) generates/validates tokens
+- Blazor stores tokens in `localStorage` via `Blazored.LocalStorage`
+- `JwtAuthStateProvider` reads the token and exposes `AuthenticationState`
+
+**Player registration requires an invite code:**
+- GM generates `InviteCode` (has `ExpiresAt`, single-use)
+- `InviteCode.IsValid()` checks `!IsUsed && ExpiresAt > UtcNow`
+- Player registers via `POST /api/auth/register/player` with `RegisterPlayerRequest.InviteCode`
+
+**Runtime config for Blazor WASM:**
+- `wwwroot/config.json` contains `"ApiBaseUrl": "${API_BASE_URL}"` with a shell placeholder
+- nginx container runs `entrypoint.sh` which calls `envsubst` to replace the placeholder at startup
+- `Program.cs` fetches `config.json` before building the DI container
+
+**Result pattern:**
+- `Result` / `Result<T>` in `Ruptura.Application.Common` — all service methods return these
+- Never throw business exceptions across layer boundaries
+
+**Settings binding:**
+- `JwtSettings` is bound via `configuration.GetSection(nameof(JwtSettings))` → key in `appsettings.json` must be `"JwtSettings"` (not `"Jwt"`)
+
+---
+
+## Stack
+
+| Layer | Technology |
+|---|---|
+| API | ASP.NET Core 8 Web API, Serilog, Swashbuckle/Swagger |
+| Auth | ASP.NET Core Identity + JWT Bearer + Refresh Token |
+| ORM | Entity Framework Core 8 + Npgsql (PostgreSQL) |
+| Frontend | Blazor WebAssembly 8 (standalone), Blazored.LocalStorage |
+| Containers | Docker + nginx 1.27-alpine |
+| Tests | xUnit, Moq, FluentAssertions, Bogus, Testcontainers.PostgreSql |
+
+---
+
+## Testing Approach (TDD)
+
+Write the test first, then implement. Projects:
+
+- **`Ruptura.UnitTests`** — domain entities, application services, validators. Uses Moq + FluentAssertions + Bogus.
+- **`Ruptura.IntegrationTests`** — API controllers against a real PostgreSQL instance spun up by Testcontainers. Uses `WebApplicationFactory<Program>` + Testcontainers.PostgreSql.
+
+Integration tests use `public partial class Program;` at the end of `Ruptura.API/Program.cs` to expose the entry point to `WebApplicationFactory`.
+
+---
+
+## Domain Entities (src/Ruptura.Domain/Entities)
+
+| Entity | Purpose |
+|---|---|
+| `InviteCode` | Single-use, time-limited invite generated by GM for player registration |
+| `CharacterSheet` | Assigned to a player by the GM; player sees only their own |
+| `GuildSheet` | Shared sheet for a set of players selected by the GM |
+| `GuildMembership` | Join table linking a player (Guid) to a GuildSheet |
+
+`ApplicationUser` (Infrastructure) extends `IdentityUser<Guid>` and adds `DisplayName`, `Role` (`UserRole` enum), and `RefreshToken` / `RefreshTokenExpiresAt`.
+
+---
+
+## Environment Variables (.env)
+
+Key variables and what they control:
+
+| Variable | Used by |
+|---|---|
+| `POSTGRES_*` | PostgreSQL container and API connection string |
+| `JWT_SECRET_KEY` | Token signing (min 32 chars for HMAC-SHA256) |
+| `JWT_ISSUER` / `JWT_AUDIENCE` | Token validation |
+| `API_BASE_URL` | Injected into Blazor `config.json` by `entrypoint.sh` |
+| `CORS_ALLOWED_ORIGIN` | API CORS policy — must match the Web container URL |
+| `API_PORT` / `WEB_PORT` | Host port bindings in docker-compose |
+
+---
+
+## RPG System Context (docs/)
+
+The `docs/` folder contains the full Ruptura RPG system design:
+
+- `docs/GDD_Ruptura.md` — authoritative game design document (1,500+ lines, Brazilian Portuguese)
+- `docs/manuais/` — Player and GM manuals
+- `docs/fichas/` — PDF character/guild/creature/NPC sheets
+
+When implementing UI features (character sheets, guild sheets), the GDD is the source of truth for fields and rules. The GDD's 16 Design Principles define what the software must support — do not add features that contradict them.
