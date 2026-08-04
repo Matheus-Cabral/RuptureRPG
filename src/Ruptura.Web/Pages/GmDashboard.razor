@@ -164,7 +164,14 @@ else
 
     private async Task CopyAsync(string text)
     {
-        await JS.InvokeVoidAsync("ruptura.copyToClipboard", text);
+        var success = await JS.InvokeAsync<bool>("ruptura.copyToClipboard", text);
+        if (!success)
+        {
+            _errorMessage = L["Gm.Invites.CopyFailed"];
+            return;
+        }
+
+        _errorMessage = null;
         _copied = true;
         StateHasChanged();
         await Task.Delay(2000);

@@ -83,10 +83,10 @@
   <!-- Not Found -->
   <data name="NotFound.Title"><value>Page not found</value></data>
   <data name="NotFound.Back"><value>Back to home</value></data>
+  <data name="NotFound.BackToDashboard"><value>Back to Dashboard</value></data>
 
   <!-- Navigation extras -->
   <data name="Nav.Home"><value>Home</value></data>
-  <data name="Nav.Invites"><value>Invites</value></data>
   <data name="Nav.Players"><value>Players</value></data>
 
   <!-- GM Dashboard — Invite Management -->
@@ -101,6 +101,7 @@
   <data name="Gm.Invites.NewCode"><value>New invite code generated</value></data>
   <data name="Gm.Invites.Copy"><value>Copy</value></data>
   <data name="Gm.Invites.Copied"><value>Copied!</value></data>
+  <data name="Gm.Invites.CopyFailed"><value>Couldn't copy automatically — please copy the code manually.</value></data>
   <data name="Gm.Invites.ExpiresIn"><value>Expires in {0}</value></data>
   <data name="Gm.Invites.Col.Code"><value>Code</value></data>
   <data name="Gm.Invites.Col.Status"><value>Status</value></data>
@@ -147,4 +148,5 @@
   <data name="Gm.CampaignDetail.AssignPlayer"><value>Assign Player</value></data>
   <data name="Gm.CampaignDetail.NoAvailablePlayers"><value>All roster players are already members of this campaign.</value></data>
   <data name="Gm.CampaignDetail.SelectPlayer"><value>Select a player…</value></data>
+  <data name="Gm.CampaignDetail.SearchPlaceholder"><value>Search by nickname or email…</value></data>
 </root>

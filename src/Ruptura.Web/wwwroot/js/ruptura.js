@@ -18,11 +18,31 @@ window.ruptura = {
     },
 
     // ── Clipboard ─────────────────────────────────────────────────────────────
+    // navigator.clipboard requires a secure context (HTTPS or localhost) — it's
+    // undefined on plain-HTTP LAN access (e.g. http://192.168.x.x), so fall back
+    // to the legacy execCommand technique there.
 
     copyToClipboard: async function (text) {
+        if (window.isSecureContext && navigator.clipboard) {
+            try {
+                await navigator.clipboard.writeText(text);
+                return true;
+            } catch {
+                // fall through to legacy fallback
+            }
+        }
+
         try {
-            await navigator.clipboard.writeText(text);
-            return true;
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.left = '-9999px';
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+            const success = document.execCommand('copy');
+            document.body.removeChild(textarea);
+            return success;
         } catch {
             return false;
         }

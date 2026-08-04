@@ -1,3 +1,7 @@
+@using Microsoft.Extensions.Localization
+@using Ruptura.Web.Resources
+@inject IStringLocalizer<AppStrings> L
+
 <CascadingAuthenticationState>
     <Router AppAssembly="@typeof(App).Assembly">
         <Found Context="routeData">
@@ -13,9 +17,16 @@
             <LayoutView Layout="@typeof(MainLayout)">
                 <div class="page-heading">
                     <h1>404</h1>
-                    <p>Page not found.</p>
+                    <p>@L["NotFound.Title"]</p>
                 </div>
-                <a href="/" class="btn btn-outline-secondary btn-sm">Back to home</a>
+                <AuthorizeView>
+                    <Authorized>
+                        <a href="/dashboard" class="btn btn-outline-secondary btn-sm">@L["NotFound.BackToDashboard"]</a>
+                    </Authorized>
+                    <NotAuthorized>
+                        <a href="/" class="btn btn-outline-secondary btn-sm">@L["NotFound.Back"]</a>
+                    </NotAuthorized>
+                </AuthorizeView>
             </LayoutView>
         </NotFound>
     </Router>

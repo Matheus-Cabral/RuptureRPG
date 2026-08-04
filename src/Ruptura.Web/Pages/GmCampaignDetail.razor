@@ -23,9 +23,11 @@
         @if (_availablePlayers.Count > 0)
         {
             <div style="display:flex;gap:.5rem">
+                <input class="form-control" style="width:200px" placeholder="@L["Gm.CampaignDetail.SearchPlaceholder"]"
+                       @bind="_playerSearch" @bind:event="oninput" />
                 <select class="form-select" style="width:240px" @bind="_selectedPlayerId">
                     <option value="">@L["Gm.CampaignDetail.SelectPlayer"]</option>
-                    @foreach (var player in _availablePlayers)
+                    @foreach (var player in FilteredAvailablePlayers)
                     {
                         <option value="@player.Id">@player.DisplayName (@player.Email)</option>
                     }
@@ -94,7 +96,15 @@
     private bool _loading = true;
     private bool _assigning;
     private Guid _selectedPlayerId;
+    private string _playerSearch = string.Empty;
     private string? _errorMessage;
+
+    private IEnumerable<PlayerRosterResponse> FilteredAvailablePlayers =>
+        string.IsNullOrWhiteSpace(_playerSearch)
+            ? _availablePlayers
+            : _availablePlayers.Where(p =>
+                p.DisplayName.Contains(_playerSearch, StringComparison.OrdinalIgnoreCase) ||
+                p.Email.Contains(_playerSearch, StringComparison.OrdinalIgnoreCase));
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
@@ -126,6 +136,7 @@
         if (result?.Data is not null)
         {
             _selectedPlayerId = Guid.Empty;
+            _playerSearch = string.Empty;
             await LoadAsync();
         }
         else
