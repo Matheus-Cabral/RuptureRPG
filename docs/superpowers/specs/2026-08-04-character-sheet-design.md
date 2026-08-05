@@ -92,14 +92,17 @@ Cobre Origem, Histórico, Linhagem, Aptidão, Talento, Perícia, Magia, Técnica
 CatalogEntry
 ├─ Id (Guid)
 ├─ Type (enum: Origin, Background, Lineage, Aptitude, Talent, Skill, Spell, Technique, EquipmentItem)
-├─ CampaignId (Guid?)         — null = oficial/global (seed, reutilizável entre campanhas); preenchido = homebrew daquela Campaign
+├─ CampaignId (Guid?, FK → Campaign, ON DELETE CASCADE) — null = oficial/global (seed, reutilizável entre campanhas); preenchido = homebrew daquela Campaign
 ├─ Name (string)
 ├─ DataJson                   — campos específicos do tipo (ver §4.2.1)
+├─ IsArchived (bool, default false) — soft-delete; "apagar" um homebrew seta esta flag em vez de remover a linha
 ├─ CreatedByGameMasterId (Guid?) — null para os itens oficiais seedados
 ├─ CreatedAt / UpdatedAt
 ```
 
 Índice único `(Type, CampaignId, Name)` evita duplicatas dentro do mesmo escopo.
+
+**Soft-delete (decidido no sub-plan #3):** a partir do momento em que `CharacterSheet` passa a guardar `CatalogEntry.Id`s (Perícias, Talentos, Magias, Técnicas, Equipamentos — ver §4.3.1), apagar de verdade uma entrada homebrew em uso órfãos silenciosamente as fichas que a referenciam. `DELETE /api/catalog/{id}` passa a setar `IsArchived = true` em vez de remover a linha. Leituras para popular seletores (`GET /api/catalog`) excluem arquivadas por padrão; a página de administração do Mestre (`/gm/campaigns/{id}/catalog`) continua mostrando-as (com indicação visual de arquivada), via flag de query ou endpoint próprio — detalhe a decidir no plano. Fichas que já referenciam uma entrada arquivada continuam resolvendo normalmente. `CatalogEntry.CampaignId` ganha FK real para `Campaign.Id` com `ON DELETE CASCADE` (era `Guid?` solto até aqui) — se uma Campaign for apagada no futuro, seu catálogo homebrew vai junto, sem linhas órfãs.
 
 **Seed data** (migration inicial, `CampaignId = null`): as 20 Origens, 20 Históricos, 10 Linhagens, 6 Aptidões, 20 Talentos Iniciais (GDD §6.1.2–6.1.7), as 8 Escolas de Magia + magias de exemplo (§6.6.6), técnicas de exemplo por estilo (§6.6.8), e a lista de Perícias Fundamentais por Área (§6.4). Somente Mestres criam/editam entradas homebrew (`POST/PUT/DELETE`), escopadas à própria Campaign.
 
@@ -295,6 +298,9 @@ Registrado aqui deliberadamente: optamos por disco local em vez de object storag
 - Mídia em disco local via volume Docker, atrás de uma interface — escolha consciente de simplicidade, documentada para não parecer descuido.
 - Promoção de Ranking é semi-automática: notificação ao Mestre, que escolhe promover com um clique (um degrau por vez) ou editar manualmente.
 - NP = Σ Bônus de Grau (Atributos) + Σ Bônus de Grau (Perícias) + Σ peso de Talentos/Habilidades + Σ peso de Equipamentos (raridade).
+- `CatalogEntry` apagado por soft-delete (`IsArchived`), não FK `Restrict` (decidido no sub-plan #3, ver §4.2) — GM pode "apagar" um homebrew em uso sem que isso quebre fichas existentes; seletores de nova seleção escondem entradas arquivadas.
+- `CatalogEntry.CampaignId` ganha FK real para `Campaign.Id` com `ON DELETE CASCADE` (decidido no sub-plan #3) — antes era `Guid?` solto, seguindo a convenção de referência fraca do resto do repo; decidimos reforçar aqui por já estar mexendo na tabela.
+- Sub-plan #3 escopo: `CharacterSheet` (entidade + fluxo de concessão) + `CharacterStatsCalculator` + as 9 abas que não são Diário (#4) nem Notificações (#5) — um único plano SDD, direto na `main`, mesmo padrão dos sub-plans #1 e #2.
 
 ## 11. Próximos passos (fora desta spec)
 
