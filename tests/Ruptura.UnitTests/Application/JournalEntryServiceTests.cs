@@ -169,4 +169,100 @@ public class JournalEntryServiceTests
         result.IsSuccess.Should().BeTrue();
         result.Value!.Id.Should().Be(entry.Id);
     }
+
+    // ── UpdateAsync ──────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task UpdateAsync_AsOwner_ReplacesTextAndImagePaths()
+    {
+        var ownerId = Guid.NewGuid();
+        var sheet = new CharacterSheet { Id = Guid.NewGuid(), OwnerId = ownerId };
+        var entry = new CharacterJournalEntry
+        {
+            Id = Guid.NewGuid(), CharacterSheetId = sheet.Id, Text = "Old", ImagePaths = ["a.jpg", "b.jpg"]
+        };
+        _journalRepoMock.Setup(r => r.GetByIdAsync(entry.Id, It.IsAny<CancellationToken>())).ReturnsAsync(entry);
+        _sheetRepoMock.Setup(r => r.GetByIdAsync(sheet.Id, It.IsAny<CancellationToken>())).ReturnsAsync(sheet);
+        _journalRepoMock.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+
+        var result = await _sut.UpdateAsync(ownerId, entry.Id, new UpdateJournalEntryRequest
+        {
+            Text = "New", ImagePaths = ["a.jpg"]
+        });
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Text.Should().Be("New");
+        result.Value.ImagePaths.Should().ContainSingle().Which.Should().Be("a.jpg");
+    }
+
+    [Fact]
+    public async Task UpdateAsync_WhenAnImageIsDropped_DeletesItsFileFromDisk()
+    {
+        var ownerId = Guid.NewGuid();
+        var sheet = new CharacterSheet { Id = Guid.NewGuid(), OwnerId = ownerId };
+        var entry = new CharacterJournalEntry
+        {
+            Id = Guid.NewGuid(), CharacterSheetId = sheet.Id, Text = "x", ImagePaths = ["a.jpg", "b.jpg"]
+        };
+        _journalRepoMock.Setup(r => r.GetByIdAsync(entry.Id, It.IsAny<CancellationToken>())).ReturnsAsync(entry);
+        _sheetRepoMock.Setup(r => r.GetByIdAsync(sheet.Id, It.IsAny<CancellationToken>())).ReturnsAsync(sheet);
+        _journalRepoMock.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+
+        await _sut.UpdateAsync(ownerId, entry.Id, new UpdateJournalEntryRequest { Text = "x", ImagePaths = ["a.jpg"] });
+
+        _fileStorageMock.Verify(f => f.DeleteAsync("b.jpg", It.IsAny<CancellationToken>()), Times.Once);
+        _fileStorageMock.Verify(f => f.DeleteAsync("a.jpg", It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_AsCampaignGameMaster_ReturnsNotFound()
+    {
+        var gmId = Guid.NewGuid();
+        var sheet = new CharacterSheet { Id = Guid.NewGuid(), OwnerId = Guid.NewGuid() };
+        var entry = new CharacterJournalEntry { Id = Guid.NewGuid(), CharacterSheetId = sheet.Id, Text = "x" };
+        _journalRepoMock.Setup(r => r.GetByIdAsync(entry.Id, It.IsAny<CancellationToken>())).ReturnsAsync(entry);
+        _sheetRepoMock.Setup(r => r.GetByIdAsync(sheet.Id, It.IsAny<CancellationToken>())).ReturnsAsync(sheet);
+
+        var result = await _sut.UpdateAsync(gmId, entry.Id, new UpdateJournalEntryRequest { Text = "y", ImagePaths = [] });
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(ErrorCodes.Journal.NotFound);
+    }
+
+    // ── DeleteAsync ──────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task DeleteAsync_AsOwner_RemovesEntryAndDeletesAllImageFiles()
+    {
+        var ownerId = Guid.NewGuid();
+        var sheet = new CharacterSheet { Id = Guid.NewGuid(), OwnerId = ownerId };
+        var entry = new CharacterJournalEntry
+        {
+            Id = Guid.NewGuid(), CharacterSheetId = sheet.Id, Text = "x", ImagePaths = ["a.jpg", "b.jpg"]
+        };
+        _journalRepoMock.Setup(r => r.GetByIdAsync(entry.Id, It.IsAny<CancellationToken>())).ReturnsAsync(entry);
+        _sheetRepoMock.Setup(r => r.GetByIdAsync(sheet.Id, It.IsAny<CancellationToken>())).ReturnsAsync(sheet);
+        _journalRepoMock.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+
+        var result = await _sut.DeleteAsync(ownerId, entry.Id);
+
+        result.IsSuccess.Should().BeTrue();
+        _fileStorageMock.Verify(f => f.DeleteAsync("a.jpg", It.IsAny<CancellationToken>()), Times.Once);
+        _fileStorageMock.Verify(f => f.DeleteAsync("b.jpg", It.IsAny<CancellationToken>()), Times.Once);
+        _journalRepoMock.Verify(r => r.Remove(entry), Times.Once);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_AsUnrelatedCaller_ReturnsNotFound()
+    {
+        var sheet = new CharacterSheet { Id = Guid.NewGuid(), OwnerId = Guid.NewGuid() };
+        var entry = new CharacterJournalEntry { Id = Guid.NewGuid(), CharacterSheetId = sheet.Id, Text = "x" };
+        _journalRepoMock.Setup(r => r.GetByIdAsync(entry.Id, It.IsAny<CancellationToken>())).ReturnsAsync(entry);
+        _sheetRepoMock.Setup(r => r.GetByIdAsync(sheet.Id, It.IsAny<CancellationToken>())).ReturnsAsync(sheet);
+
+        var result = await _sut.DeleteAsync(Guid.NewGuid(), entry.Id);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(ErrorCodes.Journal.NotFound);
+    }
 }

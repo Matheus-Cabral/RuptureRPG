@@ -88,12 +88,46 @@ public class JournalEntryService(
         return Result.Success(entry);
     }
 
-    public Task<Result<JournalEntryResponse>> UpdateAsync(
-        Guid callerId, Guid entryId, UpdateJournalEntryRequest request, CancellationToken ct = default) =>
-        throw new NotImplementedException("Implemented in Task 5.");
+    public async Task<Result<JournalEntryResponse>> UpdateAsync(
+        Guid callerId,
+        Guid entryId,
+        UpdateJournalEntryRequest request,
+        CancellationToken ct = default)
+    {
+        var authorized = await AuthorizeWriteAsync(callerId, entryId, ct);
+        if (authorized.IsFailure)
+            return Result.Failure<JournalEntryResponse>(authorized.Error!);
 
-    public Task<Result> DeleteAsync(Guid callerId, Guid entryId, CancellationToken ct = default) =>
-        throw new NotImplementedException("Implemented in Task 5.");
+        var entry = authorized.Value!;
+        var droppedPaths = entry.ImagePaths.Except(request.ImagePaths).ToList();
+        foreach (var path in droppedPaths)
+            await fileStorage.DeleteAsync(path, ct);
+
+        entry.Text = request.Text;
+        entry.ImagePaths = request.ImagePaths;
+        entry.UpdatedAt = DateTime.UtcNow;
+
+        journalRepo.Update(entry);
+        await journalRepo.SaveChangesAsync(ct);
+
+        return Result.Success(MapToResponse(entry));
+    }
+
+    public async Task<Result> DeleteAsync(Guid callerId, Guid entryId, CancellationToken ct = default)
+    {
+        var authorized = await AuthorizeWriteAsync(callerId, entryId, ct);
+        if (authorized.IsFailure)
+            return Result.Failure(authorized.Error!);
+
+        var entry = authorized.Value!;
+        foreach (var path in entry.ImagePaths)
+            await fileStorage.DeleteAsync(path, ct);
+
+        journalRepo.Remove(entry);
+        await journalRepo.SaveChangesAsync(ct);
+
+        return Result.Success();
+    }
 
     public Task<Result> AppendImagePathAsync(Guid entryId, string path, CancellationToken ct = default) =>
         throw new NotImplementedException("Implemented in Task 6.");
