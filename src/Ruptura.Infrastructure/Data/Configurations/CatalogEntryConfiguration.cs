@@ -21,6 +21,14 @@ public class CatalogEntryConfiguration : IEntityTypeConfiguration<CatalogEntry>
             .HasFilter("\"CampaignId\" IS NOT NULL")
             .HasDatabaseName("ux_catalog_entries_scoped_type_campaign_name");
 
+        // Homebrew entries belong to exactly one Campaign; if the Campaign is ever
+        // deleted, its homebrew catalog goes with it (CatalogEntry.CampaignId was a
+        // bare Guid? before this — decided 2026-08-05, see design spec §4.2).
+        builder.HasOne<Campaign>()
+            .WithMany()
+            .HasForeignKey(c => c.CampaignId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         builder.HasData(CatalogSeedData.Origins);
         builder.HasData(CatalogSeedData.Backgrounds);
         builder.HasData(CatalogSeedData.Lineages);
