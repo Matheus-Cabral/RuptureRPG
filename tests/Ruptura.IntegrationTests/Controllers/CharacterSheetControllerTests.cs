@@ -2,6 +2,9 @@ using System.Net;
 using System.Net.Http.Json;
 using Bogus;
 using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Ruptura.Infrastructure.Data;
 using Ruptura.IntegrationTests.Helpers;
 using Ruptura.Shared.Campaigns;
 using Ruptura.Shared.CharacterSheets;
@@ -212,5 +215,38 @@ public class CharacterSheetControllerTests(IntegrationTestFactory factory)
         getResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var reread = (await getResponse.Content.ReadFromJsonAsync<ApiResponse<CharacterSheetResponse>>())!.Data!;
         reread.Data.Talents.Should().ContainSingle(t => t.CatalogEntryId == talent.Id);
+    }
+
+    [Fact]
+    public async Task Get_SheetWithNullModuleInStoredDataJson_Returns200WithSensibleDefaults()
+    {
+        // UpdateCharacterSheetRequestValidator rejects a DataJson with a null module before
+        // it can ever be saved through the API — so simulate a write path that bypasses it
+        // entirely (direct DB write, a migration, a future endpoint) by writing straight to
+        // the row via a scoped AppDbContext, then confirm the real read path
+        // (MapToResponseAsync → DeserializeSheetData → CollectReferencedCatalogIds →
+        // CharacterStatsCalculator.Calculate) tolerates it instead of 500ing.
+        var (client, campaign, playerId, _, gmToken) = await SetUpCampaignWithMemberAsync();
+        AuthHelper.SetBearerToken(client, gmToken);
+        var grantResponse = await client.PostAsJsonAsync($"api/campaigns/{campaign.Id}/character-sheets",
+            new GrantCharacterSheetRequest { PlayerId = playerId, CharacterName = "Corrupted Row" });
+        var sheet = (await grantResponse.Content.ReadFromJsonAsync<ApiResponse<CharacterSheetResponse>>())!.Data!;
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var entity = await db.CharacterSheets.SingleAsync(s => s.Id == sheet.Id);
+            entity.DataJson = """{"Skills":null,"Talents":null,"Equipment":null}""";
+            await db.SaveChangesAsync();
+        }
+
+        var getResponse = await client.GetAsync($"api/character-sheets/{sheet.Id}");
+
+        getResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = (await getResponse.Content.ReadFromJsonAsync<ApiResponse<CharacterSheetResponse>>())!.Data!;
+        body.Data.Skills.Should().NotBeNull().And.BeEmpty();
+        body.Data.Talents.Should().NotBeNull().And.BeEmpty();
+        body.Data.Equipment.Should().NotBeNull().And.BeEmpty();
+        body.DerivedStats.MaxHp.Should().BeGreaterThan(0);
     }
 }

@@ -177,12 +177,40 @@ public class CharacterSheetService(
     {
         try
         {
-            return JsonSerializer.Deserialize<CharacterSheetData>(dataJson) ?? new CharacterSheetData();
+            var data = JsonSerializer.Deserialize<CharacterSheetData>(dataJson) ?? new CharacterSheetData();
+            return NormalizeSheetData(data);
         }
         catch (JsonException)
         {
             return new CharacterSheetData();
         }
+    }
+
+    // System.Text.Json ignores C#'s non-nullable annotations: valid JSON like
+    // `{"Skills":null}` overwrites a property's `= []`/`= new()` initializer with an actual
+    // null, even though CharacterSheetData declares it non-nullable. That JSON is not
+    // reachable via the API today (UpdateCharacterSheetRequestValidator rejects it before
+    // save), but a future write path that bypasses the validator (direct DB write,
+    // migration, another endpoint) could still produce it. Restoring every such module to
+    // its default here — right after deserialization, once — gives every downstream reader
+    // (CollectReferencedCatalogIds, CharacterStatsCalculator.Calculate) a guaranteed-non-null
+    // object instead of requiring each of them to re-guard the same properties.
+    // AttributeTrial is intentionally excluded: it is legitimately nullable (Module 9 is
+    // optional per its own design), so a null there is not corruption.
+    private static CharacterSheetData NormalizeSheetData(CharacterSheetData data)
+    {
+        data.Identity ??= new();
+        data.Identity.AptitudeIds ??= [];
+        data.Attributes ??= new();
+        data.Combat ??= new();
+        data.Skills ??= [];
+        data.Talents ??= [];
+        data.Spells ??= [];
+        data.Techniques ??= [];
+        data.Equipment ??= [];
+        data.Currency ??= new();
+        data.GuildRegistry ??= new();
+        return data;
     }
 
     private static List<Guid> CollectReferencedCatalogIds(CharacterSheetData data)
