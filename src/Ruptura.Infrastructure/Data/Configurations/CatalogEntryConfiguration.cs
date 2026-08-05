@@ -23,5 +23,8 @@ public class CatalogEntryConfiguration : IEntityTypeConfiguration<CatalogEntry>
 
         builder.HasData(CatalogSeedData.Origins);
         builder.HasData(CatalogSeedData.Backgrounds);
+        builder.HasData(CatalogSeedData.Lineages);
+        builder.HasData(CatalogSeedData.Aptitudes);
+        builder.HasData(CatalogSeedData.Talents);
     }
 }
