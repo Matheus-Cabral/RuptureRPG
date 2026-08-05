@@ -3,8 +3,10 @@
 @using Microsoft.Extensions.Localization
 @using Ruptura.Web.Resources
 @using Ruptura.Shared.Campaigns
+@using Ruptura.Shared.CharacterSheets
 @inject IStringLocalizer<AppStrings> L
 @inject ICampaignClientService CampaignService
+@inject ICharacterSheetClientService SheetService
 
 <PageTitle>@L["Gm.CampaignDetail.Members"] — RUPTURA</PageTitle>
 
@@ -97,6 +99,61 @@
             @L["Gm.CampaignDetail.NoAvailablePlayers"]
         </p>
     }
+
+    <div class="section-header" style="margin-top:2rem">
+        <span class="section-title">@L["Gm.CampaignDetail.Characters"]</span>
+    </div>
+
+    @if (_sheets.Count > 0)
+    {
+        <div class="ledger-table-wrap">
+            <table class="ledger-table">
+                <thead>
+                    <tr>
+                        <th>@L["Gm.CampaignDetail.Col.Name"]</th>
+                        <th>@L["Gm.CampaignDetail.Col.Owner"]</th>
+                        <th>@L["Gm.CampaignDetail.Col.Status"]</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var sheet in _sheets)
+                    {
+                        <tr>
+                            <td>@sheet.CharacterName</td>
+                            <td>@(_members.FirstOrDefault(m => m.PlayerId == sheet.OwnerId)?.DisplayName ?? sheet.OwnerId.ToString())</td>
+                            <td>@(sheet.IsDead ? L["Gm.CampaignDetail.Status.Dead"] : sheet.IsRetired ? L["Gm.CampaignDetail.Status.Retired"] : L["Gm.CampaignDetail.Status.Alive"])</td>
+                            <td>
+                                <a class="btn btn-outline-secondary btn-sm" href="/gm/campaigns/@Id/character-sheets/@sheet.Id">
+                                    @L["Gm.CampaignDetail.OpenSheet"]
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+
+    @if (_members.Count > 0)
+    {
+        <div style="display:flex;gap:.5rem;margin-top:1rem;max-width:480px">
+            <select class="form-select" @bind="_selectedPlayerId">
+                <option value="@Guid.Empty">—</option>
+                @foreach (var member in _members)
+                {
+                    <option value="@member.PlayerId">@member.DisplayName</option>
+                }
+            </select>
+            <input class="form-control" placeholder="@L["Gm.CampaignDetail.CharacterNamePlaceholder"]"
+                   @bind="_newCharacterName" @bind:event="oninput" />
+            <button class="btn btn-primary btn-sm" @onclick="GrantAsync"
+                    disabled="@(_granting || _selectedPlayerId == Guid.Empty || string.IsNullOrWhiteSpace(_newCharacterName))">
+                @if (_granting) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                @L["Gm.CampaignDetail.GrantCharacter"]
+            </button>
+        </div>
+    }
 </div>
 
 @code {
@@ -104,11 +161,14 @@
 
     private List<CampaignMemberResponse> _members = [];
     private List<PlayerRosterResponse> _availablePlayers = [];
+    private List<CharacterSheetResponse> _sheets = [];
     private bool _loading = true;
     private bool _assigning;
     private bool _showSuggestions;
     private Guid _selectedPlayerId;
     private string _playerSearch = string.Empty;
+    private string _newCharacterName = string.Empty;
+    private bool _granting;
     private string? _errorMessage;
 
     private IEnumerable<PlayerRosterResponse> FilteredAvailablePlayers =>
@@ -146,6 +206,9 @@
         var memberIds = _members.Select(m => m.PlayerId).ToHashSet();
         _availablePlayers = roster.Where(p => !memberIds.Contains(p.Id)).ToList();
 
+        var sheetsResult = await SheetService.GetByCampaignAsync(Id);
+        _sheets = sheetsResult?.Data?.ToList() ?? [];
+
         _loading = false;
     }
 
@@ -172,5 +235,30 @@
         }
 
         _assigning = false;
+    }
+
+    private async Task GrantAsync()
+    {
+        if (_selectedPlayerId == Guid.Empty || string.IsNullOrWhiteSpace(_newCharacterName)) return;
+
+        _granting = true;
+        _errorMessage = null;
+
+        var result = await SheetService.GrantAsync(Id, new GrantCharacterSheetRequest
+        {
+            PlayerId = _selectedPlayerId, CharacterName = _newCharacterName
+        });
+
+        if (result?.Data is not null)
+        {
+            _newCharacterName = string.Empty;
+            await LoadAsync();
+        }
+        else
+        {
+            _errorMessage = result?.Message ?? L["Common.Error"];
+        }
+
+        _granting = false;
     }
 }

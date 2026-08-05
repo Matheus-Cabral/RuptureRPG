@@ -62,7 +62,11 @@
                                 @entry.DataJson
                             </td>
                             <td>
-                                @if (!entry.IsGlobal)
+                                @if (entry.IsArchived)
+                                {
+                                    <span style="color:var(--text-muted)">@L["Gm.Catalog.Archived"]</span>
+                                }
+                                else if (!entry.IsGlobal)
                                 {
                                     <button class="btn btn-outline-secondary btn-sm" @onclick="() => StartEdit(entry)">@L["Gm.Catalog.Edit"]</button>
                                     <button class="btn btn-outline-secondary btn-sm" @onclick="() => DeleteAsync(entry.Id)">@L["Gm.Catalog.Delete"]</button>
@@ -125,7 +129,7 @@
     {
         _loading = true;
         _errorMessage = null;
-        var result = await CatalogService.GetByTypeAsync(_selectedType, CampaignId);
+        var result = await CatalogService.GetByTypeAsync(_selectedType, CampaignId, includeArchived: true);
         if (result is null)
         {
             _errorMessage = L["Common.Error"];

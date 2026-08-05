@@ -1,0 +1,16 @@
+@page "/gm/campaigns/{CampaignId:guid}/character-sheets/{SheetId:guid}"
+@attribute [Authorize(Roles = "GameMaster")]
+@using Microsoft.Extensions.Localization
+@using Ruptura.Web.Resources
+@inject IStringLocalizer<AppStrings> L
+
+<PageTitle>@L["Sheet.Tab.Identity"] — RUPTURA</PageTitle>
+
+<div class="page-content">
+    <CharacterSheetEditor SheetId="SheetId" CampaignId="CampaignId" CanEditStatus="true" />
+</div>
+
+@code {
+    [Parameter] public Guid CampaignId { get; set; }
+    [Parameter] public Guid SheetId { get; set; }
+}

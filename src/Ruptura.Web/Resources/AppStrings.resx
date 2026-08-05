@@ -151,6 +151,15 @@
   <data name="Gm.CampaignDetail.NoAvailablePlayers"><value>All roster players are already members of this campaign.</value></data>
   <data name="Gm.CampaignDetail.SearchPlaceholder"><value>Search by nickname or email…</value></data>
   <data name="Gm.CampaignDetail.ViewCatalog"><value>Catalog</value></data>
+  <data name="Gm.CampaignDetail.Characters"><value>Characters</value></data>
+  <data name="Gm.CampaignDetail.GrantCharacter"><value>Grant Character</value></data>
+  <data name="Gm.CampaignDetail.CharacterNamePlaceholder"><value>Character name</value></data>
+  <data name="Gm.CampaignDetail.Col.Owner"><value>Player</value></data>
+  <data name="Gm.CampaignDetail.Col.Status"><value>Status</value></data>
+  <data name="Gm.CampaignDetail.Status.Alive"><value>Alive</value></data>
+  <data name="Gm.CampaignDetail.Status.Dead"><value>Dead</value></data>
+  <data name="Gm.CampaignDetail.Status.Retired"><value>Retired</value></data>
+  <data name="Gm.CampaignDetail.OpenSheet"><value>Open</value></data>
 
   <!-- GM Catalog -->
   <data name="Gm.Catalog.Title"><value>Catalog</value></data>
@@ -165,6 +174,7 @@
   <data name="Gm.Catalog.Save"><value>Save</value></data>
   <data name="Gm.Catalog.Cancel"><value>Cancel</value></data>
   <data name="Gm.Catalog.Delete"><value>Delete</value></data>
+  <data name="Gm.Catalog.Archived"><value>Archived</value></data>
 
   <!-- Character Sheet Editor -->
   <data name="Sheet.Loading"><value>Loading character sheet…</value></data>

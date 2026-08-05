@@ -151,6 +151,15 @@
   <data name="Gm.CampaignDetail.NoAvailablePlayers"><value>Todos os jogadores do roster já são membros desta campanha.</value></data>
   <data name="Gm.CampaignDetail.SearchPlaceholder"><value>Buscar por nickname ou e-mail…</value></data>
   <data name="Gm.CampaignDetail.ViewCatalog"><value>Catálogo</value></data>
+  <data name="Gm.CampaignDetail.Characters"><value>Personagens</value></data>
+  <data name="Gm.CampaignDetail.GrantCharacter"><value>Conceder Personagem</value></data>
+  <data name="Gm.CampaignDetail.CharacterNamePlaceholder"><value>Nome do personagem</value></data>
+  <data name="Gm.CampaignDetail.Col.Owner"><value>Jogador</value></data>
+  <data name="Gm.CampaignDetail.Col.Status"><value>Estado</value></data>
+  <data name="Gm.CampaignDetail.Status.Alive"><value>Vivo</value></data>
+  <data name="Gm.CampaignDetail.Status.Dead"><value>Morto</value></data>
+  <data name="Gm.CampaignDetail.Status.Retired"><value>Aposentado</value></data>
+  <data name="Gm.CampaignDetail.OpenSheet"><value>Abrir</value></data>
 
   <!-- Catálogo do Mestre -->
   <data name="Gm.Catalog.Title"><value>Catálogo</value></data>
@@ -165,6 +174,7 @@
   <data name="Gm.Catalog.Save"><value>Salvar</value></data>
   <data name="Gm.Catalog.Cancel"><value>Cancelar</value></data>
   <data name="Gm.Catalog.Delete"><value>Apagar</value></data>
+  <data name="Gm.Catalog.Archived"><value>Arquivado</value></data>
 
   <!-- Editor de Ficha de Personagem -->
   <data name="Sheet.Loading"><value>Carregando ficha…</value></data>
