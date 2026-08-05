@@ -32,6 +32,7 @@ public static class ErrorCodes
         public const string InvalidType = "Catalog.InvalidType";
         public const string AlreadyExists = "Catalog.AlreadyExists";
         public const string CannotModifyGlobalEntry = "Catalog.CannotModifyGlobalEntry";
+        public const string AlreadyArchived = "Catalog.AlreadyArchived";
     }
 
     public static class CharacterSheet

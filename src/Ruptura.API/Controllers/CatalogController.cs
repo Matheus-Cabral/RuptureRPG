@@ -29,7 +29,7 @@ public class CatalogController(
         [FromQuery] string type, [FromQuery] Guid campaignId, CancellationToken ct)
     {
         var callerId = Guid.Parse(User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
-        var result = await catalogService.GetByTypeAsync(callerId, type, campaignId, ct);
+        var result = await catalogService.GetByTypeAsync(callerId, type, campaignId, includeArchived: false, ct);
         if (result.IsFailure)
             return result.Error == ErrorCodes.Catalog.InvalidType
                 ? BadRequest(ApiResponse.Fail(localizer[result.Error!]))

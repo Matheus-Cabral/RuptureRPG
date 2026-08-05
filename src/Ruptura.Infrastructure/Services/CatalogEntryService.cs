@@ -15,6 +15,7 @@ public class CatalogEntryService(
         Guid callerId,
         string type,
         Guid campaignId,
+        bool includeArchived,
         CancellationToken ct = default)
     {
         if (!Enum.TryParse<CatalogEntryType>(type, out var parsedType) || !Enum.IsDefined(parsedType))
@@ -29,7 +30,7 @@ public class CatalogEntryService(
         if (!isMember)
             return Result.Failure<IEnumerable<CatalogEntryResponse>>(ErrorCodes.Catalog.NotFound);
 
-        var entries = await catalogRepo.GetByTypeAsync(parsedType, campaignId, includeArchived: false, ct);
+        var entries = await catalogRepo.GetByTypeAsync(parsedType, campaignId, includeArchived, ct);
         return Result.Success(entries.Select(MapToResponse));
     }
 
@@ -80,6 +81,9 @@ public class CatalogEntryService(
         if (entry.CampaignId is null)
             return Result.Failure<CatalogEntryResponse>(ErrorCodes.Catalog.CannotModifyGlobalEntry);
 
+        if (entry.IsArchived)
+            return Result.Failure<CatalogEntryResponse>(ErrorCodes.Catalog.AlreadyArchived);
+
         var campaign = await campaignRepo.GetByIdAsync(entry.CampaignId.Value, ct);
         if (campaign is null || campaign.GameMasterId != gameMasterId)
             return Result.Failure<CatalogEntryResponse>(ErrorCodes.Catalog.NotFound);
@@ -110,11 +114,16 @@ public class CatalogEntryService(
         if (entry.CampaignId is null)
             return Result.Failure(ErrorCodes.Catalog.CannotModifyGlobalEntry);
 
+        if (entry.IsArchived)
+            return Result.Failure(ErrorCodes.Catalog.AlreadyArchived);
+
         var campaign = await campaignRepo.GetByIdAsync(entry.CampaignId.Value, ct);
         if (campaign is null || campaign.GameMasterId != gameMasterId)
             return Result.Failure(ErrorCodes.Catalog.NotFound);
 
-        catalogRepo.Remove(entry);
+        entry.IsArchived = true;
+        entry.UpdatedAt = DateTime.UtcNow;
+        catalogRepo.Update(entry);
         await catalogRepo.SaveChangesAsync(ct);
 
         return Result.Success();
@@ -131,6 +140,7 @@ public class CatalogEntryService(
         Name = c.Name,
         DataJson = c.DataJson,
         CreatedByGameMasterId = c.CreatedByGameMasterId,
-        CreatedAt = c.CreatedAt
+        CreatedAt = c.CreatedAt,
+        IsArchived = c.IsArchived
     };
 }

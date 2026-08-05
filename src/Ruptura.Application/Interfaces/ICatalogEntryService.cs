@@ -6,7 +6,7 @@ namespace Ruptura.Application.Interfaces;
 public interface ICatalogEntryService
 {
     Task<Result<IEnumerable<CatalogEntryResponse>>> GetByTypeAsync(
-        Guid callerId, string type, Guid campaignId, CancellationToken ct = default);
+        Guid callerId, string type, Guid campaignId, bool includeArchived, CancellationToken ct = default);
 
     Task<Result<CatalogEntryResponse>> CreateAsync(
         Guid gameMasterId, CreateCatalogEntryRequest request, CancellationToken ct = default);

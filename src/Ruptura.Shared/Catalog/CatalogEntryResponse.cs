@@ -10,4 +10,5 @@ public class CatalogEntryResponse
     public string DataJson { get; set; } = "{}";
     public Guid? CreatedByGameMasterId { get; set; }
     public DateTime CreatedAt { get; set; }
+    public bool IsArchived { get; set; }
 }

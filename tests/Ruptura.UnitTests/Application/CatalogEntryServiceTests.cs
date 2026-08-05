@@ -27,7 +27,7 @@ public class CatalogEntryServiceTests
     [Fact]
     public async Task GetByTypeAsync_WithInvalidType_ReturnsFailure()
     {
-        var result = await _sut.GetByTypeAsync(Guid.NewGuid(), "NotARealType", Guid.NewGuid());
+        var result = await _sut.GetByTypeAsync(Guid.NewGuid(), "NotARealType", Guid.NewGuid(), includeArchived: false);
 
         result.IsFailure.Should().BeTrue();
         result.Error.Should().Be(ErrorCodes.Catalog.InvalidType);
@@ -49,7 +49,7 @@ public class CatalogEntryServiceTests
         _catalogRepoMock.Setup(r => r.GetByTypeAsync(CatalogEntryType.Talent, campaignId, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(entries);
 
-        var result = await _sut.GetByTypeAsync(gmId, "Talent", campaignId);
+        var result = await _sut.GetByTypeAsync(gmId, "Talent", campaignId, includeArchived: false);
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.Should().ContainSingle(e => e.Name == "Golpe Certeiro");
@@ -71,7 +71,7 @@ public class CatalogEntryServiceTests
         _catalogRepoMock.Setup(r => r.GetByTypeAsync(CatalogEntryType.Skill, campaignId, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
 
-        var result = await _sut.GetByTypeAsync(playerId, "Skill", campaignId);
+        var result = await _sut.GetByTypeAsync(playerId, "Skill", campaignId, includeArchived: false);
 
         result.IsSuccess.Should().BeTrue();
     }
@@ -88,7 +88,7 @@ public class CatalogEntryServiceTests
         _membershipRepoMock.Setup(r => r.ExistsAsync(campaignId, strangerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
 
-        var result = await _sut.GetByTypeAsync(strangerId, "Skill", campaignId);
+        var result = await _sut.GetByTypeAsync(strangerId, "Skill", campaignId, includeArchived: false);
 
         result.IsFailure.Should().BeTrue();
         result.Error.Should().Be(ErrorCodes.Catalog.NotFound);
@@ -103,7 +103,7 @@ public class CatalogEntryServiceTests
         _campaignRepoMock.Setup(r => r.GetByIdAsync(campaignId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Campaign?)null);
 
-        var result = await _sut.GetByTypeAsync(callerId, "Skill", campaignId);
+        var result = await _sut.GetByTypeAsync(callerId, "Skill", campaignId, includeArchived: false);
 
         result.IsFailure.Should().BeTrue();
         result.Error.Should().Be(ErrorCodes.Catalog.NotFound);
@@ -325,7 +325,7 @@ public class CatalogEntryServiceTests
     }
 
     [Fact]
-    public async Task DeleteAsync_WithValidData_RemovesEntry()
+    public async Task DeleteAsync_WithValidData_ArchivesEntry()
     {
         var gmId = Guid.NewGuid();
         var campaignId = Guid.NewGuid();
@@ -339,7 +339,7 @@ public class CatalogEntryServiceTests
         var result = await _sut.DeleteAsync(gmId, entry.Id);
 
         result.IsSuccess.Should().BeTrue();
-        _catalogRepoMock.Verify(r => r.Remove(entry), Times.Once);
+        _catalogRepoMock.Verify(r => r.Update(entry), Times.Once);
     }
 
     [Fact]
@@ -353,5 +353,68 @@ public class CatalogEntryServiceTests
 
         result.IsFailure.Should().BeTrue();
         result.Error.Should().Be(ErrorCodes.Catalog.NotFound);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_ArchivesTheEntryInsteadOfRemovingIt()
+    {
+        var gmId = Guid.NewGuid();
+        var campaign = new Campaign { Id = Guid.NewGuid(), GameMasterId = gmId };
+        var entry = new CatalogEntry { Id = Guid.NewGuid(), CampaignId = campaign.Id, Type = CatalogEntryType.Talent, Name = "Homebrew Talent" };
+        _catalogRepoMock.Setup(r => r.GetByIdAsync(entry.Id, It.IsAny<CancellationToken>())).ReturnsAsync(entry);
+        _campaignRepoMock.Setup(r => r.GetByIdAsync(campaign.Id, It.IsAny<CancellationToken>())).ReturnsAsync(campaign);
+        _catalogRepoMock.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+
+        var result = await _sut.DeleteAsync(gmId, entry.Id);
+
+        result.IsSuccess.Should().BeTrue();
+        entry.IsArchived.Should().BeTrue();
+        _catalogRepoMock.Verify(r => r.Remove(It.IsAny<CatalogEntry>()), Times.Never);
+        _catalogRepoMock.Verify(r => r.Update(It.Is<CatalogEntry>(e => e.IsArchived)), Times.Once);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_WhenAlreadyArchived_ReturnsFailure()
+    {
+        var gmId = Guid.NewGuid();
+        var campaign = new Campaign { Id = Guid.NewGuid(), GameMasterId = gmId };
+        var entry = new CatalogEntry { Id = Guid.NewGuid(), CampaignId = campaign.Id, Type = CatalogEntryType.Talent, Name = "X", IsArchived = true };
+        _catalogRepoMock.Setup(r => r.GetByIdAsync(entry.Id, It.IsAny<CancellationToken>())).ReturnsAsync(entry);
+        _campaignRepoMock.Setup(r => r.GetByIdAsync(campaign.Id, It.IsAny<CancellationToken>())).ReturnsAsync(campaign);
+
+        var result = await _sut.DeleteAsync(gmId, entry.Id);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(ErrorCodes.Catalog.AlreadyArchived);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_WhenEntryIsArchived_ReturnsFailure()
+    {
+        var gmId = Guid.NewGuid();
+        var campaign = new Campaign { Id = Guid.NewGuid(), GameMasterId = gmId };
+        var entry = new CatalogEntry { Id = Guid.NewGuid(), CampaignId = campaign.Id, Type = CatalogEntryType.Talent, Name = "X", IsArchived = true };
+        _catalogRepoMock.Setup(r => r.GetByIdAsync(entry.Id, It.IsAny<CancellationToken>())).ReturnsAsync(entry);
+        _campaignRepoMock.Setup(r => r.GetByIdAsync(campaign.Id, It.IsAny<CancellationToken>())).ReturnsAsync(campaign);
+
+        var result = await _sut.UpdateAsync(gmId, entry.Id, new UpdateCatalogEntryRequest { Name = "Y", DataJson = "{}" });
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(ErrorCodes.Catalog.AlreadyArchived);
+    }
+
+    [Fact]
+    public async Task GetByTypeAsync_WithIncludeArchivedFalse_PassesFalseToRepository()
+    {
+        var callerId = Guid.NewGuid();
+        var campaign = new Campaign { Id = Guid.NewGuid(), GameMasterId = callerId };
+        _campaignRepoMock.Setup(r => r.GetByIdAsync(campaign.Id, It.IsAny<CancellationToken>())).ReturnsAsync(campaign);
+        _catalogRepoMock.Setup(r => r.GetByTypeAsync(CatalogEntryType.Talent, campaign.Id, false, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+
+        var result = await _sut.GetByTypeAsync(callerId, "Talent", campaign.Id, includeArchived: false);
+
+        result.IsSuccess.Should().BeTrue();
+        _catalogRepoMock.Verify(r => r.GetByTypeAsync(CatalogEntryType.Talent, campaign.Id, false, It.IsAny<CancellationToken>()), Times.Once);
     }
 }
