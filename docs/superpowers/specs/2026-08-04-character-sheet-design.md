@@ -169,13 +169,19 @@ Tabela própria (não dentro do `DataJson` da ficha, que é reescrito a cada peq
 ```
 CharacterJournalEntry
 ├─ Id (Guid)
-├─ CharacterSheetId (Guid, FK)
+├─ CharacterSheetId (Guid, FK → CharacterSheet, ON DELETE CASCADE)
 ├─ Text (string)
-├─ ImagePaths (jsonb, string[])   — 0+ imagens anexadas
+├─ ImagePaths (jsonb, List<string>)   — 0+ imagens anexadas, coluna jsonb via EF value converter
 ├─ CreatedAt / UpdatedAt
 ```
 
 Autor é sempre o dono da ficha (só ele escreve — ver §6, matriz de permissões); por isso não há campo `AuthorId`.
+
+**FK real, decidido no sub-plan #4:** ao contrário da convenção de referência fraca do resto do repo (`CharacterSheet.OwnerId`, `CatalogEntry.CreatedByGameMasterId`), `CharacterJournalEntry.CharacterSheetId` ganha uma FK de verdade com `ON DELETE CASCADE` — é uma tabela nova sendo criada do zero (não um retrofit em coluna existente), e apagar uma ficha deveria mesmo levar seu diário junto. A limpeza dos arquivos de imagem em disco correspondentes não é coberta pelo `ON DELETE CASCADE` do Postgres (arquivos não vivem no banco) — o `CharacterSheetService`/`JournalEntryService`, se algum dia implementar exclusão de ficha, precisa apagar os arquivos manualmente antes ou depois do cascade.
+
+**Edição completa:** `PUT` substitui `Text` **e** `ImagePaths` juntos (mesmo formato da criação) — não existe edição só-de-texto. Uma imagem removida da lista tem seu arquivo apagado do disco pelo mesmo request. `DELETE` da entrada apaga a entrada e todos os arquivos de imagem associados.
+
+**Ordenação:** lista sempre mais recente primeiro (`OrderByDescending(CreatedAt)`), consistente com o resto do app (campanhas, etc.).
 
 ### 4.5 `Notification`
 
@@ -274,6 +280,18 @@ Sem storage de arquivos hoje (só Postgres + API + Blazor estático via nginx). 
 
 Registrado aqui deliberadamente: optamos por disco local em vez de object storage porque este projeto não tem necessidade de ser tão enxuto/distribuído (instância única, self-hosted) — não é uma limitação técnica, é uma escolha consciente de simplicidade.
 
+### 7.1 Autorização por path (decidido no sub-plan #4)
+
+`GET /api/media/{*path}` não usa uma tabela de metadados própria para checar permissão — o path em si carrega a entidade dona (`character-sheets/{sheetId}/portrait-{guid}.ext` ou `journal-entries/{entryId}/{guid}.ext`). O endpoint faz o parse do tipo+id, carrega a entidade real (`CharacterSheet` ou `CharacterJournalEntry`) e reaplica exatamente a mesma checagem dono-ou-Mestre que os endpoints normais já usam — sem tabela nova, sem duplicar a lógica de autorização. Path traversal (`..`) é rejeitado explicitamente antes de qualquer lookup.
+
+`POST /api/media` é multipart (`file` + `entityType` [`CharacterSheetPortrait`|`JournalEntryImage`] + `entityId`) e **muda a entidade-alvo diretamente no servidor** — não é só "salva e devolve o path": para `CharacterSheetPortrait`, apaga o arquivo antigo de `PortraitImagePath` (se houver) e grava o novo path na ficha; para `JournalEntryImage`, adiciona o novo path em `ImagePaths` daquela entrada. O cliente nunca precisa de um PUT de acompanhamento só para "linkar" a imagem recém-enviada.
+
+Tipos aceitos: jpg/png/webp/**gif**, validados por assinatura de bytes (magic number), não só pela extensão do arquivo.
+
+### 7.2 Limites configuráveis (decidido no sub-plan #4)
+
+`MediaSettings` (bind igual a `JwtSettings`, seção `MediaSettings` no `appsettings.json`/env): `MaxFileSizeMb` e `MaxImagesPerJournalEntry`, ambos configuráveis via `.env` (`MEDIA_MAX_FILE_SIZE_MB`, `MEDIA_MAX_IMAGES_PER_ENTRY`) — **`0` = sem limite**. Sem limite embutido no código; quem hospeda decide o teto.
+
 ## 8. UI
 
 **Lado Mestre (novo):**
@@ -288,6 +306,8 @@ Registrado aqui deliberadamente: optamos por disco local em vez de object storag
 - `/campaigns/{id}/character` — minha ficha (ou aviso de que aguardo o Mestre conceder uma)
 
 **Ficha de personagem**: uma página, módulos em **abas** — `Identidade | Atributos | Combate | Perícias | Talentos | Magias | Técnicas | Equipamento | Provação | Registro da Guilda | Diário`. Reaproveita os padrões visuais existentes (`page-content`, `page-heading`, `ledger-table`). Diário com lista cronológica de entradas + upload de imagem.
+
+**Diário e retrato (sub-plan #4):** a aba Diário só mostra os controles de escrita (criar/editar/apagar entrada) quando quem está vendo é o **dono** da ficha — diferente de `CanEditStatus` (que só controla `IsDead`/`IsRetired`), o componente `CharacterSheetEditor` ganha um parâmetro `IsOwner` próprio para isso; um Mestre vendo a ficha de um jogador enxerga o Diário, mas só em modo leitura. O campo de retrato no cabeçalho, hoje um `<input>` de texto puro (path/URL), vira um upload de arquivo de verdade com preview, usando o mesmo fluxo de `/api/media`.
 
 ## 9. Testes
 
@@ -308,6 +328,12 @@ Registrado aqui deliberadamente: optamos por disco local em vez de object storag
 - `CatalogEntry.CampaignId` ganha FK real para `Campaign.Id` com `ON DELETE CASCADE` (decidido no sub-plan #3) — antes era `Guid?` solto, seguindo a convenção de referência fraca do resto do repo; decidimos reforçar aqui por já estar mexendo na tabela.
 - Sub-plan #3 escopo: `CharacterSheet` (entidade + fluxo de concessão) + `CharacterStatsCalculator` + as 9 abas que não são Diário (#4) nem Notificações (#5) — um único plano SDD, direto na `main`, mesmo padrão dos sub-plans #1 e #2.
 - `Equipment[]` ganha `IsEquipped` (bool) e `LinkedSkillEntryId` (Guid?) — lacuna do desenho original: o motor de cálculo (§5) precisa saber quais itens estão equipados (só esses alimentam Combate) e qual Perícia rege cada arma (o catálogo não amarra item↔perícia; o jogador escolhe manualmente por item equipado).
+- Sub-plan #4 escopo (decidido 2026-08-05): `CharacterJournalEntry` (CRUD completo, dono-only) + `IFileStorageService`/disco local + a aba Diário + upload de retrato real. Autorização de mídia por path (sem tabela de metadados), decidido para não duplicar lógica de autorização já existente em `CharacterSheet`/`CharacterJournalEntry` (ver §7.1).
+- `CharacterJournalEntry.CharacterSheetId` ganha FK real com `ON DELETE CASCADE` (ver §4.4) — exceção deliberada à convenção de referência fraca do repo, justificada por ser tabela nova, não retrofit.
+- Limites de upload (tamanho de arquivo, imagens por entrada) são configuráveis via `.env`, com `0` = sem limite — não hardcoded (ver §7.2). Tipos aceitos: jpg/png/webp/gif, validados por magic bytes.
+- Upload de retrato substitui o arquivo antigo (apaga do disco antes de gravar o novo) — não deixa órfãos.
+- Edição de entrada de diário é completa (texto + imagens juntos), não só-texto — uma única forma de editar, sem endpoint separado para adicionar/remover imagem de uma entrada existente.
+- Lista de diário é sempre mais recente primeiro.
 
 ## 11. Próximos passos (fora desta spec)
 
