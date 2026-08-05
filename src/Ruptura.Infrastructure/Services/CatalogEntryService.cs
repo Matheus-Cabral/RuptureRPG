@@ -29,7 +29,7 @@ public class CatalogEntryService(
         if (!isMember)
             return Result.Failure<IEnumerable<CatalogEntryResponse>>(ErrorCodes.Catalog.NotFound);
 
-        var entries = await catalogRepo.GetByTypeAsync(parsedType, campaignId, ct);
+        var entries = await catalogRepo.GetByTypeAsync(parsedType, campaignId, includeArchived: false, ct);
         return Result.Success(entries.Select(MapToResponse));
     }
 

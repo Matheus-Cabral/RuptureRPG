@@ -46,7 +46,7 @@ public class CatalogEntryServiceTests
 
         _campaignRepoMock.Setup(r => r.GetByIdAsync(campaignId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(campaign);
-        _catalogRepoMock.Setup(r => r.GetByTypeAsync(CatalogEntryType.Talent, campaignId, It.IsAny<CancellationToken>()))
+        _catalogRepoMock.Setup(r => r.GetByTypeAsync(CatalogEntryType.Talent, campaignId, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(entries);
 
         var result = await _sut.GetByTypeAsync(gmId, "Talent", campaignId);
@@ -68,7 +68,7 @@ public class CatalogEntryServiceTests
             .ReturnsAsync(campaign);
         _membershipRepoMock.Setup(r => r.ExistsAsync(campaignId, playerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
-        _catalogRepoMock.Setup(r => r.GetByTypeAsync(CatalogEntryType.Skill, campaignId, It.IsAny<CancellationToken>()))
+        _catalogRepoMock.Setup(r => r.GetByTypeAsync(CatalogEntryType.Skill, campaignId, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
 
         var result = await _sut.GetByTypeAsync(playerId, "Skill", campaignId);

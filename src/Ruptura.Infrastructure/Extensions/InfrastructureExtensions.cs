@@ -61,6 +61,7 @@ public static class InfrastructureExtensions
         services.AddScoped<ICampaignRepository, CampaignRepository>();
         services.AddScoped<ICampaignMembershipRepository, CampaignMembershipRepository>();
         services.AddScoped<ICatalogEntryRepository, CatalogEntryRepository>();
+        services.AddScoped<ICharacterSheetRepository, CharacterSheetRepository>();
 
         // Validators
         services.AddScoped<IValidator<LoginRequest>, LoginRequestValidator>();
