@@ -45,8 +45,17 @@ public class CharacterSheetService(
             UpdatedAt = DateTime.UtcNow
         };
 
-        await sheetRepo.AddAsync(sheet, ct);
-        await sheetRepo.SaveChangesAsync(ct);
+        try
+        {
+            await sheetRepo.AddAsync(sheet, ct);
+            await sheetRepo.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException)
+        {
+            // Only the alive-per-owner-per-campaign partial unique index is on this table,
+            // so any DbUpdateException on this save path means that race — see design spec §4.1.
+            return Result.Failure<CharacterSheetResponse>(ErrorCodes.CharacterSheet.AlreadyHasAliveCharacter);
+        }
 
         return Result.Success(await MapToResponseAsync(sheet, ct));
     }

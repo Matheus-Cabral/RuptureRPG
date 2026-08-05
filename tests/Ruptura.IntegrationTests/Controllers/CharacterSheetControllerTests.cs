@@ -132,4 +132,54 @@ public class CharacterSheetControllerTests(IntegrationTestFactory factory)
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
+
+    [Fact]
+    public async Task Grant_TwoSimultaneousGrantsForTheSamePlayer_OnlyOneSucceeds()
+    {
+        var (client, campaign, playerId, _, gmToken) = await SetUpCampaignWithMemberAsync();
+        AuthHelper.SetBearerToken(client, gmToken);
+
+        var request = () => client.PostAsJsonAsync($"api/campaigns/{campaign.Id}/character-sheets",
+            new GrantCharacterSheetRequest { PlayerId = playerId, CharacterName = "Race Condition" });
+
+        var results = await Task.WhenAll(request(), request());
+
+        results.Count(r => r.StatusCode == HttpStatusCode.Created).Should().Be(1);
+        results.Count(r => r.StatusCode == HttpStatusCode.BadRequest).Should().Be(1);
+    }
+
+    [Fact]
+    public async Task ArchivedHomebrewCatalogEntry_StillResolvesOnASheetThatReferencesIt()
+    {
+        var (client, campaign, playerId, playerToken, gmToken) = await SetUpCampaignWithMemberAsync();
+        AuthHelper.SetBearerToken(client, gmToken);
+
+        var talentResponse = await client.PostAsJsonAsync("api/catalog", new Ruptura.Shared.Catalog.CreateCatalogEntryRequest
+        {
+            CampaignId = campaign.Id, Type = "Talent", Name = "Soon To Be Retired",
+            DataJson = """{"Category":"Combate","Effect":"x","PowerTier":"menor"}"""
+        });
+        var talent = (await talentResponse.Content.ReadFromJsonAsync<ApiResponse<Ruptura.Shared.Catalog.CatalogEntryResponse>>())!.Data!;
+
+        var grantResponse = await client.PostAsJsonAsync($"api/campaigns/{campaign.Id}/character-sheets",
+            new GrantCharacterSheetRequest { PlayerId = playerId, CharacterName = "Sir Aldric" });
+        var sheet = (await grantResponse.Content.ReadFromJsonAsync<ApiResponse<CharacterSheetResponse>>())!.Data!;
+
+        sheet.Data.Talents.Add(new Ruptura.Shared.CharacterSheets.CharacterCatalogRefEntry { CatalogEntryId = talent.Id });
+        var putResponse = await client.PutAsJsonAsync($"api/character-sheets/{sheet.Id}", new UpdateCharacterSheetRequest
+        {
+            CharacterName = sheet.CharacterName,
+            DataJson = System.Text.Json.JsonSerializer.Serialize(sheet.Data)
+        });
+        putResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // GM archives the homebrew talent (Task 9's soft-delete).
+        await client.DeleteAsync($"api/catalog/{talent.Id}");
+
+        // The character sheet still resolves the reference — no 500, NP still includes it.
+        var getResponse = await client.GetAsync($"api/character-sheets/{sheet.Id}");
+        getResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var reread = (await getResponse.Content.ReadFromJsonAsync<ApiResponse<CharacterSheetResponse>>())!.Data!;
+        reread.Data.Talents.Should().ContainSingle(t => t.CatalogEntryId == talent.Id);
+    }
 }
