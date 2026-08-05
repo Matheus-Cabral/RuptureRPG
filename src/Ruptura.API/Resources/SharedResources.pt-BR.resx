@@ -55,6 +55,14 @@
   <data name="Catalog.Updated"><value>Item de catálogo atualizado com sucesso.</value></data>
   <data name="Catalog.Deleted"><value>Item de catálogo apagado com sucesso.</value></data>
 
+  <!-- CharacterSheet -->
+  <data name="CharacterSheet.NotFound"><value>Ficha de personagem não encontrada.</value></data>
+  <data name="CharacterSheet.PlayerNotMember"><value>Este jogador não é membro da campanha.</value></data>
+  <data name="CharacterSheet.AlreadyHasAliveCharacter"><value>Este jogador já possui um personagem vivo nesta campanha.</value></data>
+  <data name="CharacterSheet.OnlyGameMasterCanChangeStatus"><value>Somente o Mestre pode marcar um personagem como morto ou aposentado.</value></data>
+  <data name="CharacterSheet.Granted"><value>Ficha de personagem concedida com sucesso.</value></data>
+  <data name="CharacterSheet.Updated"><value>Ficha de personagem atualizada com sucesso.</value></data>
+
   <!-- Generic -->
   <data name="Error.Unexpected"><value>Ocorreu um erro inesperado. Por favor, tente novamente mais tarde.</value></data>
   <data name="Error.Forbidden"><value>Você não tem permissão para realizar esta ação.</value></data>

@@ -55,6 +55,14 @@
   <data name="Catalog.Updated"><value>Catalog entry updated successfully.</value></data>
   <data name="Catalog.Deleted"><value>Catalog entry deleted successfully.</value></data>
 
+  <!-- CharacterSheet -->
+  <data name="CharacterSheet.NotFound"><value>Character sheet not found.</value></data>
+  <data name="CharacterSheet.PlayerNotMember"><value>This player is not a member of the campaign.</value></data>
+  <data name="CharacterSheet.AlreadyHasAliveCharacter"><value>This player already has a living character in this campaign.</value></data>
+  <data name="CharacterSheet.OnlyGameMasterCanChangeStatus"><value>Only the Game Master can mark a character as dead or retired.</value></data>
+  <data name="CharacterSheet.Granted"><value>Character sheet granted successfully.</value></data>
+  <data name="CharacterSheet.Updated"><value>Character sheet updated successfully.</value></data>
+
   <!-- Generic -->
   <data name="Error.Unexpected"><value>An unexpected error occurred. Please try again later.</value></data>
   <data name="Error.Forbidden"><value>You do not have permission to perform this action.</value></data>
