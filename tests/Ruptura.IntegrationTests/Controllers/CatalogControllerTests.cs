@@ -176,4 +176,92 @@ public class CatalogControllerTests(IntegrationTestFactory factory)
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
+
+    [Fact]
+    public async Task GetByType_AsCampaignMember_Returns200()
+    {
+        var (gmClient, campaignId) = await SetupGameMasterWithCampaignAsync();
+
+        var inviteResponse = await gmClient.PostAsync("api/invites", null);
+        var invite = (await inviteResponse.Content
+            .ReadFromJsonAsync<ApiResponse<Ruptura.Shared.Invites.InviteCodeResponse>>())!.Data!;
+        var player = await AuthHelper.RegisterPlayerAsync(factory.CreateClient(), invite.Code, Faker.Internet.Email());
+
+        var assignResponse = await gmClient.PostAsJsonAsync($"api/campaigns/{campaignId}/members", new AssignMemberRequest
+        {
+            PlayerId = player.User.Id
+        });
+        assignResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var playerClient = factory.CreateClient();
+        AuthHelper.SetBearerToken(playerClient, player.AccessToken);
+
+        var response = await playerClient.GetAsync($"api/catalog?type=Origin&campaignId={campaignId}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<ApiResponse<IEnumerable<CatalogEntryResponse>>>();
+        body!.Data.Should().NotBeEmpty();
+        body.Data.Should().OnlyContain(e => e.Type == "Origin");
+    }
+
+    [Fact]
+    public async Task GetByType_HomebrewFromOtherCampaign_IsNotVisible()
+    {
+        var client = factory.CreateClient();
+        var gm = await AuthHelper.RegisterGameMasterAsync(client, Faker.Internet.Email());
+        AuthHelper.SetBearerToken(client, gm.AccessToken);
+
+        var campaignAResponse = await client.PostAsJsonAsync("api/campaigns", new CreateCampaignRequest
+        {
+            Name = "Campaign A"
+        });
+        var campaignA = (await campaignAResponse.Content
+            .ReadFromJsonAsync<ApiResponse<CampaignResponse>>())!.Data!;
+
+        var campaignBResponse = await client.PostAsJsonAsync("api/campaigns", new CreateCampaignRequest
+        {
+            Name = "Campaign B"
+        });
+        var campaignB = (await campaignBResponse.Content
+            .ReadFromJsonAsync<ApiResponse<CampaignResponse>>())!.Data!;
+
+        const string homebrewName = "Talento Exclusivo da Campanha A";
+        var createResponse = await client.PostAsJsonAsync("api/catalog", new CreateCatalogEntryRequest
+        {
+            CampaignId = campaignA.Id,
+            Type = "Talent",
+            Name = homebrewName,
+            DataJson = "{\"Category\":\"Combate\",\"Effect\":\"teste\",\"PowerTier\":\"menor\"}"
+        });
+        createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var response = await client.GetAsync($"api/catalog?type=Talent&campaignId={campaignB.Id}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<ApiResponse<IEnumerable<CatalogEntryResponse>>>();
+        body!.Data.Should().NotContain(t => t.Name == homebrewName);
+    }
+
+    [Fact]
+    public async Task WriteEndpoints_AsPlayer_PutAndDeleteReturn403()
+    {
+        var (gmClient, _) = await SetupGameMasterWithCampaignAsync();
+
+        var inviteResponse = await gmClient.PostAsync("api/invites", null);
+        var invite = (await inviteResponse.Content
+            .ReadFromJsonAsync<ApiResponse<Ruptura.Shared.Invites.InviteCodeResponse>>())!.Data!;
+        var player = await AuthHelper.RegisterPlayerAsync(factory.CreateClient(), invite.Code, Faker.Internet.Email());
+
+        var playerClient = factory.CreateClient();
+        AuthHelper.SetBearerToken(playerClient, player.AccessToken);
+
+        var putResponse = await playerClient.PutAsJsonAsync($"api/catalog/{Guid.NewGuid()}", new UpdateCatalogEntryRequest
+        {
+            Name = "X", DataJson = "{}"
+        });
+        putResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+
+        var deleteResponse = await playerClient.DeleteAsync($"api/catalog/{Guid.NewGuid()}");
+        deleteResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
 }

@@ -124,8 +124,17 @@
     private async Task LoadAsync()
     {
         _loading = true;
+        _errorMessage = null;
         var result = await CatalogService.GetByTypeAsync(_selectedType, CampaignId);
-        _entries = result?.Data?.ToList() ?? [];
+        if (result is null)
+        {
+            _errorMessage = L["Common.Error"];
+            _entries = [];
+        }
+        else
+        {
+            _entries = result.Data?.ToList() ?? [];
+        }
         _loading = false;
     }
 

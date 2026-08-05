@@ -17,7 +17,7 @@ public class CatalogEntryService(
         Guid campaignId,
         CancellationToken ct = default)
     {
-        if (!Enum.TryParse<CatalogEntryType>(type, out var parsedType))
+        if (!Enum.TryParse<CatalogEntryType>(type, out var parsedType) || !Enum.IsDefined(parsedType))
             return Result.Failure<IEnumerable<CatalogEntryResponse>>(ErrorCodes.Catalog.InvalidType);
 
         var campaign = await campaignRepo.GetByIdAsync(campaignId, ct);
@@ -38,14 +38,15 @@ public class CatalogEntryService(
         CreateCatalogEntryRequest request,
         CancellationToken ct = default)
     {
-        if (!Enum.TryParse<CatalogEntryType>(request.Type, out var parsedType))
+        if (!Enum.TryParse<CatalogEntryType>(request.Type, out var parsedType) || !Enum.IsDefined(parsedType))
             return Result.Failure<CatalogEntryResponse>(ErrorCodes.Catalog.InvalidType);
 
         var campaign = await campaignRepo.GetByIdAsync(request.CampaignId, ct);
         if (campaign is null || campaign.GameMasterId != gameMasterId)
             return Result.Failure<CatalogEntryResponse>(ErrorCodes.Catalog.NotFound);
 
-        if (await catalogRepo.ExistsAsync(parsedType, request.CampaignId, request.Name, ct))
+        if (await catalogRepo.ExistsAsync(parsedType, request.CampaignId, request.Name, ct)
+            || await catalogRepo.ExistsAsync(parsedType, null, request.Name, ct))
             return Result.Failure<CatalogEntryResponse>(ErrorCodes.Catalog.AlreadyExists);
 
         var entry = new CatalogEntry
@@ -84,7 +85,8 @@ public class CatalogEntryService(
             return Result.Failure<CatalogEntryResponse>(ErrorCodes.Catalog.NotFound);
 
         if (!string.Equals(entry.Name, request.Name, StringComparison.Ordinal)
-            && await catalogRepo.ExistsAsync(entry.Type, entry.CampaignId, request.Name, ct))
+            && (await catalogRepo.ExistsAsync(entry.Type, entry.CampaignId, request.Name, ct)
+                || await catalogRepo.ExistsAsync(entry.Type, null, request.Name, ct)))
             return Result.Failure<CatalogEntryResponse>(ErrorCodes.Catalog.AlreadyExists);
 
         entry.Name = request.Name;

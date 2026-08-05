@@ -13,7 +13,7 @@ public class CreateCatalogEntryRequestValidator : AbstractValidator<CreateCatalo
 
         RuleFor(x => x.Type)
             .NotEmpty()
-            .Must(t => Enum.TryParse<CatalogEntryType>(t, out _))
+            .Must(t => Enum.TryParse<CatalogEntryType>(t, out var v) && Enum.IsDefined(v))
             .WithMessage("Invalid catalog entry type.");
 
         RuleFor(x => x.Name)

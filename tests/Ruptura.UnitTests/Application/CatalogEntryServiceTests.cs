@@ -192,6 +192,28 @@ public class CatalogEntryServiceTests
         result.Error.Should().Be(ErrorCodes.Catalog.AlreadyExists);
     }
 
+    [Fact]
+    public async Task CreateAsync_WhenNameCollidesWithOfficialEntry_ReturnsAlreadyExists()
+    {
+        var gmId = Guid.NewGuid();
+        var campaignId = Guid.NewGuid();
+        var campaign = new Campaign { Id = campaignId, GameMasterId = gmId };
+        _campaignRepoMock.Setup(r => r.GetByIdAsync(campaignId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(campaign);
+        _catalogRepoMock.Setup(r => r.ExistsAsync(CatalogEntryType.Talent, campaignId, "Golpe Certeiro", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+        _catalogRepoMock.Setup(r => r.ExistsAsync(CatalogEntryType.Talent, null, "Golpe Certeiro", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var result = await _sut.CreateAsync(gmId, new CreateCatalogEntryRequest
+        {
+            CampaignId = campaignId, Type = "Talent", Name = "Golpe Certeiro", DataJson = "{}"
+        });
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(ErrorCodes.Catalog.AlreadyExists);
+    }
+
     // ── UpdateAsync / DeleteAsync ────────────────────────────────────────────
 
     [Fact]
