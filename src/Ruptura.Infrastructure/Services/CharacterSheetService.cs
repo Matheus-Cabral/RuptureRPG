@@ -63,16 +63,41 @@ public class CharacterSheetService(
     public async Task<Result<CharacterSheetResponse>> GetAsync(
         Guid callerId, Guid sheetId, CancellationToken ct = default)
     {
+        var authorized = await AuthorizeAccessAsync(callerId, sheetId, ct);
+        if (authorized.IsFailure)
+            return Result.Failure<CharacterSheetResponse>(authorized.Error!);
+
+        return Result.Success(await MapToResponseAsync(authorized.Value!, ct));
+    }
+
+    public async Task<Result<CharacterSheet>> AuthorizeAccessAsync(
+        Guid callerId, Guid sheetId, CancellationToken ct = default)
+    {
         var sheet = await sheetRepo.GetByIdAsync(sheetId, ct);
         if (sheet is null)
-            return Result.Failure<CharacterSheetResponse>(ErrorCodes.CharacterSheet.NotFound);
+            return Result.Failure<CharacterSheet>(ErrorCodes.CharacterSheet.NotFound);
 
         var campaign = await campaignRepo.GetByIdAsync(sheet.CampaignId, ct);
         var authorized = sheet.OwnerId == callerId || campaign?.GameMasterId == callerId;
         if (!authorized)
-            return Result.Failure<CharacterSheetResponse>(ErrorCodes.CharacterSheet.NotFound);
+            return Result.Failure<CharacterSheet>(ErrorCodes.CharacterSheet.NotFound);
 
-        return Result.Success(await MapToResponseAsync(sheet, ct));
+        return Result.Success(sheet);
+    }
+
+    public async Task<Result> SetPortraitPathAsync(Guid sheetId, string? path, CancellationToken ct = default)
+    {
+        var sheet = await sheetRepo.GetByIdAsync(sheetId, ct);
+        if (sheet is null)
+            return Result.Failure(ErrorCodes.CharacterSheet.NotFound);
+
+        sheet.PortraitImagePath = path;
+        sheet.UpdatedAt = DateTime.UtcNow;
+
+        sheetRepo.Update(sheet);
+        await sheetRepo.SaveChangesAsync(ct);
+
+        return Result.Success();
     }
 
     public async Task<Result<IEnumerable<CharacterSheetResponse>>> GetByCampaignAsync(

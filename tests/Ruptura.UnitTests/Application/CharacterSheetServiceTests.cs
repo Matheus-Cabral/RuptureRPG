@@ -175,6 +175,53 @@ public class CharacterSheetServiceTests
         result.Error.Should().Be(ErrorCodes.CharacterSheet.NotFound);
     }
 
+    // ── AuthorizeAccessAsync ─────────────────────────────────────────────────
+
+    [Fact]
+    public async Task AuthorizeAccessAsync_AsOwner_Succeeds()
+    {
+        var ownerId = Guid.NewGuid();
+        var campaign = new Campaign { Id = Guid.NewGuid(), GameMasterId = Guid.NewGuid() };
+        var sheet = new CharacterSheet { Id = Guid.NewGuid(), OwnerId = ownerId, CampaignId = campaign.Id };
+        _sheetRepoMock.Setup(r => r.GetByIdAsync(sheet.Id, It.IsAny<CancellationToken>())).ReturnsAsync(sheet);
+        _campaignRepoMock.Setup(r => r.GetByIdAsync(campaign.Id, It.IsAny<CancellationToken>())).ReturnsAsync(campaign);
+
+        var result = await _sut.AuthorizeAccessAsync(ownerId, sheet.Id);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Id.Should().Be(sheet.Id);
+    }
+
+    [Fact]
+    public async Task AuthorizeAccessAsync_AsUnrelatedCaller_ReturnsNotFound()
+    {
+        var campaign = new Campaign { Id = Guid.NewGuid(), GameMasterId = Guid.NewGuid() };
+        var sheet = new CharacterSheet { Id = Guid.NewGuid(), OwnerId = Guid.NewGuid(), CampaignId = campaign.Id };
+        _sheetRepoMock.Setup(r => r.GetByIdAsync(sheet.Id, It.IsAny<CancellationToken>())).ReturnsAsync(sheet);
+        _campaignRepoMock.Setup(r => r.GetByIdAsync(campaign.Id, It.IsAny<CancellationToken>())).ReturnsAsync(campaign);
+
+        var result = await _sut.AuthorizeAccessAsync(Guid.NewGuid(), sheet.Id);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(ErrorCodes.CharacterSheet.NotFound);
+    }
+
+    // ── SetPortraitPathAsync ─────────────────────────────────────────────────
+
+    [Fact]
+    public async Task SetPortraitPathAsync_UpdatesThePortraitPath()
+    {
+        var sheet = new CharacterSheet { Id = Guid.NewGuid(), PortraitImagePath = "old.jpg" };
+        _sheetRepoMock.Setup(r => r.GetByIdAsync(sheet.Id, It.IsAny<CancellationToken>())).ReturnsAsync(sheet);
+        _sheetRepoMock.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+
+        var result = await _sut.SetPortraitPathAsync(sheet.Id, "new.jpg");
+
+        result.IsSuccess.Should().BeTrue();
+        sheet.PortraitImagePath.Should().Be("new.jpg");
+        _sheetRepoMock.Verify(r => r.Update(sheet), Times.Once);
+    }
+
     // ── GetByCampaignAsync ───────────────────────────────────────────────────
 
     [Fact]

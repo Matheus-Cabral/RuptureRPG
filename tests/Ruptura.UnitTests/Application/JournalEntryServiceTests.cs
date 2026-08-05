@@ -229,6 +229,37 @@ public class JournalEntryServiceTests
         result.Error.Should().Be(ErrorCodes.Journal.NotFound);
     }
 
+    // ── AppendImagePathAsync ─────────────────────────────────────────────────
+
+    [Fact]
+    public async Task AppendImagePathAsync_AddsThePathToTheEntrysImagePaths()
+    {
+        var entry = new CharacterJournalEntry
+        {
+            Id = Guid.NewGuid(), CharacterSheetId = Guid.NewGuid(), Text = "x", ImagePaths = ["existing.jpg"]
+        };
+        _journalRepoMock.Setup(r => r.GetByIdAsync(entry.Id, It.IsAny<CancellationToken>())).ReturnsAsync(entry);
+        _journalRepoMock.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+
+        var result = await _sut.AppendImagePathAsync(entry.Id, "new.jpg");
+
+        result.IsSuccess.Should().BeTrue();
+        entry.ImagePaths.Should().BeEquivalentTo(["existing.jpg", "new.jpg"]);
+        _journalRepoMock.Verify(r => r.Update(entry), Times.Once);
+    }
+
+    [Fact]
+    public async Task AppendImagePathAsync_WhenEntryDoesNotExist_ReturnsNotFound()
+    {
+        _journalRepoMock.Setup(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((CharacterJournalEntry?)null);
+
+        var result = await _sut.AppendImagePathAsync(Guid.NewGuid(), "x.jpg");
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(ErrorCodes.Journal.NotFound);
+    }
+
     // ── DeleteAsync ──────────────────────────────────────────────────────────
 
     [Fact]

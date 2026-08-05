@@ -129,8 +129,20 @@ public class JournalEntryService(
         return Result.Success();
     }
 
-    public Task<Result> AppendImagePathAsync(Guid entryId, string path, CancellationToken ct = default) =>
-        throw new NotImplementedException("Implemented in Task 6.");
+    public async Task<Result> AppendImagePathAsync(Guid entryId, string path, CancellationToken ct = default)
+    {
+        var entry = await journalRepo.GetByIdAsync(entryId, ct);
+        if (entry is null)
+            return Result.Failure(ErrorCodes.Journal.NotFound);
+
+        entry.ImagePaths = [.. entry.ImagePaths, path];
+        entry.UpdatedAt = DateTime.UtcNow;
+
+        journalRepo.Update(entry);
+        await journalRepo.SaveChangesAsync(ct);
+
+        return Result.Success();
+    }
 
     // ── Private helpers ───────────────────────────────────────────────────────
 
