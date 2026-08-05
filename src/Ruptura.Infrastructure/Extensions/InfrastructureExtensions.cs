@@ -47,10 +47,12 @@ public static class InfrastructureExtensions
 
         // Settings
         services.Configure<JwtSettings>(configuration.GetSection(nameof(JwtSettings)));
+        services.Configure<MediaSettings>(configuration.GetSection(nameof(MediaSettings)));
 
         // Core services
         services.AddSingleton<JwtService>();
         services.AddSingleton<ICharacterStatsCalculator, CharacterStatsCalculator>();
+        services.AddSingleton<IFileStorageService, LocalFileStorageService>();
 
         // Application services
         services.AddScoped<IAuthService, AuthService>();

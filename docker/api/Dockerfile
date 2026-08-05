@@ -15,6 +15,7 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
 
 RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
+RUN mkdir -p /app/media && chown -R appuser:appgroup /app/media
 USER appuser
 
 COPY --from=build --chown=appuser:appgroup /app/publish .
