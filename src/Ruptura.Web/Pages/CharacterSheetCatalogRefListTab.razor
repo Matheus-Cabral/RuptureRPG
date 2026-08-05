@@ -1,0 +1,59 @@
+@using Microsoft.Extensions.Localization
+@using Ruptura.Web.Resources
+@using Ruptura.Shared.CharacterSheets
+@using Ruptura.Shared.Catalog
+@inject IStringLocalizer<AppStrings> L
+@inject ICatalogClientService CatalogService
+
+<div class="ledger-table-wrap">
+    <table class="ledger-table">
+        <thead>
+            <tr><th>@L["Gm.CampaignDetail.Col.Name"]</th><th></th></tr>
+        </thead>
+        <tbody>
+            @foreach (var entry in Entries)
+            {
+                <tr>
+                    <td>@NameOf(entry.CatalogEntryId)</td>
+                    <td><button class="btn btn-outline-secondary btn-sm" @onclick="() => Entries.Remove(entry)">@L["Sheet.RefList.Remove"]</button></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<div style="display:flex;gap:.5rem;margin-top:1rem">
+    <select class="form-select" style="max-width:320px" @bind="_selectedId">
+        @foreach (var entry in Available)
+        {
+            <option value="@entry.Id">@entry.Name</option>
+        }
+    </select>
+    <button class="btn btn-primary btn-sm" @onclick="AddEntry" disabled="@(_selectedId == Guid.Empty)">@L["Sheet.RefList.Add"]</button>
+</div>
+
+@code {
+    [Parameter] public List<CharacterCatalogRefEntry> Entries { get; set; } = [];
+    [Parameter] public Guid CampaignId { get; set; }
+    [Parameter] public string CatalogType { get; set; } = string.Empty; // "Talent" | "Spell" | "Technique"
+
+    private List<CatalogEntryResponse> _all = [];
+    private Guid _selectedId;
+
+    private IEnumerable<CatalogEntryResponse> Available =>
+        _all.Where(e => Entries.All(x => x.CatalogEntryId != e.Id));
+
+    protected override async Task OnInitializedAsync()
+    {
+        _all = (await CatalogService.GetByTypeAsync(CatalogType, CampaignId))?.Data?.ToList() ?? [];
+    }
+
+    private string NameOf(Guid id) => _all.FirstOrDefault(e => e.Id == id)?.Name ?? id.ToString();
+
+    private void AddEntry()
+    {
+        if (_selectedId == Guid.Empty) return;
+        Entries.Add(new CharacterCatalogRefEntry { CatalogEntryId = _selectedId });
+        _selectedId = Guid.Empty;
+    }
+}

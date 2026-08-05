@@ -220,4 +220,11 @@
   <data name="Sheet.Skills.Points"><value>Pontos</value></data>
   <data name="Sheet.Skills.Grade"><value>Bônus de Grau</value></data>
   <data name="Sheet.Skills.Remove"><value>Remover</value></data>
+  <data name="Sheet.RefList.Add"><value>Adicionar</value></data>
+  <data name="Sheet.RefList.Remove"><value>Remover</value></data>
+  <data name="Sheet.Equipment.Quantity"><value>Qtd.</value></data>
+  <data name="Sheet.Equipment.Durability"><value>Durabilidade</value></data>
+  <data name="Sheet.Equipment.Equipped"><value>Equipado</value></data>
+  <data name="Sheet.Equipment.LinkedSkill"><value>Perícia Vinculada (só armas)</value></data>
+  <data name="Sheet.Equipment.NoneSkill"><value>— nenhuma —</value></data>
 </root>

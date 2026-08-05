@@ -85,6 +85,22 @@ else
         {
             <CharacterSheetSkillsTab Data="_data" Derived="_derived" CampaignId="CampaignId" />
         }
+        else if (_activeTab == "talents")
+        {
+            <CharacterSheetCatalogRefListTab Entries="_data.Talents" CampaignId="CampaignId" CatalogType="Talent" />
+        }
+        else if (_activeTab == "spells")
+        {
+            <CharacterSheetCatalogRefListTab Entries="_data.Spells" CampaignId="CampaignId" CatalogType="Spell" />
+        }
+        else if (_activeTab == "techniques")
+        {
+            <CharacterSheetCatalogRefListTab Entries="_data.Techniques" CampaignId="CampaignId" CatalogType="Technique" />
+        }
+        else if (_activeTab == "equipment")
+        {
+            <CharacterSheetEquipmentTab Data="_data" CampaignId="CampaignId" />
+        }
     </div>
 }
 
@@ -98,8 +114,12 @@ else
         ["identity"] = "Sheet.Tab.Identity",
         ["attributes"] = "Sheet.Tab.Attributes",
         ["combat"] = "Sheet.Tab.Combat",
-        ["skills"] = "Sheet.Tab.Skills"
-        // Tasks 16-17 add: talents, spells, techniques, equipment, trial, guildRegistry
+        ["skills"] = "Sheet.Tab.Skills",
+        ["talents"] = "Sheet.Tab.Talents",
+        ["spells"] = "Sheet.Tab.Spells",
+        ["techniques"] = "Sheet.Tab.Techniques",
+        ["equipment"] = "Sheet.Tab.Equipment"
+        // Task 17 adds: trial, guildRegistry
     };
 
     private bool _loading = true;

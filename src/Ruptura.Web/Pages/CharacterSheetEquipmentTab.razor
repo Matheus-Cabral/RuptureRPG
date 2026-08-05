@@ -1,0 +1,88 @@
+@using Microsoft.Extensions.Localization
+@using Ruptura.Web.Resources
+@using Ruptura.Shared.CharacterSheets
+@using Ruptura.Shared.Catalog
+@inject IStringLocalizer<AppStrings> L
+@inject ICatalogClientService CatalogService
+
+<div class="ledger-table-wrap">
+    <table class="ledger-table">
+        <thead>
+            <tr>
+                <th>@L["Gm.CampaignDetail.Col.Name"]</th>
+                <th>@L["Sheet.Equipment.Quantity"]</th>
+                <th>@L["Sheet.Equipment.Durability"]</th>
+                <th>@L["Sheet.Equipment.Equipped"]</th>
+                <th>@L["Sheet.Equipment.LinkedSkill"]</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Data.Equipment)
+            {
+                <tr>
+                    <td>@NameOf(item.CatalogEntryId)</td>
+                    <td style="width:80px">
+                        <input class="form-control form-control-sm" type="number" min="1"
+                               value="@item.Quantity" @onchange="e => item.Quantity = ParseInt(e.Value, 1)" />
+                    </td>
+                    <td style="width:100px">
+                        <input class="form-control form-control-sm" type="number" min="0"
+                               value="@item.DurabilityRemaining" @onchange="e => item.DurabilityRemaining = ParseInt(e.Value, 0)" />
+                    </td>
+                    <td><input type="checkbox" checked="@item.IsEquipped" @onchange="e => item.IsEquipped = (bool)(e.Value ?? false)" /></td>
+                    <td>
+                        <select class="form-select form-select-sm" value="@item.LinkedSkillEntryId"
+                                @onchange="e => item.LinkedSkillEntryId = ParseGuid(e.Value)">
+                            <option value="">@L["Sheet.Equipment.NoneSkill"]</option>
+                            @foreach (var skill in _skills)
+                            {
+                                <option value="@skill.CatalogEntryId">@SkillNameOf(skill.CatalogEntryId)</option>
+                            }
+                        </select>
+                    </td>
+                    <td><button class="btn btn-outline-secondary btn-sm" @onclick="() => Data.Equipment.Remove(item)">@L["Sheet.RefList.Remove"]</button></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<div style="display:flex;gap:.5rem;margin-top:1rem">
+    <select class="form-select" style="max-width:320px" @bind="_selectedId">
+        @foreach (var entry in _allItems)
+        {
+            <option value="@entry.Id">@entry.Name</option>
+        }
+    </select>
+    <button class="btn btn-primary btn-sm" @onclick="AddItem" disabled="@(_selectedId == Guid.Empty)">@L["Sheet.RefList.Add"]</button>
+</div>
+
+@code {
+    [Parameter] public CharacterSheetData Data { get; set; } = new();
+    [Parameter] public Guid CampaignId { get; set; }
+
+    private List<CatalogEntryResponse> _allItems = [];
+    private List<CharacterSkillEntry> _skills => Data.Skills;
+    private List<CatalogEntryResponse> _skillCatalog = [];
+    private Guid _selectedId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _allItems = (await CatalogService.GetByTypeAsync("EquipmentItem", CampaignId))?.Data?.ToList() ?? [];
+        _skillCatalog = (await CatalogService.GetByTypeAsync("Skill", CampaignId))?.Data?.ToList() ?? [];
+    }
+
+    private string NameOf(Guid id) => _allItems.FirstOrDefault(e => e.Id == id)?.Name ?? id.ToString();
+    private string SkillNameOf(Guid id) => _skillCatalog.FirstOrDefault(e => e.Id == id)?.Name ?? id.ToString();
+
+    private static int ParseInt(object? value, int fallback) => int.TryParse(value?.ToString(), out var v) ? v : fallback;
+    private static Guid? ParseGuid(object? value) => Guid.TryParse(value?.ToString(), out var id) ? id : null;
+
+    private void AddItem()
+    {
+        if (_selectedId == Guid.Empty) return;
+        Data.Equipment.Add(new CharacterEquipmentEntry { CatalogEntryId = _selectedId, Quantity = 1 });
+        _selectedId = Guid.Empty;
+    }
+}

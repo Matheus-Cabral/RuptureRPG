@@ -220,4 +220,11 @@
   <data name="Sheet.Skills.Points"><value>Points</value></data>
   <data name="Sheet.Skills.Grade"><value>Grade Bonus</value></data>
   <data name="Sheet.Skills.Remove"><value>Remove</value></data>
+  <data name="Sheet.RefList.Add"><value>Add</value></data>
+  <data name="Sheet.RefList.Remove"><value>Remove</value></data>
+  <data name="Sheet.Equipment.Quantity"><value>Qty.</value></data>
+  <data name="Sheet.Equipment.Durability"><value>Durability</value></data>
+  <data name="Sheet.Equipment.Equipped"><value>Equipped</value></data>
+  <data name="Sheet.Equipment.LinkedSkill"><value>Linked Skill (weapons only)</value></data>
+  <data name="Sheet.Equipment.NoneSkill"><value>— none —</value></data>
 </root>
