@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Ruptura.Application.Interfaces;
+using Ruptura.Application.Services;
 using Ruptura.Application.Validators.Auth;
 using Ruptura.Application.Validators.Catalog;
 using Ruptura.Application.Validators.Campaigns;
@@ -47,6 +48,7 @@ public static class InfrastructureExtensions
 
         // Core services
         services.AddSingleton<JwtService>();
+        services.AddSingleton<ICharacterStatsCalculator, CharacterStatsCalculator>();
 
         // Application services
         services.AddScoped<IAuthService, AuthService>();
