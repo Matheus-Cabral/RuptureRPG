@@ -150,4 +150,19 @@
   <data name="Gm.CampaignDetail.AssignPlayer"><value>Atribuir Jogador</value></data>
   <data name="Gm.CampaignDetail.NoAvailablePlayers"><value>Todos os jogadores do roster já são membros desta campanha.</value></data>
   <data name="Gm.CampaignDetail.SearchPlaceholder"><value>Buscar por nickname ou e-mail…</value></data>
+  <data name="Gm.CampaignDetail.ViewCatalog"><value>Catálogo</value></data>
+
+  <!-- Catálogo do Mestre -->
+  <data name="Gm.Catalog.Title"><value>Catálogo</value></data>
+  <data name="Gm.Catalog.TypeLabel"><value>Tipo</value></data>
+  <data name="Gm.Catalog.Official"><value>Oficial</value></data>
+  <data name="Gm.Catalog.Homebrew"><value>Homebrew</value></data>
+  <data name="Gm.Catalog.Empty"><value>Nenhum item deste tipo ainda.</value></data>
+  <data name="Gm.Catalog.NamePlaceholder"><value>Nome</value></data>
+  <data name="Gm.Catalog.DataJsonPlaceholder"><value>{ "Campo": "valor" }</value></data>
+  <data name="Gm.Catalog.Create"><value>Adicionar Item Homebrew</value></data>
+  <data name="Gm.Catalog.Edit"><value>Editar</value></data>
+  <data name="Gm.Catalog.Save"><value>Salvar</value></data>
+  <data name="Gm.Catalog.Cancel"><value>Cancelar</value></data>
+  <data name="Gm.Catalog.Delete"><value>Apagar</value></data>
 </root>

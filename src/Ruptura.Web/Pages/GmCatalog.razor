@@ -1,0 +1,189 @@
+@page "/gm/campaigns/{CampaignId:guid}/catalog"
+@attribute [Authorize(Roles = "GameMaster")]
+@using Microsoft.Extensions.Localization
+@using Ruptura.Web.Resources
+@using Ruptura.Shared.Catalog
+@inject IStringLocalizer<AppStrings> L
+@inject ICatalogClientService CatalogService
+
+<PageTitle>@L["Gm.Catalog.Title"] — RUPTURA</PageTitle>
+
+<div class="page-content">
+    <div class="page-heading">
+        <h1>@L["Gm.Catalog.Title"]</h1>
+    </div>
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <div class="alert-danger mb-4">@_errorMessage</div>
+    }
+
+    <div class="section-header">
+        <span class="section-title">@L["Gm.Catalog.TypeLabel"]</span>
+        <select class="form-select" style="width:220px" value="@_selectedType" @onchange="OnTypeChanged">
+            @foreach (var type in Types)
+            {
+                <option value="@type">@type</option>
+            }
+        </select>
+    </div>
+
+    @if (_loading)
+    {
+        <div class="ledger-empty">
+            <span class="spinner-border spinner-border-sm me-2"></span>@L["Common.Loading"]
+        </div>
+    }
+    else if (_entries.Count == 0)
+    {
+        <div class="ledger-empty">
+            <p>@L["Gm.Catalog.Empty"]</p>
+        </div>
+    }
+    else
+    {
+        <div class="ledger-table-wrap">
+            <table class="ledger-table">
+                <thead>
+                    <tr>
+                        <th>@L["Gm.CampaignDetail.Col.Name"]</th>
+                        <th>@L["Gm.Catalog.TypeLabel"]</th>
+                        <th>DataJson</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var entry in _entries)
+                    {
+                        <tr>
+                            <td>@entry.Name</td>
+                            <td>@(entry.IsGlobal ? L["Gm.Catalog.Official"] : L["Gm.Catalog.Homebrew"])</td>
+                            <td style="color:var(--text-muted);font-size:.75rem;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                                @entry.DataJson
+                            </td>
+                            <td>
+                                @if (!entry.IsGlobal)
+                                {
+                                    <button class="btn btn-outline-secondary btn-sm" @onclick="() => StartEdit(entry)">@L["Gm.Catalog.Edit"]</button>
+                                    <button class="btn btn-outline-secondary btn-sm" @onclick="() => DeleteAsync(entry.Id)">@L["Gm.Catalog.Delete"]</button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+
+    <div class="section-header" style="margin-top:2rem">
+        <span class="section-title">@(_editingId is null ? L["Gm.Catalog.Create"] : L["Gm.Catalog.Edit"])</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.75rem;max-width:480px">
+        <input class="form-control" placeholder="@L["Gm.Catalog.NamePlaceholder"]" @bind="_formName" @bind:event="oninput" />
+        <textarea class="form-control" rows="4" placeholder="@L["Gm.Catalog.DataJsonPlaceholder"]" @bind="_formDataJson" @bind:event="oninput"></textarea>
+        <div style="display:flex;gap:.5rem">
+            <button class="btn btn-primary btn-sm" @onclick="SaveAsync" disabled="@(_saving || string.IsNullOrWhiteSpace(_formName))">
+                @if (_saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                @(_editingId is null ? L["Gm.Catalog.Create"] : L["Gm.Catalog.Save"])
+            </button>
+            @if (_editingId is not null)
+            {
+                <button class="btn btn-outline-secondary btn-sm" @onclick="CancelEdit">@L["Gm.Catalog.Cancel"]</button>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public Guid CampaignId { get; set; }
+
+    private static readonly string[] Types =
+    [
+        "Origin", "Background", "Lineage", "Aptitude", "Talent",
+        "Skill", "Spell", "Technique", "EquipmentItem"
+    ];
+
+    private string _selectedType = Types[0];
+    private List<CatalogEntryResponse> _entries = [];
+    private bool _loading = true;
+    private bool _saving;
+    private Guid? _editingId;
+    private string _formName = string.Empty;
+    private string _formDataJson = "{}";
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task OnTypeChanged(ChangeEventArgs e)
+    {
+        _selectedType = e.Value?.ToString() ?? Types[0];
+        CancelEdit();
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        var result = await CatalogService.GetByTypeAsync(_selectedType, CampaignId);
+        _entries = result?.Data?.ToList() ?? [];
+        _loading = false;
+    }
+
+    private void StartEdit(CatalogEntryResponse entry)
+    {
+        _editingId = entry.Id;
+        _formName = entry.Name;
+        _formDataJson = entry.DataJson;
+    }
+
+    private void CancelEdit()
+    {
+        _editingId = null;
+        _formName = string.Empty;
+        _formDataJson = "{}";
+    }
+
+    private async Task SaveAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_formName)) return;
+
+        _saving = true;
+        _errorMessage = null;
+
+        var result = _editingId is null
+            ? await CatalogService.CreateAsync(new CreateCatalogEntryRequest
+            {
+                CampaignId = CampaignId, Type = _selectedType, Name = _formName, DataJson = _formDataJson
+            })
+            : await CatalogService.UpdateAsync(_editingId.Value, new UpdateCatalogEntryRequest
+            {
+                Name = _formName, DataJson = _formDataJson
+            });
+
+        if (result?.Data is not null)
+        {
+            CancelEdit();
+            await LoadAsync();
+        }
+        else
+        {
+            _errorMessage = result?.Message ?? L["Common.Error"];
+        }
+
+        _saving = false;
+    }
+
+    private async Task DeleteAsync(Guid id)
+    {
+        _errorMessage = null;
+        var result = await CatalogService.DeleteAsync(id);
+        if (result?.Success == true)
+        {
+            await LoadAsync();
+        }
+        else
+        {
+            _errorMessage = result?.Message ?? L["Common.Error"];
+        }
+    }
+}

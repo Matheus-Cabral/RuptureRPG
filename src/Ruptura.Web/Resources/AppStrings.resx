@@ -150,4 +150,19 @@
   <data name="Gm.CampaignDetail.AssignPlayer"><value>Assign Player</value></data>
   <data name="Gm.CampaignDetail.NoAvailablePlayers"><value>All roster players are already members of this campaign.</value></data>
   <data name="Gm.CampaignDetail.SearchPlaceholder"><value>Search by nickname or email…</value></data>
+  <data name="Gm.CampaignDetail.ViewCatalog"><value>Catalog</value></data>
+
+  <!-- GM Catalog -->
+  <data name="Gm.Catalog.Title"><value>Catalog</value></data>
+  <data name="Gm.Catalog.TypeLabel"><value>Type</value></data>
+  <data name="Gm.Catalog.Official"><value>Official</value></data>
+  <data name="Gm.Catalog.Homebrew"><value>Homebrew</value></data>
+  <data name="Gm.Catalog.Empty"><value>No entries of this type yet.</value></data>
+  <data name="Gm.Catalog.NamePlaceholder"><value>Name</value></data>
+  <data name="Gm.Catalog.DataJsonPlaceholder"><value>{ "Field": "value" }</value></data>
+  <data name="Gm.Catalog.Create"><value>Add Homebrew Entry</value></data>
+  <data name="Gm.Catalog.Edit"><value>Edit</value></data>
+  <data name="Gm.Catalog.Save"><value>Save</value></data>
+  <data name="Gm.Catalog.Cancel"><value>Cancel</value></data>
+  <data name="Gm.Catalog.Delete"><value>Delete</value></data>
 </root>
