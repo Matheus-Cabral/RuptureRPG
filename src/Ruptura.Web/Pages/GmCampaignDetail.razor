@@ -138,7 +138,7 @@
     @if (_members.Count > 0)
     {
         <div style="display:flex;gap:.5rem;margin-top:1rem;max-width:480px">
-            <select class="form-select" @bind="_selectedPlayerId">
+            <select class="form-select" @bind="_selectedGrantPlayerId">
                 <option value="@Guid.Empty">—</option>
                 @foreach (var member in _members)
                 {
@@ -148,7 +148,7 @@
             <input class="form-control" placeholder="@L["Gm.CampaignDetail.CharacterNamePlaceholder"]"
                    @bind="_newCharacterName" @bind:event="oninput" />
             <button class="btn btn-primary btn-sm" @onclick="GrantAsync"
-                    disabled="@(_granting || _selectedPlayerId == Guid.Empty || string.IsNullOrWhiteSpace(_newCharacterName))">
+                    disabled="@(_granting || _selectedGrantPlayerId == Guid.Empty || string.IsNullOrWhiteSpace(_newCharacterName))">
                 @if (_granting) { <span class="spinner-border spinner-border-sm me-1"></span> }
                 @L["Gm.CampaignDetail.GrantCharacter"]
             </button>
@@ -166,6 +166,7 @@
     private bool _assigning;
     private bool _showSuggestions;
     private Guid _selectedPlayerId;
+    private Guid _selectedGrantPlayerId;
     private string _playerSearch = string.Empty;
     private string _newCharacterName = string.Empty;
     private bool _granting;
@@ -239,18 +240,19 @@
 
     private async Task GrantAsync()
     {
-        if (_selectedPlayerId == Guid.Empty || string.IsNullOrWhiteSpace(_newCharacterName)) return;
+        if (_selectedGrantPlayerId == Guid.Empty || string.IsNullOrWhiteSpace(_newCharacterName)) return;
 
         _granting = true;
         _errorMessage = null;
 
         var result = await SheetService.GrantAsync(Id, new GrantCharacterSheetRequest
         {
-            PlayerId = _selectedPlayerId, CharacterName = _newCharacterName
+            PlayerId = _selectedGrantPlayerId, CharacterName = _newCharacterName
         });
 
         if (result?.Data is not null)
         {
+            _selectedGrantPlayerId = Guid.Empty;
             _newCharacterName = string.Empty;
             await LoadAsync();
         }

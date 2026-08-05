@@ -33,18 +33,26 @@ public class CharacterStatsCalculator : ICharacterStatsCalculator
         CharacterSheetData data,
         IReadOnlyDictionary<Guid, CatalogEntry> catalogEntries)
     {
+        // Defense-in-depth: tolerate a null module (e.g. `{"Skills":null}` written by a
+        // caller that bypassed the validator) by treating it as empty/default rather than
+        // throwing deep inside a LINQ chain below.
+        var skills = data.Skills ?? [];
+        var talents = data.Talents ?? [];
+        var equipment = data.Equipment ?? [];
+        var ranking = data.GuildRegistry?.Ranking ?? "Bronze";
+
         var attributeScores = GetAttributeScores(data.Attributes);
         var attributeModifiers = attributeScores.ToDictionary(kv => kv.Key, kv => kv.Value - 2);
         var attributeGradeBonuses = attributeScores.ToDictionary(kv => kv.Key, kv => kv.Value - 1);
 
-        var skillGradeBonuses = data.Skills.ToDictionary(s => s.CatalogEntryId, s => SkillGradeBonus(s.Points));
+        var skillGradeBonuses = skills.ToDictionary(s => s.CatalogEntryId, s => SkillGradeBonus(s.Points));
 
-        var rankingBonus = RankingHpBonus.GetValueOrDefault(data.GuildRegistry.Ranking, 0);
+        var rankingBonus = RankingHpBonus.GetValueOrDefault(ranking, 0);
         var maxHp = 10 + attributeScores["Vigor"] * 2 + rankingBonus;
         var movement = 4 + attributeModifiers["Vigor"];
         var initiative = attributeModifiers["Controle"];
 
-        var equipped = data.Equipment
+        var equipped = equipment
             .Where(e => e.IsEquipped)
             .Select(e => (Entry: e, Data: DeserializeEquipment(e.CatalogEntryId, catalogEntries)))
             .Where(x => x.Data is not null)
@@ -60,7 +68,7 @@ public class CharacterStatsCalculator : ICharacterStatsCalculator
             .Sum(x => x.Data!.ArmorDamageReduction ?? 0);
 
         var carryCapacity = attributeScores["Corpo"] * 5;
-        var currentWeight = data.Equipment.Sum(e =>
+        var currentWeight = equipment.Sum(e =>
             (DeserializeEquipment(e.CatalogEntryId, catalogEntries)?.Weight ?? 0) * e.Quantity);
 
         var weapons = equipped
@@ -77,8 +85,8 @@ public class CharacterStatsCalculator : ICharacterStatsCalculator
 
         var np = attributeGradeBonuses.Values.Sum()
             + skillGradeBonuses.Values.Sum()
-            + data.Talents.Sum(t => TalentNpWeightFor(t.CatalogEntryId, catalogEntries))
-            + data.Equipment.Sum(e => EquipmentNpWeightFor(e.CatalogEntryId, catalogEntries));
+            + talents.Sum(t => TalentNpWeightFor(t.CatalogEntryId, catalogEntries))
+            + equipment.Sum(e => EquipmentNpWeightFor(e.CatalogEntryId, catalogEntries));
 
         return new CharacterDerivedStats
         {
@@ -112,11 +120,15 @@ public class CharacterStatsCalculator : ICharacterStatsCalculator
 
         if (entry.LinkedSkillEntryId is { } skillId && catalogEntries.TryGetValue(skillId, out var skillEntry))
         {
-            var skillData = JsonSerializer.Deserialize<SkillCatalogData>(skillEntry.DataJson);
+            var skillData = DeserializeSkill(skillEntry);
             if (skillData is not null)
             {
                 var attributeName = NormalizeAttributeName(skillData.RelatedAttribute);
-                skillGrade = skillGradeBonuses.GetValueOrDefault(skillId);
+                // The skill may be linked but not (or no longer) present in the character's
+                // invested Skills[] — GetValueOrDefault's implicit int default (0) would
+                // silently read as "Básico" (0 points grade) instead of the correct
+                // "Sem Treinamento" (−2) grade for an uninvested skill. See design spec §5.
+                skillGrade = skillGradeBonuses.TryGetValue(skillId, out var grade) ? grade : SkillGradeBonus(0);
                 attributeGrade = attributeGradeBonuses.GetValueOrDefault(attributeName);
                 attributeModifier = attributeModifiers.GetValueOrDefault(attributeName);
             }
@@ -177,16 +189,19 @@ public class CharacterStatsCalculator : ICharacterStatsCalculator
         _ => -2
     };
 
+    private static SkillCatalogData? DeserializeSkill(CatalogEntry entry) =>
+        SafeDeserialize<SkillCatalogData>(entry.DataJson);
+
     private static EquipmentItemCatalogData? DeserializeEquipment(
         Guid id, IReadOnlyDictionary<Guid, CatalogEntry> catalogEntries) =>
         catalogEntries.TryGetValue(id, out var entry)
-            ? JsonSerializer.Deserialize<EquipmentItemCatalogData>(entry.DataJson)
+            ? SafeDeserialize<EquipmentItemCatalogData>(entry.DataJson)
             : null;
 
     private static int TalentNpWeightFor(Guid id, IReadOnlyDictionary<Guid, CatalogEntry> catalogEntries)
     {
         if (!catalogEntries.TryGetValue(id, out var entry)) return 0;
-        var data = JsonSerializer.Deserialize<TalentCatalogData>(entry.DataJson);
+        var data = SafeDeserialize<TalentCatalogData>(entry.DataJson);
         return data is null ? 0 : TalentNpWeight.GetValueOrDefault(data.PowerTier, 0);
     }
 
@@ -194,5 +209,22 @@ public class CharacterStatsCalculator : ICharacterStatsCalculator
     {
         var data = DeserializeEquipment(id, catalogEntries);
         return data is null ? 0 : EquipmentNpWeight.GetValueOrDefault(data.Rarity, 0);
+    }
+
+    // A GM can save malformed homebrew DataJson via the raw-textarea catalog admin page
+    // (e.g. a string where a number is expected). Deserialization failure must never bubble
+    // up and 500 every subsequent read of every character sheet that references the entry —
+    // treat it the same as a missing/absent catalog entry (null), which every call site above
+    // already handles via `?.` / `?? 0` patterns.
+    private static T? SafeDeserialize<T>(string json) where T : class
+    {
+        try
+        {
+            return JsonSerializer.Deserialize<T>(json);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 }

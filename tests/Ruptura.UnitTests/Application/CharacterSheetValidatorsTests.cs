@@ -43,4 +43,18 @@ public class CharacterSheetValidatorsTests
         var result = _updateValidator.Validate(new UpdateCharacterSheetRequest { CharacterName = "Aldric", DataJson = "{}" });
         result.IsValid.Should().BeTrue();
     }
+
+    // ── Finding 1b: valid-JSON-but-wrong-shape DataJson must be rejected at save time ──
+
+    [Theory]
+    [InlineData("[]")]
+    [InlineData("123")]
+    [InlineData("""{"Skills":null}""")]
+    [InlineData("""{"GuildRegistry":{"Ranking":null}}""")]
+    public void UpdateValidator_WithJsonThatDoesNotDeserializeToValidCharacterSheetData_Fails(string dataJson)
+    {
+        var result = _updateValidator.Validate(new UpdateCharacterSheetRequest { CharacterName = "Aldric", DataJson = dataJson });
+
+        result.IsValid.Should().BeFalse();
+    }
 }

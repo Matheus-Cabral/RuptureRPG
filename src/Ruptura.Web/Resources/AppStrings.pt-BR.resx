@@ -232,6 +232,9 @@
   <data name="Sheet.Skills.Remove"><value>Remover</value></data>
   <data name="Sheet.RefList.Add"><value>Adicionar</value></data>
   <data name="Sheet.RefList.Remove"><value>Remover</value></data>
+  <data name="Sheet.Equipment.CarryCapacity"><value>Capacidade de Carga</value></data>
+  <data name="Sheet.Equipment.CurrentWeight"><value>Peso Atual</value></data>
+  <data name="Sheet.Equipment.PactCoins"><value>Moedas de Pacto</value></data>
   <data name="Sheet.Equipment.Quantity"><value>Qtd.</value></data>
   <data name="Sheet.Equipment.Durability"><value>Durabilidade</value></data>
   <data name="Sheet.Equipment.Equipped"><value>Equipado</value></data>

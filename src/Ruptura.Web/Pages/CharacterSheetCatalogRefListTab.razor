@@ -37,15 +37,19 @@
     [Parameter] public Guid CampaignId { get; set; }
     [Parameter] public string CatalogType { get; set; } = string.Empty; // "Talent" | "Spell" | "Technique"
 
+    // Full list (including archived) — used for resolving the NAME of an already-referenced
+    // entry, so an archived-but-referenced entry still shows its real name instead of a raw GUID.
     private List<CatalogEntryResponse> _all = [];
     private Guid _selectedId;
 
+    // A user must never be able to newly add an archived entry — only offer non-archived
+    // entries that aren't already referenced.
     private IEnumerable<CatalogEntryResponse> Available =>
-        _all.Where(e => Entries.All(x => x.CatalogEntryId != e.Id));
+        _all.Where(e => !e.IsArchived && Entries.All(x => x.CatalogEntryId != e.Id));
 
     protected override async Task OnInitializedAsync()
     {
-        _all = (await CatalogService.GetByTypeAsync(CatalogType, CampaignId))?.Data?.ToList() ?? [];
+        _all = (await CatalogService.GetByTypeAsync(CatalogType, CampaignId, includeArchived: true))?.Data?.ToList() ?? [];
     }
 
     private string NameOf(Guid id) => _all.FirstOrDefault(e => e.Id == id)?.Name ?? id.ToString();

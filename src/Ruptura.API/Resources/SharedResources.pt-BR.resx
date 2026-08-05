@@ -51,6 +51,7 @@
   <data name="Catalog.InvalidType"><value>Tipo de item de catálogo inválido.</value></data>
   <data name="Catalog.AlreadyExists"><value>Já existe um item com este nome para este tipo.</value></data>
   <data name="Catalog.CannotModifyGlobalEntry"><value>Itens oficiais do catálogo não podem ser modificados.</value></data>
+  <data name="Catalog.AlreadyArchived"><value>Esta entrada do catálogo já foi arquivada.</value></data>
   <data name="Catalog.Created"><value>Item de catálogo criado com sucesso.</value></data>
   <data name="Catalog.Updated"><value>Item de catálogo atualizado com sucesso.</value></data>
   <data name="Catalog.Deleted"><value>Item de catálogo apagado com sucesso.</value></data>

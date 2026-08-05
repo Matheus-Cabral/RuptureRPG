@@ -262,4 +262,114 @@ public class CharacterStatsCalculatorTests
 
         result.Np.Should().Be(8 + 1 + 5 + 7);
     }
+
+    // ── Finding 2: untrained-skill grade drift ──────────────────────────────
+
+    [Fact]
+    public void Calculate_WeaponLinkedToUninvestedSkill_UsesUntrainedGradeBonus()
+    {
+        var skillId = Guid.NewGuid();
+        var weaponId = Guid.NewGuid();
+        var catalog = new Dictionary<Guid, CatalogEntry>
+        {
+            [skillId] = Skill(skillId, "Controle"),
+            [weaponId] = Equipment(weaponId, "arma", "Comum", diceCategory: "Leve")
+        };
+
+        // Case A: weapon links to a skill the character never invested in — not present in
+        // Skills[] at all (e.g. dangling link left after the skill was removed).
+        var dataNotInvested = new CharacterSheetData
+        {
+            Attributes = new CharacterAttributes { Controle = 4 }, // grade bonus +3
+            Equipment =
+            [
+                new CharacterEquipmentEntry
+                {
+                    CatalogEntryId = weaponId, IsEquipped = true, LinkedSkillEntryId = skillId
+                }
+            ]
+        };
+
+        // Case B: same skill, explicitly invested with 0 points — GDD's "Sem Treinamento" (−2).
+        var dataZeroPoints = new CharacterSheetData
+        {
+            Attributes = new CharacterAttributes { Controle = 4 },
+            Skills = [new CharacterSkillEntry { CatalogEntryId = skillId, Points = 0 }],
+            Equipment =
+            [
+                new CharacterEquipmentEntry
+                {
+                    CatalogEntryId = weaponId, IsEquipped = true, LinkedSkillEntryId = skillId
+                }
+            ]
+        };
+
+        var resultNotInvested = _sut.Calculate(dataNotInvested, catalog);
+        var resultZeroPoints = _sut.Calculate(dataZeroPoints, catalog);
+
+        var rowNotInvested = resultNotInvested.Weapons.Should().ContainSingle().Subject;
+        var rowZeroPoints = resultZeroPoints.Weapons.Should().ContainSingle().Subject;
+
+        // Before the fix, GetValueOrDefault on the (empty for Case A) skill-grade dictionary
+        // silently returned 0 ("Básico") instead of the correct −2 ("Sem Treinamento").
+        rowNotInvested.AttackBonus.Should().Be(3 + -2); // attribute grade bonus (3) + untrained skill grade (−2)
+        rowNotInvested.AttackBonus.Should().Be(rowZeroPoints.AttackBonus);
+    }
+
+    // ── Finding 1a: malformed catalog DataJson must not 500 the read path ───
+
+    [Fact]
+    public void Calculate_MalformedCatalogDataJson_DoesNotThrow_TreatsEntryAsAbsent()
+    {
+        var itemId = Guid.NewGuid();
+        var talentId = Guid.NewGuid();
+        var skillId = Guid.NewGuid();
+        var weaponId = Guid.NewGuid();
+
+        var malformedEquipment = new CatalogEntry
+        {
+            Id = itemId, Type = CatalogEntryType.EquipmentItem, Name = "Broken Item",
+            DataJson = """{"Weight":"2kg"}""" // Weight is decimal — a string value fails to deserialize
+        };
+        var malformedTalent = new CatalogEntry
+        {
+            Id = talentId, Type = CatalogEntryType.Talent, Name = "Broken Talent",
+            DataJson = """{"PowerTier":123}""" // PowerTier is string — a number value fails to deserialize
+        };
+        var malformedSkill = new CatalogEntry
+        {
+            Id = skillId, Type = CatalogEntryType.Skill, Name = "Broken Skill",
+            DataJson = "not json at all"
+        };
+        var validWeapon = Equipment(weaponId, "arma", "Comum", diceCategory: "Leve");
+
+        var data = new CharacterSheetData
+        {
+            Talents = [new CharacterCatalogRefEntry { CatalogEntryId = talentId }],
+            Equipment =
+            [
+                new CharacterEquipmentEntry { CatalogEntryId = itemId, Quantity = 2 },
+                new CharacterEquipmentEntry
+                {
+                    CatalogEntryId = weaponId, IsEquipped = true, LinkedSkillEntryId = skillId
+                }
+            ]
+        };
+        var catalog = new Dictionary<Guid, CatalogEntry>
+        {
+            [itemId] = malformedEquipment,
+            [talentId] = malformedTalent,
+            [skillId] = malformedSkill,
+            [weaponId] = validWeapon
+        };
+
+        CharacterDerivedStats? result = null;
+        var act = () => result = _sut.Calculate(data, catalog);
+
+        act.Should().NotThrow();
+        result.Should().NotBeNull();
+        result!.CurrentWeight.Should().Be(0); // malformed item's Weight couldn't be read → treated as absent
+        var row = result.Weapons.Should().ContainSingle().Subject; // weapon itself deserializes fine
+        row.AttackBonus.Should().Be(0); // its linked skill's malformed data is treated as no linked skill
+    }
 }

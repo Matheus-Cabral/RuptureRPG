@@ -31,4 +31,16 @@
     <ProjectReference Include="..\..\src\Ruptura.Shared\Ruptura.Shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Belt-and-suspenders: xunit.runner.json is normally auto-copied by the xUnit SDK
+         tooling, but make it explicit so a change in tooling behavior can't silently drop
+         the parallelization setting below (see Finding 10 — this file disables
+         inter-collection parallelization to fix the flaky "logger already frozen" /
+         "entry point exited without ever building an IHost" race between concurrently
+         booting WebApplicationFactory hosts sharing a static Serilog Log.Logger). -->
+    <None Update="xunit.runner.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

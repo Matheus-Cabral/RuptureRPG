@@ -51,6 +51,7 @@
   <data name="Catalog.InvalidType"><value>Invalid catalog entry type.</value></data>
   <data name="Catalog.AlreadyExists"><value>An entry with this name already exists for this type.</value></data>
   <data name="Catalog.CannotModifyGlobalEntry"><value>Official catalog entries cannot be modified.</value></data>
+  <data name="Catalog.AlreadyArchived"><value>This catalog entry has already been archived.</value></data>
   <data name="Catalog.Created"><value>Catalog entry created successfully.</value></data>
   <data name="Catalog.Updated"><value>Catalog entry updated successfully.</value></data>
   <data name="Catalog.Deleted"><value>Catalog entry deleted successfully.</value></data>

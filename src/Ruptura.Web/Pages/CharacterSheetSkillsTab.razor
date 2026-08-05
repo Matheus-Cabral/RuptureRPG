@@ -25,7 +25,7 @@
                                value="@skill.Points" @onchange="e => skill.Points = ParseInt(e.Value)" />
                     </td>
                     <td>@Derived?.SkillGradeBonuses.GetValueOrDefault(skill.CatalogEntryId)</td>
-                    <td><button class="btn btn-outline-secondary btn-sm" @onclick="() => Data.Skills.Remove(skill)">@L["Sheet.Skills.Remove"]</button></td>
+                    <td><button class="btn btn-outline-secondary btn-sm" @onclick="() => RemoveSkill(skill)">@L["Sheet.Skills.Remove"]</button></td>
                 </tr>
             }
         </tbody>
@@ -47,15 +47,19 @@
     [Parameter] public CharacterDerivedStats? Derived { get; set; }
     [Parameter] public Guid CampaignId { get; set; }
 
+    // Full list (including archived) — used for resolving the NAME of an already-referenced
+    // skill, so an archived-but-invested skill still shows its real name instead of a raw GUID.
     private List<CatalogEntryResponse> _all = [];
     private Guid _selectedSkillId;
 
+    // A user must never be able to newly add an archived skill — only offer non-archived
+    // entries that aren't already invested in.
     private IEnumerable<CatalogEntryResponse> _available =>
-        _all.Where(e => Data.Skills.All(s => s.CatalogEntryId != e.Id));
+        _all.Where(e => !e.IsArchived && Data.Skills.All(s => s.CatalogEntryId != e.Id));
 
     protected override async Task OnInitializedAsync()
     {
-        _all = (await CatalogService.GetByTypeAsync("Skill", CampaignId))?.Data?.ToList() ?? [];
+        _all = (await CatalogService.GetByTypeAsync("Skill", CampaignId, includeArchived: true))?.Data?.ToList() ?? [];
     }
 
     private string NameOf(Guid id) => _all.FirstOrDefault(e => e.Id == id)?.Name ?? id.ToString();
@@ -67,5 +71,15 @@
         if (_selectedSkillId == Guid.Empty) return;
         Data.Skills.Add(new CharacterSkillEntry { CatalogEntryId = _selectedSkillId, Points = 0 });
         _selectedSkillId = Guid.Empty;
+    }
+
+    // Removing an invested Skill must also clear any equipped weapon's LinkedSkillEntryId that
+    // pointed at it — otherwise the weapon table silently falls back to the untrained (−2) grade
+    // via a dangling reference instead of showing the link was lost. See Finding 2(iii).
+    private void RemoveSkill(CharacterSkillEntry skill)
+    {
+        Data.Skills.Remove(skill);
+        foreach (var item in Data.Equipment.Where(e => e.LinkedSkillEntryId == skill.CatalogEntryId))
+            item.LinkedSkillEntryId = null;
     }
 }

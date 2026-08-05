@@ -98,6 +98,37 @@ public class CharacterSheetControllerTests(IntegrationTestFactory factory)
     }
 
     [Fact]
+    public async Task Update_AsPlayerUpdatingOwnSheet_Returns200WithGeneralFieldsUpdated()
+    {
+        // The single most common real user journey — a player saving their own sheet —
+        // had zero direct coverage before this test.
+        var (client, campaign, playerId, playerToken, gmToken) = await SetUpCampaignWithMemberAsync();
+        AuthHelper.SetBearerToken(client, gmToken);
+        var grantResponse = await client.PostAsJsonAsync($"api/campaigns/{campaign.Id}/character-sheets",
+            new GrantCharacterSheetRequest { PlayerId = playerId, CharacterName = "Sir Aldric" });
+        var sheet = (await grantResponse.Content.ReadFromJsonAsync<ApiResponse<CharacterSheetResponse>>())!.Data!;
+
+        AuthHelper.SetBearerToken(client, playerToken);
+        sheet.Data.Attributes.Corpo = 3;
+        sheet.Data.Identity.PatronDisplayName = "Dom Alric";
+        var updateResponse = await client.PutAsJsonAsync($"api/character-sheets/{sheet.Id}", new UpdateCharacterSheetRequest
+        {
+            CharacterName = "Sir Aldric the Bold",
+            DataJson = System.Text.Json.JsonSerializer.Serialize(sheet.Data),
+            PortraitImagePath = "https://example.com/portrait.png"
+        });
+
+        updateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = (await updateResponse.Content.ReadFromJsonAsync<ApiResponse<CharacterSheetResponse>>())!.Data!;
+        body.CharacterName.Should().Be("Sir Aldric the Bold");
+        body.PortraitImagePath.Should().Be("https://example.com/portrait.png");
+        body.Data.Attributes.Corpo.Should().Be(3);
+        body.Data.Identity.PatronDisplayName.Should().Be("Dom Alric");
+        body.IsDead.Should().BeFalse();
+        body.IsRetired.Should().BeFalse();
+    }
+
+    [Fact]
     public async Task Update_AsCampaignGameMaster_CanMarkCharacterDead()
     {
         var (client, campaign, playerId, _, gmToken) = await SetUpCampaignWithMemberAsync();

@@ -10,7 +10,7 @@
         <label class="form-label">@L["Sheet.Identity.Origin"]</label>
         <select class="form-select" value="@Data.Identity.OriginId" @onchange="e => Data.Identity.OriginId = ParseGuid(e.Value)">
             <option value="">@L["Sheet.Identity.None"]</option>
-            @foreach (var entry in _origins)
+            @foreach (var entry in _originOptions)
             {
                 <option value="@entry.Id">@entry.Name</option>
             }
@@ -20,7 +20,7 @@
         <label class="form-label">@L["Sheet.Identity.Background"]</label>
         <select class="form-select" value="@Data.Identity.BackgroundId" @onchange="e => Data.Identity.BackgroundId = ParseGuid(e.Value)">
             <option value="">@L["Sheet.Identity.None"]</option>
-            @foreach (var entry in _backgrounds)
+            @foreach (var entry in _backgroundOptions)
             {
                 <option value="@entry.Id">@entry.Name</option>
             }
@@ -30,7 +30,7 @@
         <label class="form-label">@L["Sheet.Identity.Lineage"]</label>
         <select class="form-select" value="@Data.Identity.LineageId" @onchange="e => Data.Identity.LineageId = ParseGuid(e.Value)">
             <option value="">@L["Sheet.Identity.None"]</option>
-            @foreach (var entry in _lineages)
+            @foreach (var entry in _lineageOptions)
             {
                 <option value="@entry.Id">@entry.Name</option>
             }
@@ -38,7 +38,7 @@
     </div>
     <div>
         <label class="form-label">@L["Sheet.Identity.Aptitudes"]</label>
-        @foreach (var entry in _aptitudes)
+        @foreach (var entry in _aptitudeOptions)
         {
             var id = entry.Id;
             <div class="form-check">
@@ -52,7 +52,7 @@
         <label class="form-label">@L["Sheet.Identity.InitialTalent"]</label>
         <select class="form-select" value="@Data.Identity.InitialTalentId" @onchange="e => Data.Identity.InitialTalentId = ParseGuid(e.Value)">
             <option value="">@L["Sheet.Identity.None"]</option>
-            @foreach (var entry in _talents)
+            @foreach (var entry in _initialTalentOptions)
             {
                 <option value="@entry.Id">@entry.Name</option>
             }
@@ -68,19 +68,35 @@
     [Parameter] public CharacterSheetData Data { get; set; } = new();
     [Parameter] public Guid CampaignId { get; set; }
 
+    // Full lists (including archived) fetched once. Each *Options computed property below
+    // filters archived entries OUT except for whichever one is currently selected on this
+    // sheet — otherwise a <select> bound to an archived id has no matching <option> and the
+    // browser silently falls back to displaying the first option ("— none —"), which looks
+    // like nothing is set even though Data still holds the real (archived) id underneath.
     private List<CatalogEntryResponse> _origins = [];
     private List<CatalogEntryResponse> _backgrounds = [];
     private List<CatalogEntryResponse> _lineages = [];
     private List<CatalogEntryResponse> _aptitudes = [];
     private List<CatalogEntryResponse> _talents = [];
 
+    private IEnumerable<CatalogEntryResponse> _originOptions =>
+        _origins.Where(e => !e.IsArchived || e.Id == Data.Identity.OriginId);
+    private IEnumerable<CatalogEntryResponse> _backgroundOptions =>
+        _backgrounds.Where(e => !e.IsArchived || e.Id == Data.Identity.BackgroundId);
+    private IEnumerable<CatalogEntryResponse> _lineageOptions =>
+        _lineages.Where(e => !e.IsArchived || e.Id == Data.Identity.LineageId);
+    private IEnumerable<CatalogEntryResponse> _aptitudeOptions =>
+        _aptitudes.Where(e => !e.IsArchived || Data.Identity.AptitudeIds.Contains(e.Id));
+    private IEnumerable<CatalogEntryResponse> _initialTalentOptions =>
+        _talents.Where(e => !e.IsArchived || e.Id == Data.Identity.InitialTalentId);
+
     protected override async Task OnInitializedAsync()
     {
-        _origins = (await CatalogService.GetByTypeAsync("Origin", CampaignId))?.Data?.ToList() ?? [];
-        _backgrounds = (await CatalogService.GetByTypeAsync("Background", CampaignId))?.Data?.ToList() ?? [];
-        _lineages = (await CatalogService.GetByTypeAsync("Lineage", CampaignId))?.Data?.ToList() ?? [];
-        _aptitudes = (await CatalogService.GetByTypeAsync("Aptitude", CampaignId))?.Data?.ToList() ?? [];
-        _talents = (await CatalogService.GetByTypeAsync("Talent", CampaignId))?.Data?.ToList() ?? [];
+        _origins = (await CatalogService.GetByTypeAsync("Origin", CampaignId, includeArchived: true))?.Data?.ToList() ?? [];
+        _backgrounds = (await CatalogService.GetByTypeAsync("Background", CampaignId, includeArchived: true))?.Data?.ToList() ?? [];
+        _lineages = (await CatalogService.GetByTypeAsync("Lineage", CampaignId, includeArchived: true))?.Data?.ToList() ?? [];
+        _aptitudes = (await CatalogService.GetByTypeAsync("Aptitude", CampaignId, includeArchived: true))?.Data?.ToList() ?? [];
+        _talents = (await CatalogService.GetByTypeAsync("Talent", CampaignId, includeArchived: true))?.Data?.ToList() ?? [];
     }
 
     private static Guid? ParseGuid(object? value) =>

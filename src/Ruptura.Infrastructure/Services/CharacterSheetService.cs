@@ -146,7 +146,7 @@ public class CharacterSheetService(
 
     private async Task<CharacterSheetResponse> MapToResponseAsync(CharacterSheet sheet, CancellationToken ct)
     {
-        var data = JsonSerializer.Deserialize<CharacterSheetData>(sheet.DataJson) ?? new CharacterSheetData();
+        var data = DeserializeSheetData(sheet.DataJson);
         var referencedIds = CollectReferencedCatalogIds(data);
         var catalogEntries = referencedIds.Count == 0
             ? new Dictionary<Guid, CatalogEntry>()
@@ -168,6 +168,21 @@ public class CharacterSheetService(
             CreatedAt = sheet.CreatedAt,
             UpdatedAt = sheet.UpdatedAt
         };
+    }
+
+    // Defense-in-depth for any already-corrupt row (or a future write path that bypasses
+    // UpdateCharacterSheetRequestValidator's DataJson rule) — never let a deserialization
+    // failure propagate out of a read and 500 every subsequent GET of this sheet.
+    private static CharacterSheetData DeserializeSheetData(string dataJson)
+    {
+        try
+        {
+            return JsonSerializer.Deserialize<CharacterSheetData>(dataJson) ?? new CharacterSheetData();
+        }
+        catch (JsonException)
+        {
+            return new CharacterSheetData();
+        }
     }
 
     private static List<Guid> CollectReferencedCatalogIds(CharacterSheetData data)
