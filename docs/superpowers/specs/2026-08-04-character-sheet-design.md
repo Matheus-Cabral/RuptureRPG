@@ -148,7 +148,13 @@ CharacterSheetData
 ├─ Talents[]            { CatalogEntryId }
 ├─ Spells[]              { CatalogEntryId }
 ├─ Techniques[]          { CatalogEntryId }
-├─ Equipment[]            { CatalogEntryId, Quantity, DurabilityRemaining }
+├─ Equipment[]            { CatalogEntryId, Quantity, DurabilityRemaining, IsEquipped, LinkedSkillEntryId? }
+                       // IsEquipped: só itens equipados alimentam Combate (arma → linha na tabela de armas;
+                       // armadura/escudo → somam DefenseBonus/ArmorDamageReduction na Defesa Passiva).
+                       // LinkedSkillEntryId: qual Perícia (CatalogEntryId de um Skills[] investido) rege o
+                       // ataque/dano desta arma — o GDD não amarra arma↔perícia no catálogo (uma "Espada Longa"
+                       // pode ser usada com a perícia "Espadas"), então o jogador escolhe manualmente por item
+                       // equipado; null para itens que não são armas.
 ├─ Currency                { PactCoins }
 ├─ AttributeTrial            { AttributeName, TargetGrade, DaysRemaining }   // entrada manual
 ├─ GuildRegistry               { Ranking, JoinedDate, State, Expeditions, FloorsCleared }
@@ -301,6 +307,7 @@ Registrado aqui deliberadamente: optamos por disco local em vez de object storag
 - `CatalogEntry` apagado por soft-delete (`IsArchived`), não FK `Restrict` (decidido no sub-plan #3, ver §4.2) — GM pode "apagar" um homebrew em uso sem que isso quebre fichas existentes; seletores de nova seleção escondem entradas arquivadas.
 - `CatalogEntry.CampaignId` ganha FK real para `Campaign.Id` com `ON DELETE CASCADE` (decidido no sub-plan #3) — antes era `Guid?` solto, seguindo a convenção de referência fraca do resto do repo; decidimos reforçar aqui por já estar mexendo na tabela.
 - Sub-plan #3 escopo: `CharacterSheet` (entidade + fluxo de concessão) + `CharacterStatsCalculator` + as 9 abas que não são Diário (#4) nem Notificações (#5) — um único plano SDD, direto na `main`, mesmo padrão dos sub-plans #1 e #2.
+- `Equipment[]` ganha `IsEquipped` (bool) e `LinkedSkillEntryId` (Guid?) — lacuna do desenho original: o motor de cálculo (§5) precisa saber quais itens estão equipados (só esses alimentam Combate) e qual Perícia rege cada arma (o catálogo não amarra item↔perícia; o jogador escolhe manualmente por item equipado).
 
 ## 11. Próximos passos (fora desta spec)
 
