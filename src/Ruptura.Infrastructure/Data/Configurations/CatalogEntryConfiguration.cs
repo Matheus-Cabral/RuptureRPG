@@ -27,5 +27,7 @@ public class CatalogEntryConfiguration : IEntityTypeConfiguration<CatalogEntry>
         builder.HasData(CatalogSeedData.Aptitudes);
         builder.HasData(CatalogSeedData.Talents);
         builder.HasData(CatalogSeedData.Skills);
+        builder.HasData(CatalogSeedData.Spells);
+        builder.HasData(CatalogSeedData.Techniques);
     }
 }
