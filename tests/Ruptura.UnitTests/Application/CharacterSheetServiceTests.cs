@@ -105,4 +105,139 @@ public class CharacterSheetServiceTests
             It.Is<CharacterSheet>(s => s.OwnerId == playerId && s.CampaignId == campaign.Id && !s.IsDead && !s.IsRetired),
             It.IsAny<CancellationToken>()), Times.Once);
     }
+
+    // ── GetAsync ──────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetAsync_AsOwner_ReturnsSheet()
+    {
+        var ownerId = Guid.NewGuid();
+        var campaign = new Campaign { Id = Guid.NewGuid(), GameMasterId = Guid.NewGuid() };
+        var sheet = new CharacterSheet
+        {
+            Id = Guid.NewGuid(), OwnerId = ownerId, CampaignId = campaign.Id,
+            DataJson = JsonSerializer.Serialize(new CharacterSheetData())
+        };
+        _sheetRepoMock.Setup(r => r.GetByIdAsync(sheet.Id, It.IsAny<CancellationToken>())).ReturnsAsync(sheet);
+        _campaignRepoMock.Setup(r => r.GetByIdAsync(campaign.Id, It.IsAny<CancellationToken>())).ReturnsAsync(campaign);
+
+        var result = await _sut.GetAsync(ownerId, sheet.Id);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Id.Should().Be(sheet.Id);
+    }
+
+    [Fact]
+    public async Task GetAsync_AsCampaignGameMaster_ReturnsSheet()
+    {
+        var gmId = Guid.NewGuid();
+        var campaign = new Campaign { Id = Guid.NewGuid(), GameMasterId = gmId };
+        var sheet = new CharacterSheet
+        {
+            Id = Guid.NewGuid(), OwnerId = Guid.NewGuid(), CampaignId = campaign.Id,
+            DataJson = JsonSerializer.Serialize(new CharacterSheetData())
+        };
+        _sheetRepoMock.Setup(r => r.GetByIdAsync(sheet.Id, It.IsAny<CancellationToken>())).ReturnsAsync(sheet);
+        _campaignRepoMock.Setup(r => r.GetByIdAsync(campaign.Id, It.IsAny<CancellationToken>())).ReturnsAsync(campaign);
+
+        var result = await _sut.GetAsync(gmId, sheet.Id);
+
+        result.IsSuccess.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task GetAsync_AsUnrelatedCaller_ReturnsNotFound()
+    {
+        var campaign = new Campaign { Id = Guid.NewGuid(), GameMasterId = Guid.NewGuid() };
+        var sheet = new CharacterSheet
+        {
+            Id = Guid.NewGuid(), OwnerId = Guid.NewGuid(), CampaignId = campaign.Id,
+            DataJson = JsonSerializer.Serialize(new CharacterSheetData())
+        };
+        _sheetRepoMock.Setup(r => r.GetByIdAsync(sheet.Id, It.IsAny<CancellationToken>())).ReturnsAsync(sheet);
+        _campaignRepoMock.Setup(r => r.GetByIdAsync(campaign.Id, It.IsAny<CancellationToken>())).ReturnsAsync(campaign);
+
+        var result = await _sut.GetAsync(Guid.NewGuid(), sheet.Id);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(ErrorCodes.CharacterSheet.NotFound);
+    }
+
+    [Fact]
+    public async Task GetAsync_WhenSheetDoesNotExist_ReturnsNotFound()
+    {
+        _sheetRepoMock.Setup(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((CharacterSheet?)null);
+
+        var result = await _sut.GetAsync(Guid.NewGuid(), Guid.NewGuid());
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(ErrorCodes.CharacterSheet.NotFound);
+    }
+
+    // ── GetByCampaignAsync ───────────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetByCampaignAsync_AsOwningGameMaster_ReturnsAllSheetsInCampaign()
+    {
+        var gmId = Guid.NewGuid();
+        var campaign = new Campaign { Id = Guid.NewGuid(), GameMasterId = gmId };
+        var sheets = new List<CharacterSheet>
+        {
+            new() { Id = Guid.NewGuid(), CampaignId = campaign.Id, DataJson = JsonSerializer.Serialize(new CharacterSheetData()) }
+        };
+        _campaignRepoMock.Setup(r => r.GetByIdAsync(campaign.Id, It.IsAny<CancellationToken>())).ReturnsAsync(campaign);
+        _sheetRepoMock.Setup(r => r.GetByCampaignAsync(campaign.Id, It.IsAny<CancellationToken>())).ReturnsAsync(sheets);
+
+        var result = await _sut.GetByCampaignAsync(gmId, campaign.Id);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Should().HaveCount(1);
+    }
+
+    [Fact]
+    public async Task GetByCampaignAsync_WhenCallerIsNotTheGameMaster_ReturnsNotFound()
+    {
+        var campaign = new Campaign { Id = Guid.NewGuid(), GameMasterId = Guid.NewGuid() };
+        _campaignRepoMock.Setup(r => r.GetByIdAsync(campaign.Id, It.IsAny<CancellationToken>())).ReturnsAsync(campaign);
+
+        var result = await _sut.GetByCampaignAsync(Guid.NewGuid(), campaign.Id);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(ErrorCodes.CharacterSheet.NotFound);
+    }
+
+    // ── GetMineAsync ─────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetMineAsync_WhenPlayerHasAnAliveCharacterInCampaign_ReturnsIt()
+    {
+        var playerId = Guid.NewGuid();
+        var campaignId = Guid.NewGuid();
+        var sheet = new CharacterSheet
+        {
+            Id = Guid.NewGuid(), OwnerId = playerId, CampaignId = campaignId,
+            DataJson = JsonSerializer.Serialize(new CharacterSheetData())
+        };
+        _sheetRepoMock.Setup(r => r.GetAliveByOwnerAndCampaignAsync(playerId, campaignId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(sheet);
+
+        var result = await _sut.GetMineAsync(playerId, campaignId);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Id.Should().Be(sheet.Id);
+    }
+
+    [Fact]
+    public async Task GetMineAsync_WhenNoCharacterGrantedYet_ReturnsNotFound()
+    {
+        _sheetRepoMock.Setup(r => r.GetAliveByOwnerAndCampaignAsync(
+                It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((CharacterSheet?)null);
+
+        var result = await _sut.GetMineAsync(Guid.NewGuid(), Guid.NewGuid());
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(ErrorCodes.CharacterSheet.NotFound);
+    }
 }

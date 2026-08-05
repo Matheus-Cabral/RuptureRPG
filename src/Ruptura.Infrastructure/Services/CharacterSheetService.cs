@@ -50,14 +50,45 @@ public class CharacterSheetService(
         return Result.Success(await MapToResponseAsync(sheet, ct));
     }
 
-    public Task<Result<CharacterSheetResponse>> GetAsync(Guid callerId, Guid sheetId, CancellationToken ct = default) =>
-        throw new NotImplementedException("Implemented in Task 7.");
+    public async Task<Result<CharacterSheetResponse>> GetAsync(
+        Guid callerId, Guid sheetId, CancellationToken ct = default)
+    {
+        var sheet = await sheetRepo.GetByIdAsync(sheetId, ct);
+        if (sheet is null)
+            return Result.Failure<CharacterSheetResponse>(ErrorCodes.CharacterSheet.NotFound);
 
-    public Task<Result<IEnumerable<CharacterSheetResponse>>> GetByCampaignAsync(Guid gameMasterId, Guid campaignId, CancellationToken ct = default) =>
-        throw new NotImplementedException("Implemented in Task 7.");
+        var campaign = await campaignRepo.GetByIdAsync(sheet.CampaignId, ct);
+        var authorized = sheet.OwnerId == callerId || campaign?.GameMasterId == callerId;
+        if (!authorized)
+            return Result.Failure<CharacterSheetResponse>(ErrorCodes.CharacterSheet.NotFound);
 
-    public Task<Result<CharacterSheetResponse>> GetMineAsync(Guid playerId, Guid campaignId, CancellationToken ct = default) =>
-        throw new NotImplementedException("Implemented in Task 7.");
+        return Result.Success(await MapToResponseAsync(sheet, ct));
+    }
+
+    public async Task<Result<IEnumerable<CharacterSheetResponse>>> GetByCampaignAsync(
+        Guid gameMasterId, Guid campaignId, CancellationToken ct = default)
+    {
+        var campaign = await campaignRepo.GetByIdAsync(campaignId, ct);
+        if (campaign is null || campaign.GameMasterId != gameMasterId)
+            return Result.Failure<IEnumerable<CharacterSheetResponse>>(ErrorCodes.CharacterSheet.NotFound);
+
+        var sheets = await sheetRepo.GetByCampaignAsync(campaignId, ct);
+        var responses = new List<CharacterSheetResponse>();
+        foreach (var sheet in sheets)
+            responses.Add(await MapToResponseAsync(sheet, ct));
+
+        return Result.Success(responses.AsEnumerable());
+    }
+
+    public async Task<Result<CharacterSheetResponse>> GetMineAsync(
+        Guid playerId, Guid campaignId, CancellationToken ct = default)
+    {
+        var sheet = await sheetRepo.GetAliveByOwnerAndCampaignAsync(playerId, campaignId, ct);
+        if (sheet is null)
+            return Result.Failure<CharacterSheetResponse>(ErrorCodes.CharacterSheet.NotFound);
+
+        return Result.Success(await MapToResponseAsync(sheet, ct));
+    }
 
     public Task<Result<CharacterSheetResponse>> UpdateAsync(Guid callerId, Guid sheetId, UpdateCharacterSheetRequest request, CancellationToken ct = default) =>
         throw new NotImplementedException("Implemented in Task 8.");
