@@ -12,6 +12,14 @@
                 @L["Nav.Dashboard"]
             </NavLink>
 
+            <AuthorizeView Roles="Player">
+                <Authorized Context="playerCtx">
+                    <NavLink class="nav-link" href="/campaigns">
+                        @L["Nav.Campaigns.Player"]
+                    </NavLink>
+                </Authorized>
+            </AuthorizeView>
+
             <AuthorizeView Roles="GameMaster">
                 <Authorized Context="gmCtx">
                     <span class="nav-section-label" style="margin-top:.75rem">Mestre</span>

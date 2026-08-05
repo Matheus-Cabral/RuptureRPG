@@ -227,4 +227,19 @@
   <data name="Sheet.Equipment.Equipped"><value>Equipado</value></data>
   <data name="Sheet.Equipment.LinkedSkill"><value>Perícia Vinculada (só armas)</value></data>
   <data name="Sheet.Equipment.NoneSkill"><value>— nenhuma —</value></data>
+  <data name="Sheet.Trial.None"><value>Nenhuma Provação de Atributo em andamento.</value></data>
+  <data name="Sheet.Trial.Start"><value>Iniciar Provação</value></data>
+  <data name="Sheet.Trial.Attribute"><value>Atributo</value></data>
+  <data name="Sheet.Trial.TargetGrade"><value>Grau Alvo</value></data>
+  <data name="Sheet.Trial.DaysRemaining"><value>Dias Restantes</value></data>
+  <data name="Sheet.Trial.Clear"><value>Limpar</value></data>
+  <data name="Sheet.Guild.JoinedDate"><value>Ingresso</value></data>
+  <data name="Sheet.Guild.State"><value>Estado</value></data>
+  <data name="Sheet.Guild.Expeditions"><value>Expedições</value></data>
+  <data name="Sheet.Guild.FloorsCleared"><value>Andares Limpos</value></data>
+  <data name="Campaigns.Title"><value>Minhas Campanhas</value></data>
+  <data name="Campaigns.Empty"><value>Você ainda não participa de nenhuma campanha.</value></data>
+  <data name="Campaigns.OpenCharacter"><value>Abrir Personagem</value></data>
+  <data name="Character.AwaitingGrant"><value>Seu Mestre ainda não concedeu um personagem a você.</value></data>
+  <data name="Nav.Campaigns.Player"><value>Minhas Campanhas</value></data>
 </root>

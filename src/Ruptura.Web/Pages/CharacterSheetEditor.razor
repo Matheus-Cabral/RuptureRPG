@@ -101,6 +101,14 @@ else
         {
             <CharacterSheetEquipmentTab Data="_data" CampaignId="CampaignId" />
         }
+        else if (_activeTab == "trial")
+        {
+            <CharacterSheetTrialTab Data="_data" />
+        }
+        else if (_activeTab == "guildRegistry")
+        {
+            <CharacterSheetGuildRegistryTab Data="_data" />
+        }
     </div>
 }
 
@@ -118,8 +126,9 @@ else
         ["talents"] = "Sheet.Tab.Talents",
         ["spells"] = "Sheet.Tab.Spells",
         ["techniques"] = "Sheet.Tab.Techniques",
-        ["equipment"] = "Sheet.Tab.Equipment"
-        // Task 17 adds: trial, guildRegistry
+        ["equipment"] = "Sheet.Tab.Equipment",
+        ["trial"] = "Sheet.Tab.Trial",
+        ["guildRegistry"] = "Sheet.Tab.GuildRegistry"
     };
 
     private bool _loading = true;

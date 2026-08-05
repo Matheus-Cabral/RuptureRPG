@@ -1,0 +1,37 @@
+@page "/campaigns/{CampaignId:guid}/character"
+@attribute [Authorize(Roles = "Player")]
+@using Microsoft.Extensions.Localization
+@using Ruptura.Web.Resources
+@inject IStringLocalizer<AppStrings> L
+@inject ICharacterSheetClientService SheetService
+
+<PageTitle>@L["Sheet.Tab.Identity"] — RUPTURA</PageTitle>
+
+<div class="page-content">
+    @if (_loading)
+    {
+        <div class="ledger-empty"><span class="spinner-border spinner-border-sm me-2"></span>@L["Common.Loading"]</div>
+    }
+    else if (_sheetId is null)
+    {
+        <div class="ledger-empty"><p>@L["Character.AwaitingGrant"]</p></div>
+    }
+    else
+    {
+        <CharacterSheetEditor SheetId="_sheetId.Value" CampaignId="CampaignId" CanEditStatus="false" />
+    }
+</div>
+
+@code {
+    [Parameter] public Guid CampaignId { get; set; }
+
+    private bool _loading = true;
+    private Guid? _sheetId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await SheetService.GetMineAsync(CampaignId);
+        _sheetId = result?.Data?.Id;
+        _loading = false;
+    }
+}

@@ -1,0 +1,51 @@
+@page "/campaigns"
+@attribute [Authorize(Roles = "Player")]
+@using Microsoft.Extensions.Localization
+@using Ruptura.Web.Resources
+@using Ruptura.Shared.Campaigns
+@inject IStringLocalizer<AppStrings> L
+@inject ICampaignClientService CampaignService
+
+<PageTitle>@L["Campaigns.Title"] — RUPTURA</PageTitle>
+
+<div class="page-content">
+    <div class="page-heading"><h1>@L["Campaigns.Title"]</h1></div>
+
+    @if (_loading)
+    {
+        <div class="ledger-empty"><span class="spinner-border spinner-border-sm me-2"></span>@L["Common.Loading"]</div>
+    }
+    else if (_campaigns.Count == 0)
+    {
+        <div class="ledger-empty"><p>@L["Campaigns.Empty"]</p></div>
+    }
+    else
+    {
+        <div class="ledger-table-wrap">
+            <table class="ledger-table">
+                <thead><tr><th>@L["Gm.CampaignDetail.Col.Name"]</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var campaign in _campaigns)
+                    {
+                        <tr>
+                            <td>@campaign.Name</td>
+                            <td><a class="btn btn-outline-secondary btn-sm" href="/campaigns/@campaign.Id/character">@L["Campaigns.OpenCharacter"]</a></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    private List<CampaignResponse> _campaigns = [];
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await CampaignService.GetMineAsync();
+        _campaigns = result?.Data?.ToList() ?? [];
+        _loading = false;
+    }
+}

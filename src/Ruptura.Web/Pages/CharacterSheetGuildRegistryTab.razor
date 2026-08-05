@@ -1,0 +1,41 @@
+@using Microsoft.Extensions.Localization
+@using Ruptura.Web.Resources
+@using Ruptura.Shared.CharacterSheets
+@inject IStringLocalizer<AppStrings> L
+
+<div style="display:flex;flex-direction:column;gap:1rem;max-width:320px">
+    <div>
+        <label class="form-label">@L["Sheet.RankLabel"]</label>
+        <select class="form-select" @bind="Data.GuildRegistry.Ranking">
+            @foreach (var rank in Rankings)
+            {
+                <option value="@rank">@rank</option>
+            }
+        </select>
+    </div>
+    <div>
+        <label class="form-label">@L["Sheet.Guild.JoinedDate"]</label>
+        <input class="form-control" type="date"
+               value="@Data.GuildRegistry.JoinedDate?.ToString("yyyy-MM-dd")"
+               @onchange="e => Data.GuildRegistry.JoinedDate = DateTime.TryParse(e.Value?.ToString(), out var d) ? d : null" />
+    </div>
+    <div>
+        <label class="form-label">@L["Sheet.Guild.State"]</label>
+        <input class="form-control" @bind="Data.GuildRegistry.State" @bind:event="oninput" />
+    </div>
+    <div>
+        <label class="form-label">@L["Sheet.Guild.Expeditions"]</label>
+        <input class="form-control" type="number" min="0" @bind="Data.GuildRegistry.Expeditions" @bind:event="oninput" />
+    </div>
+    <div>
+        <label class="form-label">@L["Sheet.Guild.FloorsCleared"]</label>
+        <input class="form-control" type="number" min="0" @bind="Data.GuildRegistry.FloorsCleared" @bind:event="oninput" />
+    </div>
+</div>
+
+@code {
+    [Parameter] public CharacterSheetData Data { get; set; } = new();
+
+    private static readonly string[] Rankings =
+        ["Bronze", "Ferro", "Aço", "Prata", "Ouro", "Mithril", "Adamante", "Lendário"];
+}

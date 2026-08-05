@@ -1,0 +1,35 @@
+@using Microsoft.Extensions.Localization
+@using Ruptura.Web.Resources
+@using Ruptura.Shared.CharacterSheets
+@inject IStringLocalizer<AppStrings> L
+
+@if (Data.AttributeTrial is null)
+{
+    <p style="color:var(--text-muted)">@L["Sheet.Trial.None"]</p>
+    <button class="btn btn-outline-secondary btn-sm" @onclick="Start">@L["Sheet.Trial.Start"]</button>
+}
+else
+{
+    <div style="display:flex;flex-direction:column;gap:1rem;max-width:320px">
+        <div>
+            <label class="form-label">@L["Sheet.Trial.Attribute"]</label>
+            <input class="form-control" @bind="Data.AttributeTrial.AttributeName" @bind:event="oninput" />
+        </div>
+        <div>
+            <label class="form-label">@L["Sheet.Trial.TargetGrade"]</label>
+            <input class="form-control" @bind="Data.AttributeTrial.TargetGrade" @bind:event="oninput" />
+        </div>
+        <div>
+            <label class="form-label">@L["Sheet.Trial.DaysRemaining"]</label>
+            <input class="form-control" type="number" min="0" @bind="Data.AttributeTrial.DaysRemaining" @bind:event="oninput" />
+        </div>
+        <button class="btn btn-outline-secondary btn-sm" @onclick="Clear">@L["Sheet.Trial.Clear"]</button>
+    </div>
+}
+
+@code {
+    [Parameter] public CharacterSheetData Data { get; set; } = new();
+
+    private void Start() => Data.AttributeTrial = new CharacterAttributeTrial();
+    private void Clear() => Data.AttributeTrial = null;
+}
