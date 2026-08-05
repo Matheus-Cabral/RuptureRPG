@@ -21,4 +21,12 @@ public class CampaignMembershipRepository(AppDbContext db)
         Guid playerId,
         CancellationToken ct = default) =>
         await Set.AnyAsync(m => m.CampaignId == campaignId && m.PlayerId == playerId, ct);
+
+    public async Task<IEnumerable<CampaignMembership>> GetByPlayerAsync(
+        Guid playerId,
+        CancellationToken ct = default) =>
+        await Set
+            .Where(m => m.PlayerId == playerId)
+            .OrderBy(m => m.AssignedAt)
+            .ToListAsync(ct);
 }

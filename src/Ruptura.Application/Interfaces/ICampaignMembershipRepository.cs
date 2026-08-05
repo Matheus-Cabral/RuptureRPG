@@ -7,4 +7,5 @@ public interface ICampaignMembershipRepository : IRepository<CampaignMembership>
 {
     Task<IEnumerable<CampaignMembership>> GetByCampaignAsync(Guid campaignId, CancellationToken ct = default);
     Task<bool> ExistsAsync(Guid campaignId, Guid playerId, CancellationToken ct = default);
+    Task<IEnumerable<CampaignMembership>> GetByPlayerAsync(Guid playerId, CancellationToken ct = default);
 }

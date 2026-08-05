@@ -14,7 +14,7 @@ namespace Ruptura.API.Controllers;
 
 [ApiController]
 [Route("api/campaigns")]
-[Authorize(Roles = "GameMaster")]
+[Authorize]
 public class CampaignController(
     ICampaignService campaignService,
     IStringLocalizer<SharedResources> localizer,
@@ -22,6 +22,7 @@ public class CampaignController(
     IValidator<AssignMemberRequest> assignValidator) : ControllerBase
 {
     [HttpPost]
+    [Authorize(Roles = "GameMaster")]
     [ProducesResponseType(typeof(ApiResponse<CampaignResponse>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create([FromBody] CreateCampaignRequest request, CancellationToken ct)
@@ -40,6 +41,7 @@ public class CampaignController(
     }
 
     [HttpGet]
+    [Authorize(Roles = "GameMaster")]
     [ProducesResponseType(typeof(ApiResponse<IEnumerable<CampaignResponse>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> List(CancellationToken ct)
     {
@@ -50,6 +52,7 @@ public class CampaignController(
     }
 
     [HttpGet("{campaignId:guid}/members")]
+    [Authorize(Roles = "GameMaster")]
     [ProducesResponseType(typeof(ApiResponse<IEnumerable<CampaignMemberResponse>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Members(Guid campaignId, CancellationToken ct)
@@ -63,6 +66,7 @@ public class CampaignController(
     }
 
     [HttpPost("{campaignId:guid}/members")]
+    [Authorize(Roles = "GameMaster")]
     [ProducesResponseType(typeof(ApiResponse<CampaignMemberResponse>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
@@ -84,5 +88,16 @@ public class CampaignController(
 
         return StatusCode(StatusCodes.Status201Created,
             ApiResponse<CampaignMemberResponse>.Ok(result.Value!, localizer["Campaign.MemberAssigned"]));
+    }
+
+    [HttpGet("mine")]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<CampaignResponse>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> Mine(CancellationToken ct)
+    {
+        var callerId = Guid.Parse(User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
+        var isGameMaster = User.IsInRole("GameMaster");
+        var result = await campaignService.GetMyMembershipsAsync(callerId, isGameMaster, ct);
+
+        return Ok(ApiResponse<IEnumerable<CampaignResponse>>.Ok(result.Value!));
     }
 }

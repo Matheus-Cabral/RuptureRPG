@@ -128,6 +128,28 @@ public class CampaignService(
         return Result.Success(responses.AsEnumerable());
     }
 
+    public async Task<Result<IEnumerable<CampaignResponse>>> GetMyMembershipsAsync(
+        Guid callerId,
+        bool isGameMaster,
+        CancellationToken ct = default)
+    {
+        if (isGameMaster)
+        {
+            var owned = await campaignRepo.GetByGameMasterAsync(callerId, ct);
+            return Result.Success(owned.Select(MapToResponse));
+        }
+
+        var memberships = await membershipRepo.GetByPlayerAsync(callerId, ct);
+        var campaigns = new List<Campaign>();
+        foreach (var membership in memberships)
+        {
+            var campaign = await campaignRepo.GetByIdAsync(membership.CampaignId, ct);
+            if (campaign is not null) campaigns.Add(campaign);
+        }
+
+        return Result.Success(campaigns.Select(MapToResponse));
+    }
+
     // ── Private helpers ───────────────────────────────────────────────────────
 
     private static CampaignResponse MapToResponse(Campaign c) => new()

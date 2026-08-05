@@ -19,4 +19,7 @@ public interface ICampaignService
 
     Task<Result<IEnumerable<CampaignMemberResponse>>> GetMembersAsync(
         Guid gameMasterId, Guid campaignId, CancellationToken ct = default);
+
+    Task<Result<IEnumerable<CampaignResponse>>> GetMyMembershipsAsync(
+        Guid callerId, bool isGameMaster, CancellationToken ct = default);
 }

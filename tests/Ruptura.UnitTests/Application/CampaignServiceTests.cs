@@ -198,6 +198,41 @@ public class CampaignServiceTests
         result.Value!.Should().ContainSingle(m => m.PlayerId == player.Id && m.DisplayName == player.DisplayName);
     }
 
+    // ── GetMyMembershipsAsync ────────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetMyMembershipsAsync_AsGameMaster_ReturnsCampaignsTheyRun()
+    {
+        var gmId = Guid.NewGuid();
+        var campaigns = new List<Campaign>
+        {
+            new() { Id = Guid.NewGuid(), Name = "Arc One", GameMasterId = gmId }
+        };
+        _campaignRepoMock.Setup(r => r.GetByGameMasterAsync(gmId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(campaigns);
+
+        var result = await _sut.GetMyMembershipsAsync(gmId, isGameMaster: true);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Should().ContainSingle(c => c.Name == "Arc One");
+    }
+
+    [Fact]
+    public async Task GetMyMembershipsAsync_AsPlayer_ReturnsCampaignsTheyreAMemberOf()
+    {
+        var playerId = Guid.NewGuid();
+        var campaign = new Campaign { Id = Guid.NewGuid(), Name = "Sunken Gate", GameMasterId = Guid.NewGuid() };
+        _membershipRepoMock.Setup(r => r.GetByPlayerAsync(playerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([new CampaignMembership { CampaignId = campaign.Id, PlayerId = playerId }]);
+        _campaignRepoMock.Setup(r => r.GetByIdAsync(campaign.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(campaign);
+
+        var result = await _sut.GetMyMembershipsAsync(playerId, isGameMaster: false);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Should().ContainSingle(c => c.Name == "Sunken Gate");
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────────────
 
     private static ApplicationUser BuildPlayer(Guid recruitedBy) => new()

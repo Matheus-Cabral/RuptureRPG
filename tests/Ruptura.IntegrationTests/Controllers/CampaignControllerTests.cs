@@ -179,4 +179,27 @@ public class CampaignControllerTests(IntegrationTestFactory factory)
         var response = await playerClient.GetAsync("api/campaigns");
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
+
+    [Fact]
+    public async Task GetMine_AsPlayerMemberOfACampaign_ReturnsThatCampaign()
+    {
+        var client = factory.CreateClient();
+        var gm = await AuthHelper.RegisterGameMasterAsync(client, Faker.Internet.Email());
+        AuthHelper.SetBearerToken(client, gm.AccessToken);
+
+        var campaignResponse = await client.PostAsJsonAsync("api/campaigns", new CreateCampaignRequest { Name = "Mine Test" });
+        var campaign = (await campaignResponse.Content.ReadFromJsonAsync<ApiResponse<CampaignResponse>>())!.Data!;
+
+        var invite = await client.PostAsync("api/invites", null);
+        var inviteCode = (await invite.Content.ReadFromJsonAsync<ApiResponse<InviteCodeResponse>>())!.Data!.Code;
+        var player = await AuthHelper.RegisterPlayerAsync(client, inviteCode, Faker.Internet.Email());
+
+        await client.PostAsJsonAsync($"api/campaigns/{campaign.Id}/members", new AssignMemberRequest { PlayerId = player.User.Id });
+
+        AuthHelper.SetBearerToken(client, player.AccessToken);
+        var mineResponse = await client.GetAsync("api/campaigns/mine");
+        var mine = (await mineResponse.Content.ReadFromJsonAsync<ApiResponse<IEnumerable<CampaignResponse>>>())!.Data!;
+
+        mine.Should().ContainSingle(c => c.Id == campaign.Id);
+    }
 }
