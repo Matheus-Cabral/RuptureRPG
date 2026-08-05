@@ -42,4 +42,20 @@ public static class ErrorCodes
         public const string AlreadyHasAliveCharacter = "CharacterSheet.AlreadyHasAliveCharacter";
         public const string OnlyGameMasterCanChangeStatus = "CharacterSheet.OnlyGameMasterCanChangeStatus";
     }
+
+    public static class Journal
+    {
+        public const string NotFound = "Journal.NotFound";
+        public const string OnlyOwnerCanWrite = "Journal.OnlyOwnerCanWrite";
+    }
+
+    public static class Media
+    {
+        public const string InvalidEntityType = "Media.InvalidEntityType";
+        public const string FileRequired = "Media.FileRequired";
+        public const string FileTooLarge = "Media.FileTooLarge";
+        public const string UnsupportedFileType = "Media.UnsupportedFileType";
+        public const string TooManyImages = "Media.TooManyImages";
+        public const string NotFound = "Media.NotFound";
+    }
 }
