@@ -46,6 +46,15 @@
   <data name="Campaign.Created"><value>Campaign created successfully.</value></data>
   <data name="Campaign.MemberAssigned"><value>Player assigned to campaign successfully.</value></data>
 
+  <!-- Catalog -->
+  <data name="Catalog.NotFound"><value>Catalog entry not found.</value></data>
+  <data name="Catalog.InvalidType"><value>Invalid catalog entry type.</value></data>
+  <data name="Catalog.AlreadyExists"><value>An entry with this name already exists for this type.</value></data>
+  <data name="Catalog.CannotModifyGlobalEntry"><value>Official catalog entries cannot be modified.</value></data>
+  <data name="Catalog.Created"><value>Catalog entry created successfully.</value></data>
+  <data name="Catalog.Updated"><value>Catalog entry updated successfully.</value></data>
+  <data name="Catalog.Deleted"><value>Catalog entry deleted successfully.</value></data>
+
   <!-- Generic -->
   <data name="Error.Unexpected"><value>An unexpected error occurred. Please try again later.</value></data>
   <data name="Error.Forbidden"><value>You do not have permission to perform this action.</value></data>
