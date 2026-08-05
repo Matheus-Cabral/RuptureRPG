@@ -204,4 +204,20 @@
   <data name="Sheet.Attributes.Afinidade"><value>Affinity</value></data>
   <data name="Sheet.Attributes.Modifier"><value>Mod.</value></data>
   <data name="Sheet.Attributes.Grade"><value>Grade Bonus</value></data>
+  <data name="Sheet.Combat.CurrentHp"><value>Current HP</value></data>
+  <data name="Sheet.Combat.MaxHp"><value>Max HP</value></data>
+  <data name="Sheet.Combat.Movement"><value>Movement</value></data>
+  <data name="Sheet.Combat.Initiative"><value>Initiative</value></data>
+  <data name="Sheet.Combat.PassiveDefense"><value>Passive Defense</value></data>
+  <data name="Sheet.Combat.DamageReduction"><value>Damage Reduction</value></data>
+  <data name="Sheet.Combat.Conditions"><value>Active Conditions</value></data>
+  <data name="Sheet.Combat.AddCondition"><value>Add</value></data>
+  <data name="Sheet.Combat.Weapons"><value>Weapons (equipped, see Equipment tab)</value></data>
+  <data name="Sheet.Combat.Weapon.Name"><value>Weapon</value></data>
+  <data name="Sheet.Combat.Weapon.Attack"><value>Attack</value></data>
+  <data name="Sheet.Combat.Weapon.Damage"><value>Damage</value></data>
+  <data name="Sheet.Skills.Add"><value>Add Skill</value></data>
+  <data name="Sheet.Skills.Points"><value>Points</value></data>
+  <data name="Sheet.Skills.Grade"><value>Grade Bonus</value></data>
+  <data name="Sheet.Skills.Remove"><value>Remove</value></data>
 </root>

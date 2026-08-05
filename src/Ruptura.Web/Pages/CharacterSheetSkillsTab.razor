@@ -1,0 +1,71 @@
+@using Microsoft.Extensions.Localization
+@using Ruptura.Web.Resources
+@using Ruptura.Shared.CharacterSheets
+@using Ruptura.Shared.Catalog
+@inject IStringLocalizer<AppStrings> L
+@inject ICatalogClientService CatalogService
+
+<div class="ledger-table-wrap">
+    <table class="ledger-table">
+        <thead>
+            <tr>
+                <th>@L["Gm.CampaignDetail.Col.Name"]</th>
+                <th>@L["Sheet.Skills.Points"]</th>
+                <th>@L["Sheet.Skills.Grade"]</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var skill in Data.Skills)
+            {
+                <tr>
+                    <td>@NameOf(skill.CatalogEntryId)</td>
+                    <td style="width:100px">
+                        <input class="form-control form-control-sm" type="number" min="0"
+                               value="@skill.Points" @onchange="e => skill.Points = ParseInt(e.Value)" />
+                    </td>
+                    <td>@Derived?.SkillGradeBonuses.GetValueOrDefault(skill.CatalogEntryId)</td>
+                    <td><button class="btn btn-outline-secondary btn-sm" @onclick="() => Data.Skills.Remove(skill)">@L["Sheet.Skills.Remove"]</button></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<div style="display:flex;gap:.5rem;margin-top:1rem">
+    <select class="form-select" style="max-width:320px" @bind="_selectedSkillId">
+        @foreach (var entry in _available)
+        {
+            <option value="@entry.Id">@entry.Name</option>
+        }
+    </select>
+    <button class="btn btn-primary btn-sm" @onclick="AddSkill" disabled="@(_selectedSkillId == Guid.Empty)">@L["Sheet.Skills.Add"]</button>
+</div>
+
+@code {
+    [Parameter] public CharacterSheetData Data { get; set; } = new();
+    [Parameter] public CharacterDerivedStats? Derived { get; set; }
+    [Parameter] public Guid CampaignId { get; set; }
+
+    private List<CatalogEntryResponse> _all = [];
+    private Guid _selectedSkillId;
+
+    private IEnumerable<CatalogEntryResponse> _available =>
+        _all.Where(e => Data.Skills.All(s => s.CatalogEntryId != e.Id));
+
+    protected override async Task OnInitializedAsync()
+    {
+        _all = (await CatalogService.GetByTypeAsync("Skill", CampaignId))?.Data?.ToList() ?? [];
+    }
+
+    private string NameOf(Guid id) => _all.FirstOrDefault(e => e.Id == id)?.Name ?? id.ToString();
+
+    private static int ParseInt(object? value) => int.TryParse(value?.ToString(), out var v) ? v : 0;
+
+    private void AddSkill()
+    {
+        if (_selectedSkillId == Guid.Empty) return;
+        Data.Skills.Add(new CharacterSkillEntry { CatalogEntryId = _selectedSkillId, Points = 0 });
+        _selectedSkillId = Guid.Empty;
+    }
+}

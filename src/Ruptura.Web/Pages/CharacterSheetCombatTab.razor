@@ -1,0 +1,65 @@
+@using Microsoft.Extensions.Localization
+@using Ruptura.Web.Resources
+@using Ruptura.Shared.CharacterSheets
+@inject IStringLocalizer<AppStrings> L
+
+<div style="display:flex;flex-wrap:wrap;gap:1.5rem;margin-bottom:1.5rem">
+    <div>
+        <label class="form-label">@L["Sheet.Combat.CurrentHp"]</label>
+        <input class="form-control" type="number" @bind="Data.Combat.CurrentHp" @bind:event="oninput" style="width:100px" />
+    </div>
+    <div><span class="section-title" style="display:block">@L["Sheet.Combat.MaxHp"]</span><span>@Derived?.MaxHp</span></div>
+    <div><span class="section-title" style="display:block">@L["Sheet.Combat.Movement"]</span><span>@Derived?.Movement</span></div>
+    <div><span class="section-title" style="display:block">@L["Sheet.Combat.Initiative"]</span><span>@Derived?.Initiative</span></div>
+    <div><span class="section-title" style="display:block">@L["Sheet.Combat.PassiveDefense"]</span><span>@Derived?.PassiveDefense</span></div>
+    <div><span class="section-title" style="display:block">@L["Sheet.Combat.DamageReduction"]</span><span>@Derived?.DamageReduction</span></div>
+</div>
+
+<div class="section-header">
+    <span class="section-title">@L["Sheet.Combat.Conditions"]</span>
+</div>
+<div style="display:flex;gap:.5rem;margin-bottom:1rem">
+    <input class="form-control" style="max-width:240px" @bind="_newCondition" @bind:event="oninput" />
+    <button class="btn btn-outline-secondary btn-sm" @onclick="AddCondition">@L["Sheet.Combat.AddCondition"]</button>
+</div>
+<div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.5rem">
+    @foreach (var condition in Data.Combat.ActiveConditions.ToList())
+    {
+        <span class="btn btn-outline-secondary btn-sm" @onclick="() => Data.Combat.ActiveConditions.Remove(condition)">
+            @condition ✕
+        </span>
+    }
+</div>
+
+<div class="section-header"><span class="section-title">@L["Sheet.Combat.Weapons"]</span></div>
+<div class="ledger-table-wrap">
+    <table class="ledger-table">
+        <thead>
+            <tr><th>@L["Sheet.Combat.Weapon.Name"]</th><th>@L["Sheet.Combat.Weapon.Attack"]</th><th>@L["Sheet.Combat.Weapon.Damage"]</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var weapon in Derived?.Weapons ?? [])
+            {
+                <tr>
+                    <td>@weapon.Name</td>
+                    <td>@(weapon.AttackBonus >= 0 ? $"+{weapon.AttackBonus}" : weapon.AttackBonus.ToString())</td>
+                    <td>@weapon.DamageFormula</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    [Parameter] public CharacterSheetData Data { get; set; } = new();
+    [Parameter] public CharacterDerivedStats? Derived { get; set; }
+
+    private string _newCondition = string.Empty;
+
+    private void AddCondition()
+    {
+        if (string.IsNullOrWhiteSpace(_newCondition)) return;
+        Data.Combat.ActiveConditions.Add(_newCondition.Trim());
+        _newCondition = string.Empty;
+    }
+}

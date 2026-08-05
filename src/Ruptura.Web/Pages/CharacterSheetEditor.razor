@@ -77,6 +77,14 @@ else
         {
             <CharacterSheetAttributesTab Data="_data" Derived="_derived" />
         }
+        else if (_activeTab == "combat")
+        {
+            <CharacterSheetCombatTab Data="_data" Derived="_derived" />
+        }
+        else if (_activeTab == "skills")
+        {
+            <CharacterSheetSkillsTab Data="_data" Derived="_derived" CampaignId="CampaignId" />
+        }
     </div>
 }
 
@@ -88,8 +96,10 @@ else
     private static readonly Dictionary<string, string> Tabs = new()
     {
         ["identity"] = "Sheet.Tab.Identity",
-        ["attributes"] = "Sheet.Tab.Attributes"
-        // Tasks 15-17 add: combat, skills, talents, spells, techniques, equipment, trial, guildRegistry
+        ["attributes"] = "Sheet.Tab.Attributes",
+        ["combat"] = "Sheet.Tab.Combat",
+        ["skills"] = "Sheet.Tab.Skills"
+        // Tasks 16-17 add: talents, spells, techniques, equipment, trial, guildRegistry
     };
 
     private bool _loading = true;

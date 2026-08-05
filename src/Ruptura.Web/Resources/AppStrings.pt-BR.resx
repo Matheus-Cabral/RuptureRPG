@@ -204,4 +204,20 @@
   <data name="Sheet.Attributes.Afinidade"><value>Afinidade</value></data>
   <data name="Sheet.Attributes.Modifier"><value>Mod.</value></data>
   <data name="Sheet.Attributes.Grade"><value>Bônus de Grau</value></data>
+  <data name="Sheet.Combat.CurrentHp"><value>PV Atual</value></data>
+  <data name="Sheet.Combat.MaxHp"><value>PV Máximo</value></data>
+  <data name="Sheet.Combat.Movement"><value>Deslocamento</value></data>
+  <data name="Sheet.Combat.Initiative"><value>Iniciativa</value></data>
+  <data name="Sheet.Combat.PassiveDefense"><value>Defesa Passiva</value></data>
+  <data name="Sheet.Combat.DamageReduction"><value>Redução de Dano</value></data>
+  <data name="Sheet.Combat.Conditions"><value>Condições Ativas</value></data>
+  <data name="Sheet.Combat.AddCondition"><value>Adicionar</value></data>
+  <data name="Sheet.Combat.Weapons"><value>Armas (equipadas, ver aba Equipamento)</value></data>
+  <data name="Sheet.Combat.Weapon.Name"><value>Arma</value></data>
+  <data name="Sheet.Combat.Weapon.Attack"><value>Ataque</value></data>
+  <data name="Sheet.Combat.Weapon.Damage"><value>Dano</value></data>
+  <data name="Sheet.Skills.Add"><value>Adicionar Perícia</value></data>
+  <data name="Sheet.Skills.Points"><value>Pontos</value></data>
+  <data name="Sheet.Skills.Grade"><value>Bônus de Grau</value></data>
+  <data name="Sheet.Skills.Remove"><value>Remover</value></data>
 </root>
