@@ -9,9 +9,10 @@ public class CatalogClientService(IHttpClientFactory factory) : ICatalogClientSe
 {
     private HttpClient Http => factory.CreateClient("RupturaApi");
 
-    public async Task<ApiResponse<IEnumerable<CatalogEntryResponse>>?> GetByTypeAsync(string type, Guid campaignId)
+    public async Task<ApiResponse<IEnumerable<CatalogEntryResponse>>?> GetByTypeAsync(
+        string type, Guid campaignId, bool includeArchived = false)
     {
-        var query = $"api/catalog?type={HttpUtility.UrlEncode(type)}&campaignId={campaignId}";
+        var query = $"api/catalog?type={HttpUtility.UrlEncode(type)}&campaignId={campaignId}&includeArchived={includeArchived}";
         var response = await Http.GetAsync(query);
         if (!response.IsSuccessStatusCode) return null;
         return await response.Content.ReadFromJsonAsync<ApiResponse<IEnumerable<CatalogEntryResponse>>>();

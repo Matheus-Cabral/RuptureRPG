@@ -29,6 +29,13 @@ public class CampaignClientService(IHttpClientFactory factory) : ICampaignClient
         return await response.Content.ReadFromJsonAsync<ApiResponse<IEnumerable<CampaignResponse>>>();
     }
 
+    public async Task<ApiResponse<IEnumerable<CampaignResponse>>?> GetMineAsync()
+    {
+        var response = await Http.GetAsync("api/campaigns/mine");
+        if (!response.IsSuccessStatusCode) return null;
+        return await response.Content.ReadFromJsonAsync<ApiResponse<IEnumerable<CampaignResponse>>>();
+    }
+
     public async Task<ApiResponse<IEnumerable<CampaignMemberResponse>>?> GetMembersAsync(Guid campaignId)
     {
         var response = await Http.GetAsync($"api/campaigns/{campaignId}/members");

@@ -39,6 +39,7 @@ builder.Services.AddScoped<IAuthClientService, AuthClientService>();
 builder.Services.AddScoped<IInviteClientService, InviteClientService>();
 builder.Services.AddScoped<ICampaignClientService, CampaignClientService>();
 builder.Services.AddScoped<ICatalogClientService, CatalogClientService>();
+builder.Services.AddScoped<ICharacterSheetClientService, CharacterSheetClientService>();
 
 var host = builder.Build();
 
