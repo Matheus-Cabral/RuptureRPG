@@ -60,6 +60,7 @@ public static class InfrastructureExtensions
         services.AddScoped<ICampaignService, CampaignService>();
         services.AddScoped<ICatalogEntryService, CatalogEntryService>();
         services.AddScoped<ICharacterSheetService, CharacterSheetService>();
+        services.AddScoped<IJournalEntryService, JournalEntryService>();
 
         // Repositories
         services.AddScoped<IInviteCodeRepository, InviteCodeRepository>();
