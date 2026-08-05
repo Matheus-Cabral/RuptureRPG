@@ -38,6 +38,7 @@ builder.Services.AddHttpClient("RupturaApi", client =>
 builder.Services.AddScoped<IAuthClientService, AuthClientService>();
 builder.Services.AddScoped<IInviteClientService, InviteClientService>();
 builder.Services.AddScoped<ICampaignClientService, CampaignClientService>();
+builder.Services.AddScoped<ICatalogClientService, CatalogClientService>();
 
 var host = builder.Build();
 
