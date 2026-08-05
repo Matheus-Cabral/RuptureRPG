@@ -426,182 +426,182 @@ namespace Ruptura.Infrastructure.Data.Migrations
                         new
                         {
                             Id = new Guid("20000000-0000-0000-0000-000000000001"),
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             DataJson = "{\"TriggeringEvent\":\"Explorou uma constru\\u00E7\\u00E3o antiga e escapou\",\"Benefit\":\"-1 dificuldade para identificar riscos estruturais/desabamentos\",\"Complication\":\"Algo daquela ru\\u00EDna ainda o procura\"}",
                             Name = "Sobrevivente de Ruína",
                             Type = 1,
-                            UpdatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
                         },
                         new
                         {
                             Id = new Guid("20000000-0000-0000-0000-000000000002"),
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             DataJson = "{\"TriggeringEvent\":\"Seu grupo anterior foi dizimado\",\"Benefit\":\"1x por expedi\\u00E7\\u00E3o, ignora a condi\\u00E7\\u00E3o de Surpreendido\",\"Complication\":\"Sofre rea\\u00E7\\u00F5es intensas a situa\\u00E7\\u00F5es que lembrem a emboscada\"}",
                             Name = "Sobreviveu a uma Emboscada",
                             Type = 1,
-                            UpdatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
                         },
                         new
                         {
                             Id = new Guid("20000000-0000-0000-0000-000000000003"),
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             DataJson = "{\"TriggeringEvent\":\"Passou tempo confinado, injustamente ou n\\u00E3o\",\"Benefit\":\"Vantagem para escapar de conten\\u00E7\\u00F5es f\\u00EDsicas (cordas, algemas)\",\"Complication\":\"Possui um registro criminal reconhec\\u00EDvel por autoridades\"}",
                             Name = "Foi Preso",
                             Type = 1,
-                            UpdatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
                         },
                         new
                         {
                             Id = new Guid("20000000-0000-0000-0000-000000000004"),
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             DataJson = "{\"TriggeringEvent\":\"Sua unidade foi dizimada em combate\",\"Benefit\":\"Resist\\u00EAncia maior ao medo em combate organizado\",\"Complication\":\"Um superior sobrevivente o culpa pela derrota\"}",
                             Name = "Serviu no Exército",
                             Type = 1,
-                            UpdatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
                         },
                         new
                         {
                             Id = new Guid("20000000-0000-0000-0000-000000000005"),
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             DataJson = "{\"TriggeringEvent\":\"Teve um mentor renomado que sumiu\",\"Benefit\":\"Pode invocar o nome do mestre para abrir portas em um c\\u00EDrculo espec\\u00EDfico\",\"Complication\":\"O desaparecimento do mestre esconde algo perigoso\"}",
                             Name = "Estudou com um Mestre",
                             Type = 1,
-                            UpdatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
                         },
                         new
                         {
                             Id = new Guid("20000000-0000-0000-0000-000000000006"),
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             DataJson = "{\"TriggeringEvent\":\"Per\\u00EDodo de mis\\u00E9ria extrema\",\"Benefit\":\"Aguenta mais tempo sem comida antes de sofrer penalidades\",\"Complication\":\"Deve favores a uma rede do submundo\"}",
                             Name = "Viveu nas Ruas",
                             Type = 1,
-                            UpdatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
                         },
                         new
                         {
                             Id = new Guid("20000000-0000-0000-0000-000000000007"),
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             DataJson = "{\"TriggeringEvent\":\"Recebeu um objeto de fam\\u00EDlia com hist\\u00F3ria\",\"Benefit\":\"O item herdado carrega uma pequena propriedade extra\",\"Complication\":\"Algu\\u00E9m mais tamb\\u00E9m quer aquele objeto de volta\"}",
                             Name = "Herdou uma Ferramenta",
                             Type = 1,
-                            UpdatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
                         },
                         new
                         {
                             Id = new Guid("20000000-0000-0000-0000-000000000008"),
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             DataJson = "{\"TriggeringEvent\":\"Achou um documento que n\\u00E3o deveria ter achado\",\"Benefit\":\"Conhece um fragmento raro de informa\\u00E7\\u00E3o (nome, s\\u00EDmbolo, local)\",\"Complication\":\"Outros sabem que ele tem o manuscrito e o procuram\"}",
                             Name = "Descobriu um Manuscrito",
                             Type = 1,
-                            UpdatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
                         },
                         new
                         {
                             Id = new Guid("20000000-0000-0000-0000-000000000009"),
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             DataJson = "{\"TriggeringEvent\":\"Foi tra\\u00EDdo por algu\\u00E9m de confian\\u00E7a\",\"Benefit\":\"-1 dificuldade para perceber trai\\u00E7\\u00E3o/mentira de aliados pr\\u00F3ximos\",\"Complication\":\"Penalidade em testes sociais para formar v\\u00EDnculos r\\u00E1pidos\"}",
                             Name = "Traído por um Aliado",
                             Type = 1,
-                            UpdatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
                         },
                         new
                         {
                             Id = new Guid("20000000-0000-0000-0000-000000000010"),
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             DataJson = "{\"TriggeringEvent\":\"Feito her\\u00F3ico publicamente reconhecido\",\"Benefit\":\"Reputa\\u00E7\\u00E3o positiva e acesso a favores menores na regi\\u00E3o\",\"Complication\":\"A vila cobra ajuda cont\\u00EDnua; recusar custa reputa\\u00E7\\u00E3o\"}",
                             Name = "Salvou uma Vila",
                             Type = 1,
-                            UpdatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
                         },
                         new
                         {
                             Id = new Guid("20000000-0000-0000-0000-000000000011"),
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             DataJson = "{\"TriggeringEvent\":\"Um familiar desapareceu ou morreu em uma expedi\\u00E7\\u00E3o\",\"Benefit\":\"-1 dificuldade em testes ligados a rastrear aquele tipo de perigo espec\\u00EDfico\",\"Complication\":\"Obsess\\u00E3o que pode lev\\u00E1-lo a riscos desnecess\\u00E1rios\"}",
                             Name = "Perdeu Alguém na Dungeon",
                             Type = 1,
-                            UpdatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
                         },
                         new
                         {
                             Id = new Guid("20000000-0000-0000-0000-000000000012"),
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             DataJson = "{\"TriggeringEvent\":\"Selou um pequeno acordo com uma entidade\",\"Benefit\":\"Pequeno benef\\u00EDcio sobrenatural (definido com o Mestre)\",\"Complication\":\"A entidade cobrar\\u00E1 algo em troca, em algum momento\"}",
                             Name = "Fez um Pacto Menor",
                             Type = 1,
-                            UpdatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
                         },
                         new
                         {
                             Id = new Guid("20000000-0000-0000-0000-000000000013"),
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             DataJson = "{\"TriggeringEvent\":\"Quase morreu de uma praga\",\"Benefit\":\"Resist\\u00EAncia aumentada contra doen\\u00E7as e venenos\",\"Complication\":\"Carrega uma sequela f\\u00EDsica leve e permanente\"}",
                             Name = "Sobreviveu a uma Doença Grave",
                             Type = 1,
-                            UpdatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
                         },
                         new
                         {
                             Id = new Guid("20000000-0000-0000-0000-000000000014"),
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             DataJson = "{\"TriggeringEvent\":\"Teve a reputa\\u00E7\\u00E3o manchada por um crime que n\\u00E3o cometeu\",\"Benefit\":\"B\\u00F4nus em Diplomacia quando precisa se defender de acusa\\u00E7\\u00F5es\",\"Complication\":\"Ainda \\u00E9 malvisto ou procurado em determinado lugar\"}",
                             Name = "Acusado Injustamente",
                             Type = 1,
-                            UpdatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
                         },
                         new
                         {
                             Id = new Guid("20000000-0000-0000-0000-000000000015"),
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            DataJson = "{\"TriggeringEvent\":\"Sabe de algo perigoso que n\\u00E3o deveria saber\",\"Benefit\":\"Possui informa\\u00E7\\u00E3o valiosa, negoci\\u00E1vel\",\"Complication\":\"Outros sabem que ele sabe \\u2014 e isso o torna um alvo\"}",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DataJson = "{\"TriggeringEvent\":\"Sabe de algo perigoso que n\\u00E3o devia saber\",\"Benefit\":\"Possui informa\\u00E7\\u00E3o valiosa, negoci\\u00E1vel\",\"Complication\":\"Outros sabem que ele sabe \\u2014 e isso o torna um alvo\"}",
                             Name = "Guardião de um Segredo",
                             Type = 1,
-                            UpdatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
                         },
                         new
                         {
                             Id = new Guid("20000000-0000-0000-0000-000000000016"),
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             DataJson = "{\"TriggeringEvent\":\"Passou por um ritual incompleto\",\"Benefit\":\"Sensibilidade leve a presen\\u00E7as m\\u00E1gicas pr\\u00F3ximas\",\"Complication\":\"A marca do ritual \\u00E9 percept\\u00EDvel ou reage mal a certos est\\u00EDmulos\"}",
                             Name = "Marcado por um Ritual",
                             Type = 1,
-                            UpdatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
                         },
                         new
                         {
                             Id = new Guid("20000000-0000-0000-0000-000000000017"),
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             DataJson = "{\"TriggeringEvent\":\"Deve a vida a algu\\u00E9m que nunca identificou\",\"Benefit\":\"Possui um contato misterioso que pode ajudar 1x\",\"Complication\":\"N\\u00E3o sabe quem foi \\u2014 a d\\u00EDvida pode ser cobrada a qualquer momento\"}",
                             Name = "Resgatado por Estranhos",
                             Type = 1,
-                            UpdatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
                         },
                         new
                         {
                             Id = new Guid("20000000-0000-0000-0000-000000000018"),
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             DataJson = "{\"TriggeringEvent\":\"Um inc\\u00EAndio ou colapso destruiu sua vida anterior\",\"Benefit\":\"B\\u00F4nus de Vontade contra desespero e perda\",\"Complication\":\"N\\u00E3o possui posses, contatos ou apoio financeiro antigos\"}",
                             Name = "Perdeu Tudo em um Desastre",
                             Type = 1,
-                            UpdatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
                         },
                         new
                         {
                             Id = new Guid("20000000-0000-0000-0000-000000000019"),
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             DataJson = "{\"TriggeringEvent\":\"Viu de perto o fen\\u00F4meno mais temido do mundo\",\"Benefit\":\"Resist\\u00EAncia a p\\u00E2nico diante de fen\\u00F4menos dimensionais\",\"Complication\":\"Hipervigil\\u00E2ncia: penalidade em ambientes que lembram o evento\"}",
                             Name = "Testemunhou uma Ruptura",
                             Type = 1,
-                            UpdatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
                         },
                         new
                         {
                             Id = new Guid("20000000-0000-0000-0000-000000000020"),
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             DataJson = "{\"TriggeringEvent\":\"Cresceu dentro da pr\\u00F3pria institui\\u00E7\\u00E3o\",\"Benefit\":\"B\\u00F4nus em testes administrativos/burocr\\u00E1ticos internos da Guilda\",\"Complication\":\"Nunca teve vida \\u0022normal\\u0022: penalidade leve em situa\\u00E7\\u00F5es sociais fora da Guilda\"}",
                             Name = "Criado pela Guilda",
                             Type = 1,
-                            UpdatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
                         });
                 });
 

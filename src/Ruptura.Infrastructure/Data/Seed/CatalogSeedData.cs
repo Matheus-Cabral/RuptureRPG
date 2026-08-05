@@ -9,7 +9,8 @@ public static partial class CatalogSeedData
     // Fixed timestamp so HasData produces a stable migration diff — using
     // DateTime.UtcNow here would make every migration regeneration look
     // like every seed row changed.
-    private static readonly DateTime SeedTimestamp = new(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+    // Property instead of field to avoid static initializer order issues across partial class files.
+    private static DateTime SeedTimestamp => new(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
     private static CatalogEntry Entry(string id, CatalogEntryType type, string name, object data) => new()
     {
