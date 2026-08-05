@@ -33,4 +33,12 @@ public static class ErrorCodes
         public const string AlreadyExists = "Catalog.AlreadyExists";
         public const string CannotModifyGlobalEntry = "Catalog.CannotModifyGlobalEntry";
     }
+
+    public static class CharacterSheet
+    {
+        public const string NotFound = "CharacterSheet.NotFound";
+        public const string PlayerNotMember = "CharacterSheet.PlayerNotMember";
+        public const string AlreadyHasAliveCharacter = "CharacterSheet.AlreadyHasAliveCharacter";
+        public const string OnlyGameMasterCanChangeStatus = "CharacterSheet.OnlyGameMasterCanChangeStatus";
+    }
 }
