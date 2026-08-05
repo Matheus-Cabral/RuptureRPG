@@ -240,4 +240,119 @@ public class CharacterSheetServiceTests
         result.IsFailure.Should().BeTrue();
         result.Error.Should().Be(ErrorCodes.CharacterSheet.NotFound);
     }
+
+    // ── UpdateAsync ──────────────────────────────────────────────────────────
+
+    private static CharacterSheet BuildAliveSheet(Guid ownerId, Guid campaignId) => new()
+    {
+        Id = Guid.NewGuid(), OwnerId = ownerId, CampaignId = campaignId, CharacterName = "Old Name",
+        IsDead = false, IsRetired = false, DataJson = JsonSerializer.Serialize(new CharacterSheetData())
+    };
+
+    [Fact]
+    public async Task UpdateAsync_AsOwner_UpdatesGeneralFieldsWithoutTouchingStatus()
+    {
+        var ownerId = Guid.NewGuid();
+        var campaign = new Campaign { Id = Guid.NewGuid(), GameMasterId = Guid.NewGuid() };
+        var sheet = BuildAliveSheet(ownerId, campaign.Id);
+        _sheetRepoMock.Setup(r => r.GetByIdAsync(sheet.Id, It.IsAny<CancellationToken>())).ReturnsAsync(sheet);
+        _campaignRepoMock.Setup(r => r.GetByIdAsync(campaign.Id, It.IsAny<CancellationToken>())).ReturnsAsync(campaign);
+        _sheetRepoMock.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+
+        var result = await _sut.UpdateAsync(ownerId, sheet.Id, new UpdateCharacterSheetRequest
+        {
+            CharacterName = "New Name", DataJson = JsonSerializer.Serialize(new CharacterSheetData()),
+            IsDead = false, IsRetired = false
+        });
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.CharacterName.Should().Be("New Name");
+        sheet.IsDead.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task UpdateAsync_AsOwnerAttemptingToMarkDead_ReturnsFailureAndDoesNotSave()
+    {
+        var ownerId = Guid.NewGuid();
+        var campaign = new Campaign { Id = Guid.NewGuid(), GameMasterId = Guid.NewGuid() };
+        var sheet = BuildAliveSheet(ownerId, campaign.Id);
+        _sheetRepoMock.Setup(r => r.GetByIdAsync(sheet.Id, It.IsAny<CancellationToken>())).ReturnsAsync(sheet);
+        _campaignRepoMock.Setup(r => r.GetByIdAsync(campaign.Id, It.IsAny<CancellationToken>())).ReturnsAsync(campaign);
+
+        var result = await _sut.UpdateAsync(ownerId, sheet.Id, new UpdateCharacterSheetRequest
+        {
+            CharacterName = "New Name", DataJson = JsonSerializer.Serialize(new CharacterSheetData()),
+            IsDead = true, IsRetired = false
+        });
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(ErrorCodes.CharacterSheet.OnlyGameMasterCanChangeStatus);
+        sheet.CharacterName.Should().Be("Old Name");
+        _sheetRepoMock.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_AsGameMaster_CanMarkCharacterDead()
+    {
+        var gmId = Guid.NewGuid();
+        var campaign = new Campaign { Id = Guid.NewGuid(), GameMasterId = gmId };
+        var sheet = BuildAliveSheet(Guid.NewGuid(), campaign.Id);
+        _sheetRepoMock.Setup(r => r.GetByIdAsync(sheet.Id, It.IsAny<CancellationToken>())).ReturnsAsync(sheet);
+        _campaignRepoMock.Setup(r => r.GetByIdAsync(campaign.Id, It.IsAny<CancellationToken>())).ReturnsAsync(campaign);
+        _sheetRepoMock.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+
+        var result = await _sut.UpdateAsync(gmId, sheet.Id, new UpdateCharacterSheetRequest
+        {
+            CharacterName = "Old Name", DataJson = JsonSerializer.Serialize(new CharacterSheetData()),
+            IsDead = true, IsRetired = false
+        });
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.IsDead.Should().BeTrue();
+        sheet.IsDead.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task UpdateAsync_AsUnrelatedCaller_ReturnsNotFound()
+    {
+        var campaign = new Campaign { Id = Guid.NewGuid(), GameMasterId = Guid.NewGuid() };
+        var sheet = BuildAliveSheet(Guid.NewGuid(), campaign.Id);
+        _sheetRepoMock.Setup(r => r.GetByIdAsync(sheet.Id, It.IsAny<CancellationToken>())).ReturnsAsync(sheet);
+        _campaignRepoMock.Setup(r => r.GetByIdAsync(campaign.Id, It.IsAny<CancellationToken>())).ReturnsAsync(campaign);
+
+        var result = await _sut.UpdateAsync(Guid.NewGuid(), sheet.Id, new UpdateCharacterSheetRequest
+        {
+            CharacterName = "X", DataJson = JsonSerializer.Serialize(new CharacterSheetData())
+        });
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(ErrorCodes.CharacterSheet.NotFound);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_WhenSaveViolatesUniqueAliveIndex_ReturnsAlreadyHasAliveCharacter()
+    {
+        var gmId = Guid.NewGuid();
+        var campaign = new Campaign { Id = Guid.NewGuid(), GameMasterId = gmId };
+        var sheet = new CharacterSheet
+        {
+            Id = Guid.NewGuid(), OwnerId = Guid.NewGuid(), CampaignId = campaign.Id, CharacterName = "Resurrected",
+            IsDead = true, IsRetired = false, DataJson = JsonSerializer.Serialize(new CharacterSheetData())
+        };
+        _sheetRepoMock.Setup(r => r.GetByIdAsync(sheet.Id, It.IsAny<CancellationToken>())).ReturnsAsync(sheet);
+        _campaignRepoMock.Setup(r => r.GetByIdAsync(campaign.Id, It.IsAny<CancellationToken>())).ReturnsAsync(campaign);
+        _sheetRepoMock.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Microsoft.EntityFrameworkCore.DbUpdateException("unique violation"));
+
+        // GM tries to un-kill this character back to alive, while another alive sheet
+        // for the same owner+campaign already exists (simulated by the DB throwing).
+        var result = await _sut.UpdateAsync(gmId, sheet.Id, new UpdateCharacterSheetRequest
+        {
+            CharacterName = "Resurrected", DataJson = JsonSerializer.Serialize(new CharacterSheetData()),
+            IsDead = false, IsRetired = false
+        });
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(ErrorCodes.CharacterSheet.AlreadyHasAliveCharacter);
+    }
 }

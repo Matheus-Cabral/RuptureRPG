@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
 using Ruptura.Application.Common;
 using Ruptura.Application.Interfaces;
 using Ruptura.Domain.Entities;
@@ -90,8 +91,47 @@ public class CharacterSheetService(
         return Result.Success(await MapToResponseAsync(sheet, ct));
     }
 
-    public Task<Result<CharacterSheetResponse>> UpdateAsync(Guid callerId, Guid sheetId, UpdateCharacterSheetRequest request, CancellationToken ct = default) =>
-        throw new NotImplementedException("Implemented in Task 8.");
+    public async Task<Result<CharacterSheetResponse>> UpdateAsync(
+        Guid callerId, Guid sheetId, UpdateCharacterSheetRequest request, CancellationToken ct = default)
+    {
+        var sheet = await sheetRepo.GetByIdAsync(sheetId, ct);
+        if (sheet is null)
+            return Result.Failure<CharacterSheetResponse>(ErrorCodes.CharacterSheet.NotFound);
+
+        var campaign = await campaignRepo.GetByIdAsync(sheet.CampaignId, ct);
+        var isOwner = sheet.OwnerId == callerId;
+        var isGameMaster = campaign?.GameMasterId == callerId;
+        if (!isOwner && !isGameMaster)
+            return Result.Failure<CharacterSheetResponse>(ErrorCodes.CharacterSheet.NotFound);
+
+        var statusChanged = request.IsDead != sheet.IsDead || request.IsRetired != sheet.IsRetired;
+        if (statusChanged && !isGameMaster)
+            return Result.Failure<CharacterSheetResponse>(ErrorCodes.CharacterSheet.OnlyGameMasterCanChangeStatus);
+
+        sheet.CharacterName = request.CharacterName;
+        sheet.DataJson = request.DataJson;
+        sheet.PortraitImagePath = request.PortraitImagePath;
+        if (isGameMaster)
+        {
+            sheet.IsDead = request.IsDead;
+            sheet.IsRetired = request.IsRetired;
+        }
+        sheet.UpdatedAt = DateTime.UtcNow;
+
+        try
+        {
+            sheetRepo.Update(sheet);
+            await sheetRepo.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException)
+        {
+            // Only the alive-per-owner-per-campaign partial unique index is on this table,
+            // so any DbUpdateException on this save path means that race — see design spec §4.1.
+            return Result.Failure<CharacterSheetResponse>(ErrorCodes.CharacterSheet.AlreadyHasAliveCharacter);
+        }
+
+        return Result.Success(await MapToResponseAsync(sheet, ct));
+    }
 
     // ── Private helpers (shared with Tasks 7-8) ─────────────────────────────
 
