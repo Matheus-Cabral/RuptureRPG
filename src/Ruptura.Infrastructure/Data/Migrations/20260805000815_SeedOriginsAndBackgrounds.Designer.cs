@@ -12,7 +12,7 @@ using Ruptura.Infrastructure.Data;
 namespace Ruptura.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260805000303_SeedOriginsAndBackgrounds")]
+    [Migration("20260805000815_SeedOriginsAndBackgrounds")]
     partial class SeedOriginsAndBackgrounds
     {
         /// <inheritdoc />
