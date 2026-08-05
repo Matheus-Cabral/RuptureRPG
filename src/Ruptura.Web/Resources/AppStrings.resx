@@ -165,4 +165,43 @@
   <data name="Gm.Catalog.Save"><value>Save</value></data>
   <data name="Gm.Catalog.Cancel"><value>Cancel</value></data>
   <data name="Gm.Catalog.Delete"><value>Delete</value></data>
+
+  <!-- Character Sheet Editor -->
+  <data name="Sheet.Loading"><value>Loading character sheet…</value></data>
+  <data name="Sheet.NotFound"><value>Character sheet not found.</value></data>
+  <data name="Sheet.Save"><value>Save</value></data>
+  <data name="Sheet.Saved"><value>Saved.</value></data>
+  <data name="Sheet.NameLabel"><value>Character Name</value></data>
+  <data name="Sheet.PortraitLabel"><value>Portrait (path or URL)</value></data>
+  <data name="Sheet.RankLabel"><value>Rank</value></data>
+  <data name="Sheet.NpLabel"><value>NP</value></data>
+  <data name="Sheet.MarkDead"><value>Dead</value></data>
+  <data name="Sheet.MarkRetired"><value>Retired</value></data>
+  <data name="Sheet.Tab.Identity"><value>Identity</value></data>
+  <data name="Sheet.Tab.Attributes"><value>Attributes</value></data>
+  <data name="Sheet.Tab.Combat"><value>Combat</value></data>
+  <data name="Sheet.Tab.Skills"><value>Skills</value></data>
+  <data name="Sheet.Tab.Talents"><value>Talents</value></data>
+  <data name="Sheet.Tab.Spells"><value>Spells</value></data>
+  <data name="Sheet.Tab.Techniques"><value>Techniques</value></data>
+  <data name="Sheet.Tab.Equipment"><value>Equipment</value></data>
+  <data name="Sheet.Tab.Trial"><value>Attribute Trial</value></data>
+  <data name="Sheet.Tab.GuildRegistry"><value>Guild Registry</value></data>
+  <data name="Sheet.Identity.Origin"><value>Origin</value></data>
+  <data name="Sheet.Identity.Background"><value>Background</value></data>
+  <data name="Sheet.Identity.Lineage"><value>Lineage</value></data>
+  <data name="Sheet.Identity.Aptitudes"><value>Aptitudes (up to 2)</value></data>
+  <data name="Sheet.Identity.InitialTalent"><value>Initial Talent</value></data>
+  <data name="Sheet.Identity.Patron"><value>Patron (display name)</value></data>
+  <data name="Sheet.Identity.None"><value>— none —</value></data>
+  <data name="Sheet.Attributes.Corpo"><value>Body</value></data>
+  <data name="Sheet.Attributes.Controle"><value>Control</value></data>
+  <data name="Sheet.Attributes.Vigor"><value>Vigor</value></data>
+  <data name="Sheet.Attributes.Presenca"><value>Presence</value></data>
+  <data name="Sheet.Attributes.Intelecto"><value>Intellect</value></data>
+  <data name="Sheet.Attributes.Percepcao"><value>Perception</value></data>
+  <data name="Sheet.Attributes.Vontade"><value>Will</value></data>
+  <data name="Sheet.Attributes.Afinidade"><value>Affinity</value></data>
+  <data name="Sheet.Attributes.Modifier"><value>Mod.</value></data>
+  <data name="Sheet.Attributes.Grade"><value>Grade Bonus</value></data>
 </root>

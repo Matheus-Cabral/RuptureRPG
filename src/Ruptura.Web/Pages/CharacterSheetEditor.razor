@@ -1,0 +1,162 @@
+@using Microsoft.Extensions.Localization
+@using Ruptura.Web.Resources
+@using Ruptura.Shared.CharacterSheets
+@inject IStringLocalizer<AppStrings> L
+@inject ICharacterSheetClientService SheetService
+
+@if (_loading)
+{
+    <div class="ledger-empty"><span class="spinner-border spinner-border-sm me-2"></span>@L["Sheet.Loading"]</div>
+}
+else if (_sheet is null)
+{
+    <div class="alert-danger">@(_errorMessage ?? L["Sheet.NotFound"])</div>
+}
+else
+{
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <div class="alert-danger mb-4">@_errorMessage</div>
+    }
+    @if (!string.IsNullOrEmpty(_successMessage))
+    {
+        <div class="mb-4" style="color:var(--text-muted);font-size:.85rem">@_successMessage</div>
+    }
+
+    <div style="display:flex;flex-wrap:wrap;gap:1rem;align-items:flex-end;margin-bottom:1.5rem">
+        <div>
+            <label class="form-label">@L["Sheet.NameLabel"]</label>
+            <input class="form-control" @bind="_characterName" @bind:event="oninput" />
+        </div>
+        <div>
+            <label class="form-label">@L["Sheet.PortraitLabel"]</label>
+            <input class="form-control" @bind="_portraitImagePath" @bind:event="oninput" />
+        </div>
+        <div>
+            <span class="section-title" style="display:block">@L["Sheet.RankLabel"]</span>
+            <span>@_data.GuildRegistry.Ranking</span>
+        </div>
+        <div>
+            <span class="section-title" style="display:block">@L["Sheet.NpLabel"]</span>
+            <span>@_derived?.Np</span>
+        </div>
+        @if (CanEditStatus)
+        {
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="isDead" @bind="_isDead" />
+                <label class="form-check-label" for="isDead">@L["Sheet.MarkDead"]</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="isRetired" @bind="_isRetired" />
+                <label class="form-check-label" for="isRetired">@L["Sheet.MarkRetired"]</label>
+            </div>
+        }
+        <button class="btn btn-primary btn-sm" @onclick="SaveAsync" disabled="@_saving">
+            @if (_saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+            @L["Sheet.Save"]
+        </button>
+    </div>
+
+    <ul class="nav nav-tabs">
+        @foreach (var tab in Tabs)
+        {
+            <li class="nav-item">
+                <button class="nav-link @(_activeTab == tab.Key ? "active" : "")" @onclick="() => _activeTab = tab.Key">
+                    @L[tab.Value]
+                </button>
+            </li>
+        }
+    </ul>
+
+    <div style="padding:1.5rem 0">
+        @if (_activeTab == "identity")
+        {
+            <CharacterSheetIdentityTab Data="_data" CampaignId="CampaignId" />
+        }
+        else if (_activeTab == "attributes")
+        {
+            <CharacterSheetAttributesTab Data="_data" Derived="_derived" />
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public Guid SheetId { get; set; }
+    [Parameter] public Guid CampaignId { get; set; }
+    [Parameter] public bool CanEditStatus { get; set; }
+
+    private static readonly Dictionary<string, string> Tabs = new()
+    {
+        ["identity"] = "Sheet.Tab.Identity",
+        ["attributes"] = "Sheet.Tab.Attributes"
+        // Tasks 15-17 add: combat, skills, talents, spells, techniques, equipment, trial, guildRegistry
+    };
+
+    private bool _loading = true;
+    private bool _saving;
+    private string? _errorMessage;
+    private string? _successMessage;
+    private CharacterSheetResponse? _sheet;
+    private CharacterSheetData _data = new();
+    private CharacterDerivedStats? _derived;
+    private string _characterName = string.Empty;
+    private string? _portraitImagePath;
+    private bool _isDead;
+    private bool _isRetired;
+    private string _activeTab = "identity";
+
+    protected override async Task OnParametersSetAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _errorMessage = null;
+        var result = await SheetService.GetAsync(SheetId);
+        if (result?.Data is null)
+        {
+            _sheet = null;
+            _errorMessage = result?.Message;
+        }
+        else
+        {
+            _sheet = result.Data;
+            _data = result.Data.Data;
+            _derived = result.Data.DerivedStats;
+            _characterName = result.Data.CharacterName;
+            _portraitImagePath = result.Data.PortraitImagePath;
+            _isDead = result.Data.IsDead;
+            _isRetired = result.Data.IsRetired;
+        }
+        _loading = false;
+    }
+
+    private async Task SaveAsync()
+    {
+        _saving = true;
+        _errorMessage = null;
+        _successMessage = null;
+
+        var result = await SheetService.UpdateAsync(SheetId, new UpdateCharacterSheetRequest
+        {
+            CharacterName = _characterName,
+            DataJson = System.Text.Json.JsonSerializer.Serialize(_data),
+            IsDead = _isDead,
+            IsRetired = _isRetired,
+            PortraitImagePath = _portraitImagePath
+        });
+
+        if (result?.Data is not null)
+        {
+            _sheet = result.Data;
+            _data = result.Data.Data;
+            _derived = result.Data.DerivedStats;
+            _successMessage = L["Sheet.Saved"];
+        }
+        else
+        {
+            _errorMessage = result?.Message ?? L["Common.Error"];
+        }
+
+        _saving = false;
+    }
+}

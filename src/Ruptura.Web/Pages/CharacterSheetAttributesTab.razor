@@ -1,0 +1,58 @@
+@using Microsoft.Extensions.Localization
+@using Ruptura.Web.Resources
+@using Ruptura.Shared.CharacterSheets
+@inject IStringLocalizer<AppStrings> L
+
+<div class="ledger-table-wrap">
+    <table class="ledger-table">
+        <thead>
+            <tr>
+                <th></th>
+                <th>@L["Sheet.NameLabel"]</th>
+                <th>@L["Sheet.Attributes.Modifier"]</th>
+                <th>@L["Sheet.Attributes.Grade"]</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var attr in Attrs)
+            {
+                <tr>
+                    <td style="width:80px">
+                        <input class="form-control form-control-sm" type="number" min="1" max="6"
+                               value="@attr.Get(Data.Attributes)" @onchange="e => attr.Set(Data.Attributes, ParseInt(e.Value))" />
+                    </td>
+                    <td>@L[attr.LabelKey]</td>
+                    <td>@FormatModifier(Derived?.AttributeModifiers.GetValueOrDefault(attr.Key) ?? 0)</td>
+                    <td>@FormatModifier(Derived?.AttributeGradeBonuses.GetValueOrDefault(attr.Key) ?? 0)</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    [Parameter] public CharacterSheetData Data { get; set; } = new();
+    [Parameter] public CharacterDerivedStats? Derived { get; set; }
+
+    private record AttrRow(string Key, string LabelKey, Func<CharacterAttributes, int> Get, Action<CharacterAttributes, int> Set);
+
+    private static readonly List<AttrRow> Attrs =
+    [
+        new("Corpo", "Sheet.Attributes.Corpo", a => a.Corpo, (a, v) => a.Corpo = v),
+        new("Controle", "Sheet.Attributes.Controle", a => a.Controle, (a, v) => a.Controle = v),
+        new("Vigor", "Sheet.Attributes.Vigor", a => a.Vigor, (a, v) => a.Vigor = v),
+        new("Presenca", "Sheet.Attributes.Presenca", a => a.Presenca, (a, v) => a.Presenca = v),
+        new("Intelecto", "Sheet.Attributes.Intelecto", a => a.Intelecto, (a, v) => a.Intelecto = v),
+        new("Percepcao", "Sheet.Attributes.Percepcao", a => a.Percepcao, (a, v) => a.Percepcao = v),
+        new("Vontade", "Sheet.Attributes.Vontade", a => a.Vontade, (a, v) => a.Vontade = v),
+        new("Afinidade", "Sheet.Attributes.Afinidade", a => a.Afinidade, (a, v) => a.Afinidade = v)
+    ];
+
+    private static int ParseInt(object? value) => int.TryParse(value?.ToString(), out var v) ? v : 1;
+
+    private static string FormatModifier(int value) => value switch
+    {
+        > 0 => $"+{value}",
+        _ => value.ToString()
+    };
+}
