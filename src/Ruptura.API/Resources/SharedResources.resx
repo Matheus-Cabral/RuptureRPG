@@ -71,6 +71,12 @@
   <data name="Journal.Updated"><value>Journal entry updated successfully.</value></data>
   <data name="Journal.Deleted"><value>Journal entry deleted successfully.</value></data>
 
+  <!-- Notification -->
+  <data name="Notification.NotFound"><value>Notification not found.</value></data>
+  <data name="Notification.NotPromotable"><value>This notification cannot be promoted.</value></data>
+  <data name="Notification.Promoted"><value>Character promoted successfully.</value></data>
+  <data name="Notification.Dismissed"><value>Notification dismissed.</value></data>
+
   <!-- Generic -->
   <data name="Error.Unexpected"><value>An unexpected error occurred. Please try again later.</value></data>
   <data name="Error.Forbidden"><value>You do not have permission to perform this action.</value></data>

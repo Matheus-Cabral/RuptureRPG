@@ -17,6 +17,7 @@ namespace Ruptura.API.Controllers;
 [Authorize]
 public class CharacterSheetController(
     ICharacterSheetService characterSheetService,
+    INotificationService notificationService,
     IStringLocalizer<SharedResources> localizer,
     IValidator<GrantCharacterSheetRequest> grantValidator,
     IValidator<UpdateCharacterSheetRequest> updateValidator) : ControllerBase
@@ -104,6 +105,10 @@ public class CharacterSheetController(
             return result.Error == ErrorCodes.CharacterSheet.NotFound
                 ? NotFound(ApiResponse.Fail(localizer[result.Error!]))
                 : BadRequest(ApiResponse.Fail(localizer[result.Error!]));
+
+        await notificationService.CheckAndCreateRankPromotionNotificationAsync(
+            result.Value!.CampaignId, result.Value.Id,
+            result.Value.Data.GuildRegistry.Ranking, result.Value.DerivedStats.Np, ct);
 
         return Ok(ApiResponse<CharacterSheetResponse>.Ok(result.Value!, localizer["CharacterSheet.Updated"]));
     }

@@ -71,6 +71,12 @@
   <data name="Journal.Updated"><value>Entrada de diário atualizada com sucesso.</value></data>
   <data name="Journal.Deleted"><value>Entrada de diário apagada com sucesso.</value></data>
 
+  <!-- Notification -->
+  <data name="Notification.NotFound"><value>Notificação não encontrada.</value></data>
+  <data name="Notification.NotPromotable"><value>Esta notificação não pode ser promovida.</value></data>
+  <data name="Notification.Promoted"><value>Personagem promovido com sucesso.</value></data>
+  <data name="Notification.Dismissed"><value>Notificação descartada.</value></data>
+
   <!-- Generic -->
   <data name="Error.Unexpected"><value>Ocorreu um erro inesperado. Por favor, tente novamente mais tarde.</value></data>
   <data name="Error.Forbidden"><value>Você não tem permissão para realizar esta ação.</value></data>
