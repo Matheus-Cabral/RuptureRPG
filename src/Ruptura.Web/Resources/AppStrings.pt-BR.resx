@@ -130,6 +130,10 @@
   <!-- Comum -->
   <data name="Common.Loading"><value>Carregando…</value></data>
   <data name="Common.Error"><value>Algo deu errado. Por favor, tente novamente.</value></data>
+  <data name="Theme.Switcher.Label"><value>Tema</value></data>
+  <data name="Theme.Light"><value>Claro</value></data>
+  <data name="Theme.System"><value>Sistema</value></data>
+  <data name="Theme.Dark"><value>Escuro</value></data>
 
   <!-- Campanhas do Mestre -->
   <data name="Nav.Section.GameMaster"><value>Mestre</value></data>
