@@ -414,13 +414,14 @@ public class CharacterSheetServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_AsOwnerAttemptingToChangeRanking_ReturnsFailureAndDoesNotSave()
+    public async Task UpdateAsync_AsOwnerAttemptingToChangeRanking_ServerStaysAuthoritativeAndUpdateSucceeds()
     {
         var ownerId = Guid.NewGuid();
         var campaign = new Campaign { Id = Guid.NewGuid(), GameMasterId = Guid.NewGuid() };
-        var sheet = BuildAliveSheet(ownerId, campaign.Id);
+        var sheet = BuildAliveSheet(ownerId, campaign.Id); // default Ranking = "Bronze"
         _sheetRepoMock.Setup(r => r.GetByIdAsync(sheet.Id, It.IsAny<CancellationToken>())).ReturnsAsync(sheet);
         _campaignRepoMock.Setup(r => r.GetByIdAsync(campaign.Id, It.IsAny<CancellationToken>())).ReturnsAsync(campaign);
+        _sheetRepoMock.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
 
         var changedData = new CharacterSheetData();
         changedData.GuildRegistry.Ranking = "Ferro";
@@ -431,10 +432,9 @@ public class CharacterSheetServiceTests
             IsDead = false, IsRetired = false
         });
 
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be(ErrorCodes.CharacterSheet.OnlyGameMasterCanChangeStatus);
-        sheet.CharacterName.Should().Be("Old Name");
-        _sheetRepoMock.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.CharacterName.Should().Be("New Name"); // rest of the payload still applies
+        result.Value.Data.GuildRegistry.Ranking.Should().Be("Bronze"); // server stayed authoritative
     }
 
     [Fact]

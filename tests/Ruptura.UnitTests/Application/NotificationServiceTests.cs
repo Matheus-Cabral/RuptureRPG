@@ -101,6 +101,19 @@ public class NotificationServiceTests
         _notificationRepoMock.Verify(r => r.AddAsync(It.IsAny<Notification>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
+    [Fact]
+    public async Task CheckAndCreate_WhenNpNoLongerExceedsCeiling_MarksExistingNotificationRead()
+    {
+        var characterSheetId = Guid.NewGuid();
+
+        var result = await _sut.CheckAndCreateRankPromotionNotificationAsync(
+            Guid.NewGuid(), characterSheetId, "Ferro", 90);
+
+        result.IsSuccess.Should().BeTrue();
+        _notificationRepoMock.Verify(r => r.MarkReadForSheetAsync(
+            characterSheetId, NotificationType.RankPromotionAvailable, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
     // ── PromoteAsync ─────────────────────────────────────────────────────────
 
     [Fact]
@@ -172,6 +185,24 @@ public class NotificationServiceTests
             s => s.SetRankingAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
+    [Fact]
+    public async Task PromoteAsync_WhenAlreadyRead_ReturnsNotFound()
+    {
+        var gmId = Guid.NewGuid();
+        var notification = new Notification
+        {
+            Id = Guid.NewGuid(), RecipientUserId = gmId, RelatedCharacterSheetId = Guid.NewGuid(), IsRead = true
+        };
+        _notificationRepoMock.Setup(r => r.GetByIdAsync(notification.Id, It.IsAny<CancellationToken>())).ReturnsAsync(notification);
+
+        var result = await _sut.PromoteAsync(gmId, notification.Id);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(ErrorCodes.Notification.NotFound);
+        _characterSheetServiceMock.Verify(
+            s => s.SetRankingAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
     // ── DismissAsync ─────────────────────────────────────────────────────────
 
     [Fact]
@@ -197,6 +228,19 @@ public class NotificationServiceTests
         _notificationRepoMock.Setup(r => r.GetByIdAsync(notification.Id, It.IsAny<CancellationToken>())).ReturnsAsync(notification);
 
         var result = await _sut.DismissAsync(Guid.NewGuid(), notification.Id);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(ErrorCodes.Notification.NotFound);
+    }
+
+    [Fact]
+    public async Task DismissAsync_WhenAlreadyRead_ReturnsNotFound()
+    {
+        var gmId = Guid.NewGuid();
+        var notification = new Notification { Id = Guid.NewGuid(), RecipientUserId = gmId, IsRead = true };
+        _notificationRepoMock.Setup(r => r.GetByIdAsync(notification.Id, It.IsAny<CancellationToken>())).ReturnsAsync(notification);
+
+        var result = await _sut.DismissAsync(gmId, notification.Id);
 
         result.IsFailure.Should().BeTrue();
         result.Error.Should().Be(ErrorCodes.Notification.NotFound);

@@ -162,7 +162,7 @@ public class RankPromotionFlowTests(IntegrationTestFactory factory)
     }
 
     [Fact]
-    public async Task Player_AttemptingToChangeRanking_IsRejected()
+    public async Task Player_AttemptingToChangeRanking_IsSilentlyIgnored()
     {
         var client = factory.CreateClient();
         var gm = await AuthHelper.RegisterGameMasterAsync(client, Faker.Internet.Email());
@@ -183,14 +183,89 @@ public class RankPromotionFlowTests(IntegrationTestFactory factory)
 
         AuthHelper.SetBearerToken(client, player.AccessToken);
         sheet.Data.GuildRegistry.Ranking = "Ferro";
+        var newCharacterName = "Dame Lysbet the Bold";
 
         var updateResponse = await client.PutAsJsonAsync($"api/character-sheets/{sheet.Id}", new UpdateCharacterSheetRequest
+        {
+            CharacterName = newCharacterName,
+            DataJson = JsonSerializer.Serialize(sheet.Data)
+        });
+
+        updateResponse.EnsureSuccessStatusCode();
+        var updated = (await updateResponse.Content.ReadFromJsonAsync<ApiResponse<CharacterSheetResponse>>())!.Data!;
+        updated.CharacterName.Should().Be(newCharacterName); // rest of the payload still applied
+        updated.Data.GuildRegistry.Ranking.Should().Be("Bronze"); // server stayed authoritative
+
+        var getResponse = await client.GetAsync($"api/character-sheets/{sheet.Id}");
+        var persisted = (await getResponse.Content.ReadFromJsonAsync<ApiResponse<CharacterSheetResponse>>())!.Data!;
+        persisted.Data.GuildRegistry.Ranking.Should().Be("Bronze");
+    }
+
+    [Fact]
+    public async Task Notification_IsInvisibleAndInaccessibleToADifferentGameMaster()
+    {
+        var clientA = factory.CreateClient();
+        var gmA = await AuthHelper.RegisterGameMasterAsync(clientA, Faker.Internet.Email());
+        AuthHelper.SetBearerToken(clientA, gmA.AccessToken);
+
+        var campaignResponse = await clientA.PostAsJsonAsync("api/campaigns", new CreateCampaignRequest { Name = "GM-A's Campaign" });
+        var campaign = (await campaignResponse.Content.ReadFromJsonAsync<ApiResponse<CampaignResponse>>())!.Data!;
+
+        var inviteResponse = await clientA.PostAsync("api/invites", null);
+        var inviteCode = (await inviteResponse.Content.ReadFromJsonAsync<ApiResponse<InviteCodeResponse>>())!.Data!.Code;
+        var player = await AuthHelper.RegisterPlayerAsync(clientA, inviteCode, Faker.Internet.Email());
+        var playerId = player.User.Id;
+        await clientA.PostAsJsonAsync($"api/campaigns/{campaign.Id}/members", new AssignMemberRequest { PlayerId = playerId });
+
+        var grantResponse = await clientA.PostAsJsonAsync($"api/campaigns/{campaign.Id}/character-sheets",
+            new GrantCharacterSheetRequest { PlayerId = playerId, CharacterName = "GM-A's Character" });
+        var sheet = (await grantResponse.Content.ReadFromJsonAsync<ApiResponse<CharacterSheetResponse>>())!.Data!;
+
+        var itemResponse = await clientA.PostAsJsonAsync("api/catalog", new CreateCatalogEntryRequest
+        {
+            CampaignId = campaign.Id,
+            Type = "EquipmentItem",
+            Name = "Relíquia Divina 3",
+            DataJson = """{"Category":"item","Rarity":"Divino","Weight":0}"""
+        });
+        var item = (await itemResponse.Content.ReadFromJsonAsync<ApiResponse<CatalogEntryResponse>>())!.Data!;
+
+        sheet.Data.Attributes.Corpo = 6;
+        sheet.Data.Attributes.Controle = 6;
+        sheet.Data.Attributes.Vigor = 6;
+        sheet.Data.Attributes.Presenca = 6;
+        sheet.Data.Attributes.Intelecto = 6;
+        sheet.Data.Attributes.Percepcao = 6;
+        sheet.Data.Attributes.Vontade = 6;
+        sheet.Data.Attributes.Afinidade = 6;
+        sheet.Data.Equipment.Add(new CharacterEquipmentEntry { CatalogEntryId = item.Id });
+
+        await clientA.PutAsJsonAsync($"api/character-sheets/{sheet.Id}", new UpdateCharacterSheetRequest
         {
             CharacterName = sheet.CharacterName,
             DataJson = JsonSerializer.Serialize(sheet.Data)
         });
 
-        updateResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var groupsA = await GetNotificationGroupsAsync(clientA);
+        var notification = groupsA.Single(g => g.CampaignId == campaign.Id).Notifications.Single(n => n.RelatedCharacterSheetId == sheet.Id);
+
+        // A second, unrelated GM must see none of this and must not be able to act on it.
+        var clientB = factory.CreateClient();
+        var gmB = await AuthHelper.RegisterGameMasterAsync(clientB, Faker.Internet.Email());
+        AuthHelper.SetBearerToken(clientB, gmB.AccessToken);
+
+        var groupsB = await GetNotificationGroupsAsync(clientB);
+        groupsB.SelectMany(g => g.Notifications).Should().NotContain(n => n.Id == notification.Id);
+
+        var promoteAsGmBResponse = await clientB.PostAsync($"api/notifications/{notification.Id}/promote", null);
+        promoteAsGmBResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
+
+        var dismissAsGmBResponse = await clientB.PostAsync($"api/notifications/{notification.Id}/dismiss", null);
+        dismissAsGmBResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
+
+        // GM-A's own view is unaffected by GM-B's failed attempts.
+        var groupsAAfter = await GetNotificationGroupsAsync(clientA);
+        groupsAAfter.SelectMany(g => g.Notifications).Should().Contain(n => n.Id == notification.Id);
     }
 
     private static async Task<List<NotificationGroupResponse>> GetNotificationGroupsAsync(HttpClient client)

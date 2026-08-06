@@ -25,6 +25,9 @@ public class NotificationController(
     {
         var gameMasterId = Guid.Parse(User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
         var result = await notificationService.GetForGameMasterAsync(gameMasterId, ct);
+        if (result.IsFailure)
+            return BadRequest(ApiResponse.Fail(localizer[result.Error!]));
+
         return Ok(ApiResponse<IEnumerable<NotificationGroupResponse>>.Ok(result.Value!));
     }
 

@@ -106,9 +106,18 @@ public class CharacterSheetController(
                 ? NotFound(ApiResponse.Fail(localizer[result.Error!]))
                 : BadRequest(ApiResponse.Fail(localizer[result.Error!]));
 
-        await notificationService.CheckAndCreateRankPromotionNotificationAsync(
-            result.Value!.CampaignId, result.Value.Id,
-            result.Value.Data.GuildRegistry.Ranking, result.Value.DerivedStats.Np, ct);
+        try
+        {
+            await notificationService.CheckAndCreateRankPromotionNotificationAsync(
+                result.Value!.CampaignId, result.Value.Id,
+                result.Value.Data.GuildRegistry.Ranking, result.Value.DerivedStats.Np, ct);
+        }
+        catch (Exception)
+        {
+            // The sheet save above already succeeded and committed. This check is advisory —
+            // a transient fault here (e.g. a DB blip) must never turn an already-successful
+            // save into an apparent failure for the client.
+        }
 
         return Ok(ApiResponse<CharacterSheetResponse>.Ok(result.Value!, localizer["CharacterSheet.Updated"]));
     }

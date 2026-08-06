@@ -13,6 +13,11 @@
         <h1>@L["Gm.Notifications.Title"]</h1>
     </div>
 
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <div class="alert-danger mb-4">@_errorMessage</div>
+    }
+
     @if (_loading)
     {
         <div class="ledger-empty">
@@ -70,6 +75,7 @@
     private List<NotificationGroupResponse> _groups = [];
     private bool _loading = true;
     private bool _busy;
+    private string? _errorMessage;
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
@@ -84,16 +90,34 @@
     private async Task PromoteAsync(Guid id)
     {
         _busy = true;
-        await NotificationService.PromoteAsync(id);
+        _errorMessage = null;
+        try
+        {
+            var result = await NotificationService.PromoteAsync(id);
+            if (result is null || !result.Success)
+                _errorMessage = result?.Message ?? L["Common.Error"];
+        }
+        finally
+        {
+            _busy = false;
+        }
         await LoadAsync();
-        _busy = false;
     }
 
     private async Task DismissAsync(Guid id)
     {
         _busy = true;
-        await NotificationService.DismissAsync(id);
+        _errorMessage = null;
+        try
+        {
+            var result = await NotificationService.DismissAsync(id);
+            if (result is null || !result.Success)
+                _errorMessage = result?.Message ?? L["Common.Error"];
+        }
+        finally
+        {
+            _busy = false;
+        }
         await LoadAsync();
-        _busy = false;
     }
 }

@@ -11,4 +11,7 @@ public interface INotificationRepository : IRepository<Notification>
 
     Task<IEnumerable<Notification>> GetUnreadByRecipientAsync(
         Guid recipientUserId, CancellationToken ct = default);
+
+    Task MarkReadForSheetAsync(
+        Guid characterSheetId, NotificationType type, CancellationToken ct = default);
 }

@@ -100,6 +100,8 @@ public class CharacterSheetService(
         return Result.Success();
     }
 
+    // No authorization of its own — mirrors the existing SetPortraitPathAsync precedent.
+    // Callers (NotificationService.PromoteAsync today) must authorize the caller first.
     public async Task<Result<string>> GetRankingAsync(Guid sheetId, CancellationToken ct = default)
     {
         var sheet = await sheetRepo.GetByIdAsync(sheetId, ct);
@@ -109,6 +111,11 @@ public class CharacterSheetService(
         return Result.Success(DeserializeSheetData(sheet.DataJson).GuildRegistry.Ranking);
     }
 
+    // No authorization of its own — see the comment on GetRankingAsync above. Also note this
+    // re-serializes the full CharacterSheetData model (a normalized round-trip that drops any
+    // JSON property not on the model and materializes defaults for nulls) — unlike UpdateAsync,
+    // which stores request.DataJson verbatim. Harmless today since client and server share the
+    // same DTO, but worth knowing before this method is reused elsewhere.
     public async Task<Result> SetRankingAsync(Guid sheetId, string ranking, CancellationToken ct = default)
     {
         var sheet = await sheetRepo.GetByIdAsync(sheetId, ct);
@@ -164,16 +171,32 @@ public class CharacterSheetService(
         if (!isOwner && !isGameMaster)
             return Result.Failure<CharacterSheetResponse>(ErrorCodes.CharacterSheet.NotFound);
 
-        var currentRanking = DeserializeSheetData(sheet.DataJson).GuildRegistry.Ranking;
-        var incomingRanking = DeserializeSheetData(request.DataJson).GuildRegistry.Ranking;
-        var statusChanged = request.IsDead != sheet.IsDead
-            || request.IsRetired != sheet.IsRetired
-            || incomingRanking != currentRanking;
+        var statusChanged = request.IsDead != sheet.IsDead || request.IsRetired != sheet.IsRetired;
         if (statusChanged && !isGameMaster)
             return Result.Failure<CharacterSheetResponse>(ErrorCodes.CharacterSheet.OnlyGameMasterCanChangeStatus);
 
+        var dataToSave = request.DataJson;
+        if (!isGameMaster)
+        {
+            // Ranking is GM-only (design spec §4.3/§6), but unlike IsDead/IsRetired a mismatch
+            // here does NOT reject the whole update — a non-GM's payload can legitimately go
+            // stale the instant a GM promotes the character via POST /api/notifications/{id}/promote
+            // (no realtime layer exists to push that change into an already-open editor). The
+            // server silently stays authoritative and keeps the rest of the payload, mirroring
+            // the PortraitImagePath precedent immediately below. A malicious direct-API caller
+            // still cannot change the rank — the attempt just has zero effect instead of failing
+            // the whole request.
+            var currentRanking = DeserializeSheetData(sheet.DataJson).GuildRegistry.Ranking;
+            var incomingData = DeserializeSheetData(request.DataJson);
+            if (incomingData.GuildRegistry.Ranking != currentRanking)
+            {
+                incomingData.GuildRegistry.Ranking = currentRanking;
+                dataToSave = JsonSerializer.Serialize(incomingData);
+            }
+        }
+
         sheet.CharacterName = request.CharacterName;
-        sheet.DataJson = request.DataJson;
+        sheet.DataJson = dataToSave;
         // PortraitImagePath is intentionally NOT settable from this general update payload —
         // portrait changes happen exclusively through SetPortraitPathAsync, called only by
         // MediaController.Upload, which already authorizes and controls the path format itself.

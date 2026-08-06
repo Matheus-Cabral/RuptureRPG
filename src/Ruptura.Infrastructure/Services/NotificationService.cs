@@ -30,7 +30,15 @@ public class NotificationService(
         CancellationToken ct = default)
     {
         if (!ExceedsCurrentRankCeiling(currentRanking, currentNp))
+        {
+            // A GM may resolve an outstanding notification by manually editing Ranking
+            // instead of clicking Promote (design spec §4.5's two resolution paths). If that
+            // manual edit already brought NP back under the new rank's ceiling, any old
+            // unread notification for this sheet is stale — clear it, or the GM could later
+            // click a leftover "Promote" and advance a rank the current NP no longer justifies.
+            await notificationRepo.MarkReadForSheetAsync(characterSheetId, NotificationType.RankPromotionAvailable, ct);
             return Result.Success();
+        }
 
         if (await notificationRepo.ExistsUnreadForSheetAsync(characterSheetId, NotificationType.RankPromotionAvailable, ct))
             return Result.Success();
@@ -114,7 +122,10 @@ public class NotificationService(
     public async Task<Result> PromoteAsync(Guid gameMasterId, Guid notificationId, CancellationToken ct = default)
     {
         var notification = await notificationRepo.GetByIdAsync(notificationId, ct);
-        if (notification is null || notification.RecipientUserId != gameMasterId)
+        // IsRead here means "already resolved" — reject a replay the same way a nonexistent
+        // or not-yours notification is rejected, so a double-submit or retried request can't
+        // silently advance the rank a second time.
+        if (notification is null || notification.RecipientUserId != gameMasterId || notification.IsRead)
             return Result.Failure(ErrorCodes.Notification.NotFound);
 
         if (notification.RelatedCharacterSheetId is not { } sheetId)
@@ -142,7 +153,7 @@ public class NotificationService(
     public async Task<Result> DismissAsync(Guid gameMasterId, Guid notificationId, CancellationToken ct = default)
     {
         var notification = await notificationRepo.GetByIdAsync(notificationId, ct);
-        if (notification is null || notification.RecipientUserId != gameMasterId)
+        if (notification is null || notification.RecipientUserId != gameMasterId || notification.IsRead)
             return Result.Failure(ErrorCodes.Notification.NotFound);
 
         notification.IsRead = true;

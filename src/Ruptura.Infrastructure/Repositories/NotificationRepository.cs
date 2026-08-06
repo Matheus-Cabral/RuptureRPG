@@ -20,4 +20,18 @@ public class NotificationRepository(AppDbContext db)
             .Where(n => n.RecipientUserId == recipientUserId && !n.IsRead)
             .OrderByDescending(n => n.CreatedAt)
             .ToListAsync(ct);
+
+    public async Task MarkReadForSheetAsync(
+        Guid characterSheetId, NotificationType type, CancellationToken ct = default)
+    {
+        var notifications = await Set
+            .Where(n => n.RelatedCharacterSheetId == characterSheetId && n.Type == type && !n.IsRead)
+            .ToListAsync(ct);
+
+        foreach (var notification in notifications)
+            notification.IsRead = true;
+
+        if (notifications.Count > 0)
+            await Db.SaveChangesAsync(ct);
+    }
 }
