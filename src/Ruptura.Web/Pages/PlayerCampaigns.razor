@@ -13,7 +13,7 @@
 
     @if (_loading)
     {
-        <div class="ledger-empty"><span class="spinner-border spinner-border-sm me-2"></span>@L["Common.Loading"]</div>
+        <LoadingIndicator Text="@L["Common.Loading"]" />
     }
     else if (_campaigns.Count == 0)
     {
@@ -22,14 +22,14 @@
     else
     {
         <div class="ledger-table-wrap">
-            <table class="ledger-table">
+            <table class="ledger-table stack-mobile">
                 <thead><tr><th>@L["Gm.CampaignDetail.Col.Name"]</th><th></th></tr></thead>
                 <tbody>
                     @foreach (var campaign in _campaigns)
                     {
                         <tr>
-                            <td>@campaign.Name</td>
-                            <td><a class="btn btn-outline-secondary btn-sm" href="/campaigns/@campaign.Id/character">@L["Campaigns.OpenCharacter"]</a></td>
+                            <td data-label="@L["Gm.CampaignDetail.Col.Name"]">@campaign.Name</td>
+                            <td data-label=""><a class="btn btn-outline-secondary btn-sm" href="/campaigns/@campaign.Id/character">@L["Campaigns.OpenCharacter"]</a></td>
                         </tr>
                     }
                 </tbody>
