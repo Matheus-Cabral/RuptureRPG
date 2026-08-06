@@ -37,8 +37,7 @@ public class MediaController(
         if (!Enum.TryParse<MediaEntityType>(entityType, out var parsedType) || !Enum.IsDefined(parsedType))
             return BadRequest(ApiResponse.Fail(localizer[ErrorCodes.Media.InvalidEntityType]));
 
-        var maxBytes = (long)mediaSettings.Value.MaxFileSizeMb * 1024 * 1024;
-        if (mediaSettings.Value.MaxFileSizeMb > 0 && file.Length > maxBytes)
+        if (ExceedsSizeLimit(file.Length, mediaSettings.Value.MaxFileSizeMb))
             return BadRequest(ApiResponse.Fail(localizer[ErrorCodes.Media.FileTooLarge]));
 
         var header = new byte[12];
@@ -66,7 +65,15 @@ public class MediaController(
             await using (var stream = file.OpenReadStream())
                 await fileStorage.SaveAsync(stream, relativePath, ct);
 
-            await characterSheetService.SetPortraitPathAsync(entityId, relativePath, ct);
+            var setPortraitResult = await characterSheetService.SetPortraitPathAsync(entityId, relativePath, ct);
+            if (setPortraitResult.IsFailure)
+            {
+                // The file was already saved to disk but the entity mutation failed —
+                // delete it rather than leave an orphaned file the client believes is linked.
+                await fileStorage.DeleteAsync(relativePath, ct);
+                return BadRequest(ApiResponse.Fail(localizer[setPortraitResult.Error!]));
+            }
+
             return Ok(ApiResponse<MediaUploadResponse>.Ok(new MediaUploadResponse { Path = relativePath }));
         }
 
@@ -84,7 +91,13 @@ public class MediaController(
         await using (var journalStream = file.OpenReadStream())
             await fileStorage.SaveAsync(journalStream, journalRelativePath, ct);
 
-        await journalEntryService.AppendImagePathAsync(entityId, journalRelativePath, ct);
+        var appendResult = await journalEntryService.AppendImagePathAsync(entityId, journalRelativePath, ct);
+        if (appendResult.IsFailure)
+        {
+            await fileStorage.DeleteAsync(journalRelativePath, ct);
+            return BadRequest(ApiResponse.Fail(localizer[appendResult.Error!]));
+        }
+
         return Ok(ApiResponse<MediaUploadResponse>.Ok(new MediaUploadResponse { Path = journalRelativePath }));
     }
 
@@ -129,6 +142,13 @@ public class MediaController(
     }
 
     // ── Private helpers ───────────────────────────────────────────────────────
+
+    // Extracted so it can be unit-tested directly (0 = unlimited must never reject;
+    // a real configured limit must reject anything strictly larger). Internal +
+    // InternalsVisibleTo(Ruptura.UnitTests) rather than public, since this is an
+    // implementation detail of the upload size check, not a public API surface.
+    internal static bool ExceedsSizeLimit(long fileLength, int maxFileSizeMb) =>
+        maxFileSizeMb > 0 && fileLength > (long)maxFileSizeMb * 1024 * 1024;
 
     private static string? DetectImageContentType(byte[] header)
     {

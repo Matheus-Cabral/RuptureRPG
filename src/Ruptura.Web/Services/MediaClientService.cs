@@ -18,7 +18,21 @@ public class MediaClientService(IHttpClientFactory factory) : IMediaClientServic
         form.Add(new StringContent(entityId.ToString()), "entityId");
 
         var response = await Http.PostAsync("api/media", form);
-        return await response.Content.ReadFromJsonAsync<ApiResponse<MediaUploadResponse>>();
+
+        // Deliberately NOT gated on response.IsSuccessStatusCode: MediaController's own
+        // business-logic rejections (400 with ApiResponse.Fail(...), e.g. TooManyImages,
+        // FileTooLarge) are legitimate JSON bodies whose specific localized Message callers
+        // rely on — only guard against a body that isn't JSON at all (e.g. a bare 413
+        // straight from Kestrel, bypassing the controller entirely), which must not
+        // propagate as an unhandled exception.
+        try
+        {
+            return await response.Content.ReadFromJsonAsync<ApiResponse<MediaUploadResponse>>();
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return null;
+        }
     }
 
     public async Task<string?> GetDataUriAsync(string? path)

@@ -193,26 +193,35 @@ else
         _uploading = true;
         _errorMessage = null;
 
-        await using var stream = e.File.OpenReadStream(maxAllowedSize: 20 * 1024 * 1024);
-        var result = await MediaService.UploadAsync(stream, e.File.Name, "JournalEntryImage", entryId);
-
-        if (result?.Data is not null)
+        try
         {
-            var refreshed = await JournalService.GetByCharacterSheetAsync(CharacterSheetId);
-            _entries = refreshed?.Data?.ToList() ?? _entries;
-            var updatedEntry = _entries.FirstOrDefault(x => x.Id == entryId);
-            if (updatedEntry is not null)
+            await using var stream = e.File.OpenReadStream(maxAllowedSize: Ruptura.Shared.Media.MediaLimits.ClientMaxUploadBytes);
+            var result = await MediaService.UploadAsync(stream, e.File.Name, "JournalEntryImage", entryId);
+
+            if (result?.Data is not null)
             {
-                _editImagePaths = updatedEntry.ImagePaths.ToList();
-                foreach (var path in updatedEntry.ImagePaths)
-                    await EnsureThumbAsync(path);
+                var refreshed = await JournalService.GetByCharacterSheetAsync(CharacterSheetId);
+                _entries = refreshed?.Data?.ToList() ?? _entries;
+                var updatedEntry = _entries.FirstOrDefault(x => x.Id == entryId);
+                if (updatedEntry is not null)
+                {
+                    _editImagePaths = updatedEntry.ImagePaths.ToList();
+                    foreach (var path in updatedEntry.ImagePaths)
+                        await EnsureThumbAsync(path);
+                }
+            }
+            else
+            {
+                _errorMessage = result?.Message ?? L["Common.Error"];
             }
         }
-        else
+        catch (Exception)
         {
-            _errorMessage = result?.Message ?? L["Common.Error"];
+            _errorMessage = L["Common.Error"];
         }
-
-        _uploading = false;
+        finally
+        {
+            _uploading = false;
+        }
     }
 }

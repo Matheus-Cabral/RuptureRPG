@@ -19,6 +19,14 @@ try
 {
     var builder = WebApplication.CreateBuilder(args);
 
+    // ── Kestrel ──────────────────────────────────────────────────────────────
+    // Raise the transport-level request body limit to match the client-side upload
+    // ceiling, so requests up to that size can actually reach MediaController — the
+    // real business-logic check (MediaSettings.MaxFileSizeMb, which correctly handles
+    // 0 = unlimited) is what should actually decide whether a given upload is allowed.
+    builder.WebHost.ConfigureKestrel(opts =>
+        opts.Limits.MaxRequestBodySize = Ruptura.Shared.Media.MediaLimits.ClientMaxUploadBytes);
+
     // ── Logging ───────────────────────────────────────────────────────────────
     builder.Host.UseSerilog((ctx, services, cfg) => cfg
         .ReadFrom.Configuration(ctx.Configuration)

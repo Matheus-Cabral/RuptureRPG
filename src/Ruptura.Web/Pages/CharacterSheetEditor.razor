@@ -197,8 +197,7 @@ else
             CharacterName = _characterName,
             DataJson = System.Text.Json.JsonSerializer.Serialize(_data),
             IsDead = _isDead,
-            IsRetired = _isRetired,
-            PortraitImagePath = _portraitImagePath
+            IsRetired = _isRetired
         });
 
         if (result?.Data is not null)
@@ -221,19 +220,28 @@ else
         _uploadingPortrait = true;
         _errorMessage = null;
 
-        await using var stream = e.File.OpenReadStream(maxAllowedSize: 20 * 1024 * 1024);
-        var result = await MediaService.UploadAsync(stream, e.File.Name, "CharacterSheetPortrait", SheetId);
-
-        if (result?.Data is not null)
+        try
         {
-            _portraitImagePath = result.Data.Path;
-            _portraitDataUri = await MediaService.GetDataUriAsync(_portraitImagePath);
-        }
-        else
-        {
-            _errorMessage = result?.Message ?? L["Common.Error"];
-        }
+            await using var stream = e.File.OpenReadStream(maxAllowedSize: Ruptura.Shared.Media.MediaLimits.ClientMaxUploadBytes);
+            var result = await MediaService.UploadAsync(stream, e.File.Name, "CharacterSheetPortrait", SheetId);
 
-        _uploadingPortrait = false;
+            if (result?.Data is not null)
+            {
+                _portraitImagePath = result.Data.Path;
+                _portraitDataUri = await MediaService.GetDataUriAsync(_portraitImagePath);
+            }
+            else
+            {
+                _errorMessage = result?.Message ?? L["Common.Error"];
+            }
+        }
+        catch (Exception)
+        {
+            _errorMessage = L["Common.Error"];
+        }
+        finally
+        {
+            _uploadingPortrait = false;
+        }
     }
 }

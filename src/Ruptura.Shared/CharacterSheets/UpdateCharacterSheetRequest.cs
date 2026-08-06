@@ -12,5 +12,4 @@ public class UpdateCharacterSheetRequest
 
     public bool IsDead { get; set; }
     public bool IsRetired { get; set; }
-    public string? PortraitImagePath { get; set; }
 }

@@ -144,7 +144,9 @@ public class CharacterSheetService(
 
         sheet.CharacterName = request.CharacterName;
         sheet.DataJson = request.DataJson;
-        sheet.PortraitImagePath = request.PortraitImagePath;
+        // PortraitImagePath is intentionally NOT settable from this general update payload —
+        // portrait changes happen exclusively through SetPortraitPathAsync, called only by
+        // MediaController.Upload, which already authorizes and controls the path format itself.
         if (isGameMaster)
         {
             sheet.IsDead = request.IsDead;

@@ -215,6 +215,61 @@ public class JournalEntryServiceTests
     }
 
     [Fact]
+    public async Task UpdateAsync_WhenRequestIncludesAPathNeverOwnedByTheEntry_StripsItAndNeverDeletesIt()
+    {
+        // A malicious/buggy client sends back an ImagePaths list containing a path that was
+        // never part of this entry (e.g. another user's real file, or a path-traversal string).
+        // The persisted result must never include it, and it must never be treated as a real
+        // file this entry owned — so DeleteAsync must never be called for it.
+        var ownerId = Guid.NewGuid();
+        var sheet = new CharacterSheet { Id = Guid.NewGuid(), OwnerId = ownerId };
+        var entry = new CharacterJournalEntry
+        {
+            Id = Guid.NewGuid(), CharacterSheetId = sheet.Id, Text = "Old", ImagePaths = ["a.jpg"]
+        };
+        _journalRepoMock.Setup(r => r.GetByIdAsync(entry.Id, It.IsAny<CancellationToken>())).ReturnsAsync(entry);
+        _sheetRepoMock.Setup(r => r.GetByIdAsync(sheet.Id, It.IsAny<CancellationToken>())).ReturnsAsync(sheet);
+        _journalRepoMock.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+
+        var result = await _sut.UpdateAsync(ownerId, entry.Id, new UpdateJournalEntryRequest
+        {
+            Text = "New", ImagePaths = ["a.jpg", "injected/path.jpg"]
+        });
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.ImagePaths.Should().BeEquivalentTo(["a.jpg"]);
+        result.Value.ImagePaths.Should().NotContain("injected/path.jpg");
+        _fileStorageMock.Verify(f => f.DeleteAsync("injected/path.jpg", It.IsAny<CancellationToken>()), Times.Never);
+        _fileStorageMock.Verify(f => f.DeleteAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_WhenDeletingADroppedPathThrowsArgumentException_StillPersistsSuccessfully()
+    {
+        // A dropped path that fails ResolveSafePath's validation (e.g. it was corrupted or
+        // never a real file this entry owned) must not blow up the whole update.
+        var ownerId = Guid.NewGuid();
+        var sheet = new CharacterSheet { Id = Guid.NewGuid(), OwnerId = ownerId };
+        var entry = new CharacterJournalEntry
+        {
+            Id = Guid.NewGuid(), CharacterSheetId = sheet.Id, Text = "Old", ImagePaths = ["a.jpg", "bad.jpg"]
+        };
+        _journalRepoMock.Setup(r => r.GetByIdAsync(entry.Id, It.IsAny<CancellationToken>())).ReturnsAsync(entry);
+        _sheetRepoMock.Setup(r => r.GetByIdAsync(sheet.Id, It.IsAny<CancellationToken>())).ReturnsAsync(sheet);
+        _journalRepoMock.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+        _fileStorageMock.Setup(f => f.DeleteAsync("bad.jpg", It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new ArgumentException("escapes root"));
+
+        var result = await _sut.UpdateAsync(ownerId, entry.Id, new UpdateJournalEntryRequest
+        {
+            Text = "New", ImagePaths = ["a.jpg"]
+        });
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.ImagePaths.Should().BeEquivalentTo(["a.jpg"]);
+    }
+
+    [Fact]
     public async Task UpdateAsync_AsCampaignGameMaster_ReturnsNotFound()
     {
         var gmId = Guid.NewGuid();

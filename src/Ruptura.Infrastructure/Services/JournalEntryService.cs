@@ -99,12 +99,28 @@ public class JournalEntryService(
             return Result.Failure<JournalEntryResponse>(authorized.Error!);
 
         var entry = authorized.Value!;
-        var droppedPaths = entry.ImagePaths.Except(request.ImagePaths).ToList();
+        // The client's ImagePaths is a SELECTOR over paths the entry already owns, never
+        // a new filesystem address — the client can only ever remove paths here, never
+        // introduce new ones (new paths only ever arrive via AppendImagePathAsync from
+        // MediaController.Upload). Whatever ends up persisted must be a subset of what
+        // was already there.
+        var keptPaths = entry.ImagePaths.Intersect(request.ImagePaths).ToList();
+        var droppedPaths = entry.ImagePaths.Except(keptPaths).ToList();
         foreach (var path in droppedPaths)
-            await fileStorage.DeleteAsync(path, ct);
+        {
+            try
+            {
+                await fileStorage.DeleteAsync(path, ct);
+            }
+            catch (ArgumentException)
+            {
+                // A path that fails ResolveSafePath's validation was never a real file
+                // this entry owned in the first place — nothing to delete.
+            }
+        }
 
         entry.Text = request.Text;
-        entry.ImagePaths = request.ImagePaths;
+        entry.ImagePaths = keptPaths;
         entry.UpdatedAt = DateTime.UtcNow;
 
         journalRepo.Update(entry);

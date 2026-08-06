@@ -117,14 +117,12 @@ public class CharacterSheetControllerTests(IntegrationTestFactory factory)
         var updateResponse = await client.PutAsJsonAsync($"api/character-sheets/{sheet.Id}", new UpdateCharacterSheetRequest
         {
             CharacterName = "Sir Aldric the Bold",
-            DataJson = System.Text.Json.JsonSerializer.Serialize(sheet.Data),
-            PortraitImagePath = "https://example.com/portrait.png"
+            DataJson = System.Text.Json.JsonSerializer.Serialize(sheet.Data)
         });
 
         updateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = (await updateResponse.Content.ReadFromJsonAsync<ApiResponse<CharacterSheetResponse>>())!.Data!;
         body.CharacterName.Should().Be("Sir Aldric the Bold");
-        body.PortraitImagePath.Should().Be("https://example.com/portrait.png");
         body.Data.Attributes.Corpo.Should().Be(3);
         body.Data.Identity.PatronDisplayName.Should().Be("Dom Alric");
         body.IsDead.Should().BeFalse();

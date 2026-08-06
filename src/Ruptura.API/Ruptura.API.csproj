@@ -7,6 +7,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Lets Ruptura.UnitTests unit-test MediaController.ExceedsSizeLimit directly
+         without making it a public API surface. -->
+    <InternalsVisibleTo Include="Ruptura.UnitTests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.12" />
     <PackageReference Include="Serilog.AspNetCore" Version="8.0.3" />
     <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
