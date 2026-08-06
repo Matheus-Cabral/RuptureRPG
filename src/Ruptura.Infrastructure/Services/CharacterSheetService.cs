@@ -100,6 +100,32 @@ public class CharacterSheetService(
         return Result.Success();
     }
 
+    public async Task<Result<string>> GetRankingAsync(Guid sheetId, CancellationToken ct = default)
+    {
+        var sheet = await sheetRepo.GetByIdAsync(sheetId, ct);
+        if (sheet is null)
+            return Result.Failure<string>(ErrorCodes.CharacterSheet.NotFound);
+
+        return Result.Success(DeserializeSheetData(sheet.DataJson).GuildRegistry.Ranking);
+    }
+
+    public async Task<Result> SetRankingAsync(Guid sheetId, string ranking, CancellationToken ct = default)
+    {
+        var sheet = await sheetRepo.GetByIdAsync(sheetId, ct);
+        if (sheet is null)
+            return Result.Failure(ErrorCodes.CharacterSheet.NotFound);
+
+        var data = DeserializeSheetData(sheet.DataJson);
+        data.GuildRegistry.Ranking = ranking;
+        sheet.DataJson = JsonSerializer.Serialize(data);
+        sheet.UpdatedAt = DateTime.UtcNow;
+
+        sheetRepo.Update(sheet);
+        await sheetRepo.SaveChangesAsync(ct);
+
+        return Result.Success();
+    }
+
     public async Task<Result<IEnumerable<CharacterSheetResponse>>> GetByCampaignAsync(
         Guid gameMasterId, Guid campaignId, CancellationToken ct = default)
     {

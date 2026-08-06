@@ -222,6 +222,60 @@ public class CharacterSheetServiceTests
         _sheetRepoMock.Verify(r => r.Update(sheet), Times.Once);
     }
 
+    // ── GetRankingAsync / SetRankingAsync ───────────────────────────────────────
+
+    [Fact]
+    public async Task GetRankingAsync_ReturnsCurrentRanking()
+    {
+        var data = new CharacterSheetData();
+        data.GuildRegistry.Ranking = "Ferro";
+        var sheet = new CharacterSheet { Id = Guid.NewGuid(), DataJson = JsonSerializer.Serialize(data) };
+        _sheetRepoMock.Setup(r => r.GetByIdAsync(sheet.Id, It.IsAny<CancellationToken>())).ReturnsAsync(sheet);
+
+        var result = await _sut.GetRankingAsync(sheet.Id);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().Be("Ferro");
+    }
+
+    [Fact]
+    public async Task GetRankingAsync_WhenSheetDoesNotExist_ReturnsNotFound()
+    {
+        _sheetRepoMock.Setup(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((CharacterSheet?)null);
+
+        var result = await _sut.GetRankingAsync(Guid.NewGuid());
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(ErrorCodes.CharacterSheet.NotFound);
+    }
+
+    [Fact]
+    public async Task SetRankingAsync_UpdatesTheRankingInDataJson()
+    {
+        var sheet = new CharacterSheet { Id = Guid.NewGuid(), DataJson = JsonSerializer.Serialize(new CharacterSheetData()) };
+        _sheetRepoMock.Setup(r => r.GetByIdAsync(sheet.Id, It.IsAny<CancellationToken>())).ReturnsAsync(sheet);
+        _sheetRepoMock.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+
+        var result = await _sut.SetRankingAsync(sheet.Id, "Ferro");
+
+        result.IsSuccess.Should().BeTrue();
+        JsonSerializer.Deserialize<CharacterSheetData>(sheet.DataJson)!.GuildRegistry.Ranking.Should().Be("Ferro");
+        _sheetRepoMock.Verify(r => r.Update(sheet), Times.Once);
+    }
+
+    [Fact]
+    public async Task SetRankingAsync_WhenSheetDoesNotExist_ReturnsNotFound()
+    {
+        _sheetRepoMock.Setup(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((CharacterSheet?)null);
+
+        var result = await _sut.SetRankingAsync(Guid.NewGuid(), "Ferro");
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(ErrorCodes.CharacterSheet.NotFound);
+    }
+
     // ── GetByCampaignAsync ───────────────────────────────────────────────────
 
     [Fact]

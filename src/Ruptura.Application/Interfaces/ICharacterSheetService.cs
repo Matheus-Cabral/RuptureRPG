@@ -17,6 +17,10 @@ public interface ICharacterSheetService
 
     Task<Result> SetPortraitPathAsync(Guid sheetId, string? path, CancellationToken ct = default);
 
+    Task<Result<string>> GetRankingAsync(Guid sheetId, CancellationToken ct = default);
+
+    Task<Result> SetRankingAsync(Guid sheetId, string ranking, CancellationToken ct = default);
+
     Task<Result<IEnumerable<CharacterSheetResponse>>> GetByCampaignAsync(
         Guid gameMasterId, Guid campaignId, CancellationToken ct = default);
 
