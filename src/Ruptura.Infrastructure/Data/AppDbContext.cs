@@ -17,6 +17,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<CampaignMembership> CampaignMemberships => Set<CampaignMembership>();
     public DbSet<CatalogEntry> CatalogEntries => Set<CatalogEntry>();
     public DbSet<CharacterJournalEntry> CharacterJournalEntries => Set<CharacterJournalEntry>();
+    public DbSet<Notification> Notifications => Set<Notification>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
