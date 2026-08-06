@@ -121,6 +121,7 @@
   <data name="Gm.Players.Col.Name"><value>Name</value></data>
   <data name="Gm.Players.Col.Email"><value>Email</value></data>
   <data name="Gm.Players.Col.RecruitedAt"><value>Joined</value></data>
+  <data name="Gm.Players.SearchPlaceholder"><value>Search players…</value></data>
 
   <!-- Player Dashboard -->
   <data name="Dashboard.Player.Title"><value>My Character</value></data>

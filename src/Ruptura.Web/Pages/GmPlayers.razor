@@ -15,9 +15,7 @@
 
     @if (_loading)
     {
-        <div class="ledger-empty">
-            <span class="spinner-border spinner-border-sm me-2"></span>@L["Common.Loading"]
-        </div>
+        <LoadingIndicator Text="@L["Common.Loading"]" />
     }
     else if (_players.Count == 0)
     {
@@ -27,35 +25,50 @@
     }
     else
     {
-        <div class="ledger-table-wrap">
-            <table class="ledger-table">
-                <thead>
-                    <tr>
-                        <th>@L["Gm.Players.Col.Name"]</th>
-                        <th>@L["Gm.Players.Col.Email"]</th>
-                        <th>@L["Gm.Players.Col.RecruitedAt"]</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var player in _players)
-                    {
+        <TableSearchBox @bind-Value="_searchTerm" Placeholder="@L["Gm.Players.SearchPlaceholder"]" />
+
+        @if (FilteredPlayers.Count == 0)
+        {
+            <div class="ledger-empty">
+                <p>@L["Gm.Players.Empty"]</p>
+            </div>
+        }
+        else
+        {
+            <div class="ledger-table-wrap">
+                <table class="ledger-table stack-mobile">
+                    <thead>
                         <tr>
-                            <td>@player.DisplayName</td>
-                            <td>@player.Email</td>
-                            <td style="color:var(--text-muted);font-size:.78rem;white-space:nowrap">
-                                @player.RecruitedAt.ToLocalTime().ToString("dd/MM/yy HH:mm")
-                            </td>
+                            <th>@L["Gm.Players.Col.Name"]</th>
+                            <th>@L["Gm.Players.Col.Email"]</th>
+                            <th>@L["Gm.Players.Col.RecruitedAt"]</th>
                         </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
+                    </thead>
+                    <tbody>
+                        @foreach (var player in FilteredPlayers)
+                        {
+                            <tr>
+                                <td data-label="@L["Gm.Players.Col.Name"]">@player.DisplayName</td>
+                                <td data-label="@L["Gm.Players.Col.Email"]">@player.Email</td>
+                                <td data-label="@L["Gm.Players.Col.RecruitedAt"]" style="color:var(--text-muted);font-size:var(--text-xs);white-space:nowrap">
+                                    @player.RecruitedAt.ToLocalTime().ToString("dd/MM/yy HH:mm")
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
     }
 </div>
 
 @code {
     private List<PlayerRosterResponse> _players = [];
     private bool _loading = true;
+    private string _searchTerm = string.Empty;
+
+    private List<PlayerRosterResponse> FilteredPlayers =>
+        _players.Where(p => TableFilter.Matches(_searchTerm, p.DisplayName, p.Email)).ToList();
 
     protected override async Task OnInitializedAsync()
     {

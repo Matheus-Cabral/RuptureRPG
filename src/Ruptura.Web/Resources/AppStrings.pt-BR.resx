@@ -121,6 +121,7 @@
   <data name="Gm.Players.Col.Name"><value>Nome</value></data>
   <data name="Gm.Players.Col.Email"><value>E-mail</value></data>
   <data name="Gm.Players.Col.RecruitedAt"><value>Ingressou</value></data>
+  <data name="Gm.Players.SearchPlaceholder"><value>Buscar jogadores…</value></data>
 
   <!-- Dashboard do Jogador -->
   <data name="Dashboard.Player.Title"><value>Meu Personagem</value></data>
