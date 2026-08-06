@@ -1,0 +1,42 @@
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<div class="table-search">
+    <input @ref="_inputRef"
+           class="form-control table-search-input"
+           type="search"
+           placeholder="@Placeholder"
+           value="@Value"
+           @oninput="OnInputAsync" />
+</div>
+
+@code {
+    [Parameter] public string Value { get; set; } = string.Empty;
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+    [Parameter] public string Placeholder { get; set; } = string.Empty;
+
+    private ElementReference _inputRef;
+
+    private Task OnInputAsync(ChangeEventArgs e) =>
+        ValueChanged.InvokeAsync(e.Value?.ToString() ?? string.Empty);
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("ruptura.bindSearchShortcut", _inputRef);
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("ruptura.unbindSearchShortcut", _inputRef);
+        }
+        catch (JSDisconnectedException)
+        {
+            // circuit already gone — nothing to clean up client-side
+        }
+    }
+}
