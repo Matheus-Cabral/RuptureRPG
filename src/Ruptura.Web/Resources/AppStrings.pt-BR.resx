@@ -114,6 +114,7 @@
   <data name="Gm.Invites.Status.Used"><value>Usado</value></data>
   <data name="Gm.Invites.Status.Expired"><value>Expirado</value></data>
   <data name="Gm.Invites.SearchPlaceholder"><value>Buscar códigos de convite…</value></data>
+  <data name="Gm.Invites.NoResults"><value>Nenhum código de convite corresponde à busca.</value></data>
 
   <!-- Dashboard do Mestre — Roster de Jogadores -->
   <data name="Gm.Players.Title"><value>Roster de Jogadores</value></data>
@@ -122,6 +123,7 @@
   <data name="Gm.Players.Col.Email"><value>E-mail</value></data>
   <data name="Gm.Players.Col.RecruitedAt"><value>Ingressou</value></data>
   <data name="Gm.Players.SearchPlaceholder"><value>Buscar jogadores…</value></data>
+  <data name="Gm.Players.NoResults"><value>Nenhum jogador corresponde à busca.</value></data>
 
   <!-- Dashboard do Jogador -->
   <data name="Dashboard.Player.Title"><value>Meu Personagem</value></data>
@@ -151,6 +153,7 @@
   <data name="Gm.Campaigns.Col.CreatedAt"><value>Criada em</value></data>
   <data name="Gm.Campaigns.View"><value>Ver</value></data>
   <data name="Gm.Campaigns.SearchPlaceholder"><value>Buscar campanhas…</value></data>
+  <data name="Gm.Campaigns.NoResults"><value>Nenhuma campanha corresponde à busca.</value></data>
   <data name="Gm.Campaigns.CreateSuccess"><value>Campanha criada.</value></data>
 
   <!-- Detalhe da Campanha do Mestre -->
@@ -297,4 +300,7 @@
   <data name="Gm.Notifications.Dismiss"><value>Descartar</value></data>
   <data name="Gm.Notifications.PromoteSuccess"><value>Personagem promovido.</value></data>
   <data name="Gm.Notifications.DismissSuccess"><value>Notificação descartada.</value></data>
+  <data name="Gm.Notifications.DismissConfirm.Title"><value>Descartar notificação?</value></data>
+  <data name="Gm.Notifications.DismissConfirm.Message"><value>Isso vai descartar a notificação de promoção de ranking pendente para "{0}". Essa ação não pode ser desfeita.</value></data>
+  <data name="Gm.Notifications.Cancel"><value>Cancelar</value></data>
 </root>

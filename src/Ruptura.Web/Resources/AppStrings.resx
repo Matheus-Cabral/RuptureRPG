@@ -114,6 +114,7 @@
   <data name="Gm.Invites.Status.Used"><value>Used</value></data>
   <data name="Gm.Invites.Status.Expired"><value>Expired</value></data>
   <data name="Gm.Invites.SearchPlaceholder"><value>Search invite codes…</value></data>
+  <data name="Gm.Invites.NoResults"><value>No invite codes match your search.</value></data>
 
   <!-- GM Dashboard — Player Roster -->
   <data name="Gm.Players.Title"><value>Player Roster</value></data>
@@ -122,6 +123,7 @@
   <data name="Gm.Players.Col.Email"><value>Email</value></data>
   <data name="Gm.Players.Col.RecruitedAt"><value>Joined</value></data>
   <data name="Gm.Players.SearchPlaceholder"><value>Search players…</value></data>
+  <data name="Gm.Players.NoResults"><value>No players match your search.</value></data>
 
   <!-- Player Dashboard -->
   <data name="Dashboard.Player.Title"><value>My Character</value></data>
@@ -151,6 +153,7 @@
   <data name="Gm.Campaigns.Col.CreatedAt"><value>Created</value></data>
   <data name="Gm.Campaigns.View"><value>View</value></data>
   <data name="Gm.Campaigns.SearchPlaceholder"><value>Search campaigns…</value></data>
+  <data name="Gm.Campaigns.NoResults"><value>No campaigns match your search.</value></data>
   <data name="Gm.Campaigns.CreateSuccess"><value>Campaign created.</value></data>
 
   <!-- GM Campaign Detail -->
@@ -297,4 +300,7 @@
   <data name="Gm.Notifications.Dismiss"><value>Dismiss</value></data>
   <data name="Gm.Notifications.PromoteSuccess"><value>Character promoted.</value></data>
   <data name="Gm.Notifications.DismissSuccess"><value>Notification dismissed.</value></data>
+  <data name="Gm.Notifications.DismissConfirm.Title"><value>Dismiss notification?</value></data>
+  <data name="Gm.Notifications.DismissConfirm.Message"><value>This will dismiss the pending rank-promotion notification for "{0}". This cannot be undone.</value></data>
+  <data name="Gm.Notifications.Cancel"><value>Cancel</value></data>
 </root>

@@ -6,6 +6,7 @@
 @inject IStringLocalizer<AppStrings> L
 @inject INotificationClientService NotificationService
 @inject ToastService Toast
+@inject ConfirmService Confirm
 
 <PageTitle>@L["Gm.Notifications.Title"] — RUPTURA</PageTitle>
 
@@ -51,7 +52,7 @@
                                         <button class="btn btn-primary btn-sm" @onclick="() => PromoteAsync(notification.Id)" disabled="@_busy">
                                             @L["Gm.Notifications.Promote"]
                                         </button>
-                                        <button class="btn btn-outline-secondary btn-sm" @onclick="() => DismissAsync(notification.Id)" disabled="@_busy">
+                                        <button class="btn btn-outline-secondary btn-sm" @onclick="() => DismissAsync(notification.Id, notification.CharacterName)" disabled="@_busy">
                                             @L["Gm.Notifications.Dismiss"]
                                         </button>
                                     </td>
@@ -98,8 +99,15 @@
         await LoadAsync();
     }
 
-    private async Task DismissAsync(Guid id)
+    private async Task DismissAsync(Guid id, string characterName)
     {
+        var confirmed = await Confirm.AskAsync(
+            L["Gm.Notifications.DismissConfirm.Title"],
+            L["Gm.Notifications.DismissConfirm.Message", characterName],
+            L["Gm.Notifications.Dismiss"],
+            L["Gm.Notifications.Cancel"]);
+        if (!confirmed) return;
+
         _busy = true;
         try
         {
