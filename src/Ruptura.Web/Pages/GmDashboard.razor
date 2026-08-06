@@ -4,6 +4,7 @@
 @inject IStringLocalizer<AppStrings> L
 @inject IInviteClientService InviteService
 @inject IJSRuntime JS
+@inject ToastService Toast
 
 <!-- Stats -->
 <div class="ledger-stats">
@@ -33,16 +34,11 @@
             <div class="banner-label">@L["Gm.Invites.NewCode"]</div>
             <div class="banner-code">@_newCode.Code</div>
         </div>
-        <button class="btn btn-outline-secondary btn-sm" @onclick="CopyNewCodeAsync">
-            @(_copied ? L["Gm.Invites.Copied"] : L["Gm.Invites.Copy"])
+        <button class="btn btn-outline-secondary btn-sm" @onclick="() => CopyAsync(_newCode.Code)">
+            @L["Gm.Invites.Copy"]
         </button>
         <span class="banner-note">@L["Gm.Invites.ExpiresIn", "48h"]</span>
     </div>
-}
-
-@if (!string.IsNullOrEmpty(_errorMessage))
-{
-    <div class="alert-danger mb-4">@_errorMessage</div>
 }
 
 <!-- Section header -->
@@ -57,9 +53,7 @@
 <!-- Table -->
 @if (_loading)
 {
-    <div class="ledger-empty">
-        <span class="spinner-border spinner-border-sm me-2"></span>@L["Common.Loading"]
-    </div>
+    <LoadingIndicator Text="@L["Common.Loading"]" />
 }
 else if (_codes.Count == 0)
 {
@@ -72,55 +66,66 @@ else if (_codes.Count == 0)
 }
 else
 {
-    <div class="ledger-table-wrap">
-        <table class="ledger-table">
-            <thead>
-                <tr>
-                    <th>@L["Gm.Invites.Col.Code"]</th>
-                    <th>@L["Gm.Invites.Col.Status"]</th>
-                    <th>@L["Gm.Invites.Col.Created"]</th>
-                    <th>@L["Gm.Invites.Col.Expires"]</th>
-                    <th>@L["Gm.Invites.Col.RedeemedAt"]</th>
-                    <th>@L["Gm.Invites.Col.RedeemedBy"]</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var item in _codes)
-                {
-                    var itemCode = item.Code;
+    <TableSearchBox @bind-Value="_searchTerm" Placeholder="@L["Gm.Invites.SearchPlaceholder"]" />
+
+    @if (FilteredCodes.Count == 0)
+    {
+        <div class="ledger-empty">
+            <p>@L["Gm.Invites.Empty"]</p>
+        </div>
+    }
+    else
+    {
+        <div class="ledger-table-wrap">
+            <table class="ledger-table stack-mobile">
+                <thead>
                     <tr>
-                        <td>
-                            <span class="code-chip" @onclick="() => CopyAsync(itemCode)"
-                                  title="@L["Gm.Invites.Copy"]">
-                                @item.Code
-                            </span>
-                        </td>
-                        <td><StatusBadge Code="item" /></td>
-                        <td style="color:var(--text-muted);font-size:.78rem;white-space:nowrap">
-                            @item.CreatedAt.ToLocalTime().ToString("dd/MM/yy HH:mm")
-                        </td>
-                        <td style="color:var(--text-muted);font-size:.78rem;white-space:nowrap">
-                            @(item.IsUsed ? "—" : item.ExpiresAt.ToLocalTime().ToString("dd/MM/yy HH:mm"))
-                        </td>
-                        <td style="color:var(--text-muted);font-size:.78rem;white-space:nowrap">
-                            @(item.UsedAt is { } usedAt ? usedAt.ToLocalTime().ToString("dd/MM/yy HH:mm") : "—")
-                        </td>
-                        <td style="color:var(--text-muted);font-size:.78rem;white-space:nowrap">
-                            @(item.IsUsed ? $"{item.RedeemedByDisplayName} ({item.RedeemedByEmail})" : "—")
-                        </td>
-                        <td>
-                            @if (!item.IsUsed && item.ExpiresAt > DateTime.UtcNow)
-                            {
-                                <button class="copy-btn" @onclick="() => CopyAsync(itemCode)"
-                                        title="@L["Gm.Invites.Copy"]">⎘</button>
-                            }
-                        </td>
+                        <th>@L["Gm.Invites.Col.Code"]</th>
+                        <th>@L["Gm.Invites.Col.Status"]</th>
+                        <th>@L["Gm.Invites.Col.Created"]</th>
+                        <th>@L["Gm.Invites.Col.Expires"]</th>
+                        <th>@L["Gm.Invites.Col.RedeemedAt"]</th>
+                        <th>@L["Gm.Invites.Col.RedeemedBy"]</th>
+                        <th></th>
                     </tr>
-                }
-            </tbody>
-        </table>
-    </div>
+                </thead>
+                <tbody>
+                    @foreach (var item in FilteredCodes)
+                    {
+                        var itemCode = item.Code;
+                        <tr>
+                            <td data-label="@L["Gm.Invites.Col.Code"]">
+                                <span class="code-chip" @onclick="() => CopyAsync(itemCode)"
+                                      title="@L["Gm.Invites.Copy"]">
+                                    @item.Code
+                                </span>
+                            </td>
+                            <td data-label="@L["Gm.Invites.Col.Status"]"><StatusBadge Code="item" /></td>
+                            <td data-label="@L["Gm.Invites.Col.Created"]" style="color:var(--text-muted);font-size:var(--text-xs);white-space:nowrap">
+                                @item.CreatedAt.ToLocalTime().ToString("dd/MM/yy HH:mm")
+                            </td>
+                            <td data-label="@L["Gm.Invites.Col.Expires"]" style="color:var(--text-muted);font-size:var(--text-xs);white-space:nowrap">
+                                @(item.IsUsed ? "—" : item.ExpiresAt.ToLocalTime().ToString("dd/MM/yy HH:mm"))
+                            </td>
+                            <td data-label="@L["Gm.Invites.Col.RedeemedAt"]" style="color:var(--text-muted);font-size:var(--text-xs);white-space:nowrap">
+                                @(item.UsedAt is { } usedAt ? usedAt.ToLocalTime().ToString("dd/MM/yy HH:mm") : "—")
+                            </td>
+                            <td data-label="@L["Gm.Invites.Col.RedeemedBy"]" style="color:var(--text-muted);font-size:var(--text-xs);white-space:nowrap">
+                                @(item.IsUsed ? $"{item.RedeemedByDisplayName} ({item.RedeemedByEmail})" : "—")
+                            </td>
+                            <td data-label="">
+                                @if (!item.IsUsed && item.ExpiresAt > DateTime.UtcNow)
+                                {
+                                    <button class="copy-btn" @onclick="() => CopyAsync(itemCode)"
+                                            title="@L["Gm.Invites.Copy"]">⎘</button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
 }
 
 @code {
@@ -128,12 +133,14 @@ else
     private InviteCodeResponse? _newCode;
     private bool _loading = true;
     private bool _generating;
-    private bool _copied;
-    private string? _errorMessage;
+    private string _searchTerm = string.Empty;
 
     private int ActiveCount  => _codes.Count(i => !i.IsUsed && i.ExpiresAt > DateTime.UtcNow);
     private int UsedCount    => _codes.Count(i => i.IsUsed);
     private int ExpiredCount => _codes.Count(i => !i.IsUsed && i.ExpiresAt <= DateTime.UtcNow);
+
+    private List<InviteCodeResponse> FilteredCodes =>
+        _codes.Where(i => TableFilter.Matches(_searchTerm, i.Code, i.RedeemedByDisplayName, i.RedeemedByEmail)).ToList();
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
@@ -148,9 +155,7 @@ else
     private async Task GenerateAsync()
     {
         _generating = true;
-        _errorMessage = null;
         _newCode = null;
-        _copied = false;
 
         var result = await InviteService.GenerateAsync();
         if (result?.Data is not null)
@@ -160,29 +165,15 @@ else
         }
         else
         {
-            _errorMessage = L["Common.Error"];
+            Toast.Error(L["Common.Error"]);
         }
         _generating = false;
-    }
-
-    private async Task CopyNewCodeAsync()
-    {
-        if (_newCode is not null) await CopyAsync(_newCode.Code);
     }
 
     private async Task CopyAsync(string text)
     {
         var success = await JS.InvokeAsync<bool>("ruptura.copyToClipboard", text);
-        if (!success)
-        {
-            _errorMessage = L["Gm.Invites.CopyFailed"];
-            return;
-        }
-
-        _errorMessage = null;
-        _copied = true;
-        StateHasChanged();
-        await Task.Delay(2000);
-        _copied = false;
+        Toast.Show(success ? L["Gm.Invites.Copied"] : L["Gm.Invites.CopyFailed"],
+            success ? ToastLevel.Success : ToastLevel.Error);
     }
 }

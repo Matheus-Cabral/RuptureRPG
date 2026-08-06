@@ -113,6 +113,7 @@
   <data name="Gm.Invites.Status.Active"><value>Ativo</value></data>
   <data name="Gm.Invites.Status.Used"><value>Usado</value></data>
   <data name="Gm.Invites.Status.Expired"><value>Expirado</value></data>
+  <data name="Gm.Invites.SearchPlaceholder"><value>Buscar códigos de convite…</value></data>
 
   <!-- Dashboard do Mestre — Roster de Jogadores -->
   <data name="Gm.Players.Title"><value>Roster de Jogadores</value></data>

@@ -113,6 +113,7 @@
   <data name="Gm.Invites.Status.Active"><value>Active</value></data>
   <data name="Gm.Invites.Status.Used"><value>Used</value></data>
   <data name="Gm.Invites.Status.Expired"><value>Expired</value></data>
+  <data name="Gm.Invites.SearchPlaceholder"><value>Search invite codes…</value></data>
 
   <!-- GM Dashboard — Player Roster -->
   <data name="Gm.Players.Title"><value>Player Roster</value></data>
