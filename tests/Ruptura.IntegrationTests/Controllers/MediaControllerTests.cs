@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using Bogus;
 using FluentAssertions;
+using Microsoft.AspNetCore.Http;
 using Ruptura.IntegrationTests.Helpers;
 using Ruptura.Shared.Campaigns;
 using Ruptura.Shared.CharacterSheets;
@@ -201,5 +202,44 @@ public class MediaControllerTests(IntegrationTestFactory factory)
         var response = await client.GetAsync("api/media/not-a-real-path");
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task Download_WithMissingFileOnDisk_Returns404()
+    {
+        var (client, sheetId, playerToken, _) = await GrantACharacterAsync();
+        AuthHelper.SetBearerToken(client, playerToken);
+
+        // Syntactically valid, authorized path (real, owned sheetId) but no file was
+        // ever uploaded/saved at this exact name.
+        var response = await client.GetAsync($"api/media/character-sheets/{sheetId}/portrait-nonexistent.jpg");
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    // Empirically confirmed (see task-8-report.md "Fix report" section) that neither
+    // .NET's HttpClient/Uri (client-side) nor real Kestrel (server-side, verified via
+    // a raw wire-level request that bypasses .NET's Uri entirely) will ever hand a
+    // literal ".." segment to routing — both normalize/collapse it before the request
+    // reaches MediaController. So a normal HttpClient call cannot exercise
+    // ResolveSafePath's escape check. To genuinely exercise the controller's new
+    // try/catch (Finding 2's fix) as defense-in-depth, this test drives the request
+    // straight through the real ASP.NET Core pipeline via TestServer.SendAsync with a
+    // hand-built HttpContext whose Path contains a literal ".." — the one way to place
+    // that string in front of routing without any layer silently rewriting it first.
+    [Fact]
+    public async Task Download_WithPathTraversalAfterValidPrefix_Returns404()
+    {
+        var (_, sheetId, playerToken, _) = await GrantACharacterAsync();
+
+        var context = await factory.Server.SendAsync(ctx =>
+        {
+            ctx.Request.Method = "GET";
+            ctx.Request.Path = new PathString(
+                $"/api/media/character-sheets/{sheetId}/../../../../etc/passwd");
+            ctx.Request.Headers.Authorization = $"Bearer {playerToken}";
+        });
+
+        context.Response.StatusCode.Should().Be((int)HttpStatusCode.NotFound);
     }
 }

@@ -106,12 +106,22 @@ public class MediaController(
             _ => null
         };
 
-        if (authorized is null)
+        if (authorized is null || authorized.IsFailure)
             return NotFound(ApiResponse.Fail(localizer[ErrorCodes.Media.NotFound]));
-        if (authorized.IsFailure)
-            return NotFound(ApiResponse.Fail(localizer[authorized.Error!]));
 
-        var stream = await fileStorage.OpenReadAsync(path, ct);
+        Stream? stream;
+        try
+        {
+            stream = await fileStorage.OpenReadAsync(path, ct);
+        }
+        catch (ArgumentException)
+        {
+            // Path escapes the configured media root (e.g. crafted "../" segments
+            // after a valid-looking prefix). Treat exactly like any other
+            // not-found case — never let this distinguish itself as a 500.
+            return NotFound(ApiResponse.Fail(localizer[ErrorCodes.Media.NotFound]));
+        }
+
         if (stream is null)
             return NotFound(ApiResponse.Fail(localizer[ErrorCodes.Media.NotFound]));
 
