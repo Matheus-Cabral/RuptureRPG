@@ -105,6 +105,8 @@ Domain ← Application ← Infrastructure ← API
 - `ToastService`/`ConfirmService` (DI-scoped, `Services/`) + `ToastContainer`/`ConfirmDialog` (`Layout/`, mounted once in `MainLayout`) are the app-wide feedback pattern — inject and call `Toast.Success/Error(...)` or `await Confirm.AskAsync(...)` instead of building bespoke alert/dialog UI.
 - Reusable non-layout components (search box, loading states, breadcrumbs) live in `Shared/`.
 - `.ledger-table.stack-mobile` turns a table into a stacked mobile card view, but requires a `data-label="..."` attribute on every `<td>` matching its column header.
+- `Breadcrumbs` (`Shared/`) — first live usage on `GmCampaignDetail.razor`: resolve the parent entity's display name via whatever list/`GetMineAsync`-style endpoint already exists (no new API), do it once in `OnInitializedAsync` (not inside a method that reruns on every write), and fall back to a sensible existing string if the name can't be resolved.
+- `TableSearchBox`/`TableFilter` — client-side search over an already-loaded list; give the filtered-to-zero-results empty state its own resx string (`*.NoResults`), distinct from the "no data at all" empty state (`*.Empty`) — reusing the latter for both produces a false claim when a search matches nothing on a populated list.
 
 ---
 
