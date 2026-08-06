@@ -270,6 +270,40 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 400; color: var(--te
     padding: 0.75rem 1rem;
 }
 
+/* ── Character Sheet Tab Bar ───────────────────────────────────────────────── */
+.nav-tabs {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 0;
+}
+.nav-tabs .nav-item { flex: 0 0 auto; }
+.nav-tabs .nav-link {
+    display: block;
+    background: none;
+    border: none;
+    padding: 0.75rem 1.1rem;
+    font-family: var(--font-body);
+    font-size: var(--text-xs);
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    white-space: nowrap;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+}
+.nav-tabs .nav-link:hover { color: var(--text); }
+.nav-tabs .nav-link.active {
+    color: var(--text);
+    border-bottom-color: var(--primary);
+}
+
 /* ── App Shell ─────────────────────────────────────────────────────────────── */
 .app-shell {
     /* bare wrapper — body handles min-height, sidebar+topbar are fixed */
@@ -1136,7 +1170,7 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 400; color: var(--te
    from tablet width down, where pointer precision (mouse) can no longer be assumed. */
 @media (max-width: 1023px) {
     .btn, .hamburger, .copy-btn, .theme-btn, .lang-btn,
-    .sidebar-nav a.nav-link, .nav-btn-link, .toast-close {
+    .sidebar-nav a.nav-link, .nav-btn-link, .toast-close, .nav-tabs .nav-link {
         min-height: 44px;
         min-width: 44px;
     }
