@@ -8,7 +8,7 @@
             <h2 class="confirm-title" id="confirm-title">@request.Title</h2>
             <p class="confirm-message">@request.Message</p>
             <div class="confirm-actions">
-                <button class="btn btn-outline-secondary btn-sm" @onclick="() => Confirm.Resolve(false)">@request.CancelLabel</button>
+                <button @ref="_cancelButtonRef" class="btn btn-outline-secondary btn-sm" @onclick="() => Confirm.Resolve(false)">@request.CancelLabel</button>
                 <button class="btn btn-danger btn-sm" @onclick="() => Confirm.Resolve(true)">@request.ConfirmLabel</button>
             </div>
         </div>
@@ -16,9 +16,22 @@
 }
 
 @code {
+    private ElementReference _cancelButtonRef;
+    private bool _wasOpen;
+
     protected override void OnInitialized() => Confirm.OnChange += HandleChange;
 
     private void HandleChange() => InvokeAsync(StateHasChanged);
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        var isOpen = Confirm.Current is not null;
+        if (isOpen && !_wasOpen)
+        {
+            await _cancelButtonRef.FocusAsync();
+        }
+        _wasOpen = isOpen;
+    }
 
     public void Dispose() => Confirm.OnChange -= HandleChange;
 }
