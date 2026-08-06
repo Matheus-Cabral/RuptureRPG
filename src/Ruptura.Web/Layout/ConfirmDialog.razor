@@ -1,0 +1,24 @@
+@inject ConfirmService Confirm
+@implements IDisposable
+
+@if (Confirm.Current is { } request)
+{
+    <div class="confirm-overlay" @onclick="() => Confirm.Resolve(false)">
+        <div class="confirm-box" @onclick:stopPropagation="true" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title">
+            <h2 class="confirm-title" id="confirm-title">@request.Title</h2>
+            <p class="confirm-message">@request.Message</p>
+            <div class="confirm-actions">
+                <button class="btn btn-outline-secondary btn-sm" @onclick="() => Confirm.Resolve(false)">@request.CancelLabel</button>
+                <button class="btn btn-danger btn-sm" @onclick="() => Confirm.Resolve(true)">@request.ConfirmLabel</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    protected override void OnInitialized() => Confirm.OnChange += HandleChange;
+
+    private void HandleChange() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Confirm.OnChange -= HandleChange;
+}
