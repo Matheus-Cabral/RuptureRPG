@@ -113,6 +113,7 @@
             Toast.Success(L["Gm.Campaigns.CreateSuccess"]);
             _campaigns.Insert(0, result.Data);
             _newName = string.Empty;
+            _searchTerm = string.Empty;
         }
         else
         {
