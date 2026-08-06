@@ -75,4 +75,12 @@
   <data name="Error.Unexpected"><value>An unexpected error occurred. Please try again later.</value></data>
   <data name="Error.Forbidden"><value>You do not have permission to perform this action.</value></data>
   <data name="Error.ValidationFailed"><value>One or more validation errors occurred.</value></data>
+
+  <!-- Media -->
+  <data name="Media.InvalidEntityType"><value>Invalid media entity type.</value></data>
+  <data name="Media.FileRequired"><value>A file is required.</value></data>
+  <data name="Media.FileTooLarge"><value>The file exceeds the maximum allowed size.</value></data>
+  <data name="Media.UnsupportedFileType"><value>Unsupported file type. Allowed: JPEG, PNG, WEBP, GIF.</value></data>
+  <data name="Media.TooManyImages"><value>This journal entry already has the maximum number of images.</value></data>
+  <data name="Media.NotFound"><value>Media not found.</value></data>
 </root>

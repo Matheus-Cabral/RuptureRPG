@@ -75,4 +75,12 @@
   <data name="Error.Unexpected"><value>Ocorreu um erro inesperado. Por favor, tente novamente mais tarde.</value></data>
   <data name="Error.Forbidden"><value>Você não tem permissão para realizar esta ação.</value></data>
   <data name="Error.ValidationFailed"><value>Um ou mais erros de validação ocorreram.</value></data>
+
+  <!-- Media -->
+  <data name="Media.InvalidEntityType"><value>Tipo de entidade de mídia inválido.</value></data>
+  <data name="Media.FileRequired"><value>Um arquivo é obrigatório.</value></data>
+  <data name="Media.FileTooLarge"><value>O arquivo excede o tamanho máximo permitido.</value></data>
+  <data name="Media.UnsupportedFileType"><value>Tipo de arquivo não suportado. Permitidos: JPEG, PNG, WEBP, GIF.</value></data>
+  <data name="Media.TooManyImages"><value>Esta entrada de diário já atingiu o número máximo de imagens.</value></data>
+  <data name="Media.NotFound"><value>Mídia não encontrada.</value></data>
 </root>
