@@ -64,6 +64,13 @@
   <data name="CharacterSheet.Granted"><value>Ficha de personagem concedida com sucesso.</value></data>
   <data name="CharacterSheet.Updated"><value>Ficha de personagem atualizada com sucesso.</value></data>
 
+  <!-- Journal -->
+  <data name="Journal.NotFound"><value>Entrada de diário não encontrada.</value></data>
+  <data name="Journal.OnlyOwnerCanWrite"><value>Só o dono do personagem pode escrever no diário.</value></data>
+  <data name="Journal.Created"><value>Entrada de diário criada com sucesso.</value></data>
+  <data name="Journal.Updated"><value>Entrada de diário atualizada com sucesso.</value></data>
+  <data name="Journal.Deleted"><value>Entrada de diário apagada com sucesso.</value></data>
+
   <!-- Generic -->
   <data name="Error.Unexpected"><value>Ocorreu um erro inesperado. Por favor, tente novamente mais tarde.</value></data>
   <data name="Error.Forbidden"><value>Você não tem permissão para realizar esta ação.</value></data>

@@ -64,6 +64,13 @@
   <data name="CharacterSheet.Granted"><value>Character sheet granted successfully.</value></data>
   <data name="CharacterSheet.Updated"><value>Character sheet updated successfully.</value></data>
 
+  <!-- Journal -->
+  <data name="Journal.NotFound"><value>Journal entry not found.</value></data>
+  <data name="Journal.OnlyOwnerCanWrite"><value>Only the character's owner can write to the journal.</value></data>
+  <data name="Journal.Created"><value>Journal entry created successfully.</value></data>
+  <data name="Journal.Updated"><value>Journal entry updated successfully.</value></data>
+  <data name="Journal.Deleted"><value>Journal entry deleted successfully.</value></data>
+
   <!-- Generic -->
   <data name="Error.Unexpected"><value>An unexpected error occurred. Please try again later.</value></data>
   <data name="Error.Forbidden"><value>You do not have permission to perform this action.</value></data>

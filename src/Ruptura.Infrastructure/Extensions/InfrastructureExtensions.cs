@@ -9,6 +9,7 @@ using Ruptura.Application.Validators.Auth;
 using Ruptura.Application.Validators.Catalog;
 using Ruptura.Application.Validators.Campaigns;
 using Ruptura.Application.Validators.CharacterSheets;
+using Ruptura.Application.Validators.Journal;
 using Ruptura.Infrastructure.Data;
 using Ruptura.Infrastructure.Identity;
 using Ruptura.Infrastructure.Repositories;
@@ -18,6 +19,7 @@ using Ruptura.Shared.Auth;
 using Ruptura.Shared.Catalog;
 using Ruptura.Shared.Campaigns;
 using Ruptura.Shared.CharacterSheets;
+using Ruptura.Shared.Journal;
 
 namespace Ruptura.Infrastructure.Extensions;
 
@@ -80,6 +82,8 @@ public static class InfrastructureExtensions
         services.AddScoped<IValidator<UpdateCatalogEntryRequest>, UpdateCatalogEntryRequestValidator>();
         services.AddScoped<IValidator<GrantCharacterSheetRequest>, GrantCharacterSheetRequestValidator>();
         services.AddScoped<IValidator<UpdateCharacterSheetRequest>, UpdateCharacterSheetRequestValidator>();
+        services.AddScoped<IValidator<CreateJournalEntryRequest>, CreateJournalEntryRequestValidator>();
+        services.AddScoped<IValidator<UpdateJournalEntryRequest>, UpdateJournalEntryRequestValidator>();
 
         return services;
     }
