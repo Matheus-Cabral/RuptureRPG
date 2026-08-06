@@ -5,6 +5,7 @@
 @using Ruptura.Shared.Campaigns
 @inject IStringLocalizer<AppStrings> L
 @inject ICampaignClientService CampaignService
+@inject ToastService Toast
 @inject NavigationManager Nav
 
 <PageTitle>@L["Gm.Campaigns.Title"] — RUPTURA</PageTitle>
@@ -26,16 +27,9 @@
         </div>
     </div>
 
-    @if (!string.IsNullOrEmpty(_errorMessage))
-    {
-        <div class="alert-danger mb-4">@_errorMessage</div>
-    }
-
     @if (_loading)
     {
-        <div class="ledger-empty">
-            <span class="spinner-border spinner-border-sm me-2"></span>@L["Common.Loading"]
-        </div>
+        <LoadingIndicator Text="@L["Common.Loading"]" />
     }
     else if (_campaigns.Count == 0)
     {
@@ -45,34 +39,45 @@
     }
     else
     {
-        <div class="ledger-table-wrap">
-            <table class="ledger-table">
-                <thead>
-                    <tr>
-                        <th>@L["Gm.Campaigns.Col.Name"]</th>
-                        <th>@L["Gm.Campaigns.Col.CreatedAt"]</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var campaign in _campaigns)
-                    {
+        <TableSearchBox @bind-Value="_searchTerm" Placeholder="@L["Gm.Campaigns.SearchPlaceholder"]" />
+
+        @if (FilteredCampaigns.Count == 0)
+        {
+            <div class="ledger-empty">
+                <p>@L["Gm.Campaigns.Empty"]</p>
+            </div>
+        }
+        else
+        {
+            <div class="ledger-table-wrap">
+                <table class="ledger-table stack-mobile">
+                    <thead>
                         <tr>
-                            <td>@campaign.Name</td>
-                            <td style="color:var(--text-muted);font-size:.78rem;white-space:nowrap">
-                                @campaign.CreatedAt.ToLocalTime().ToString("dd/MM/yy HH:mm")
-                            </td>
-                            <td>
-                                <button class="btn btn-outline-secondary btn-sm"
-                                        @onclick="() => NavigateToCampaign(campaign.Id)">
-                                    @L["Gm.Campaigns.View"]
-                                </button>
-                            </td>
+                            <th>@L["Gm.Campaigns.Col.Name"]</th>
+                            <th>@L["Gm.Campaigns.Col.CreatedAt"]</th>
+                            <th></th>
                         </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
+                    </thead>
+                    <tbody>
+                        @foreach (var campaign in FilteredCampaigns)
+                        {
+                            <tr>
+                                <td data-label="@L["Gm.Campaigns.Col.Name"]">@campaign.Name</td>
+                                <td data-label="@L["Gm.Campaigns.Col.CreatedAt"]" style="color:var(--text-muted);font-size:var(--text-xs);white-space:nowrap">
+                                    @campaign.CreatedAt.ToLocalTime().ToString("dd/MM/yy HH:mm")
+                                </td>
+                                <td data-label="">
+                                    <button class="btn btn-outline-secondary btn-sm"
+                                            @onclick="() => NavigateToCampaign(campaign.Id)">
+                                        @L["Gm.Campaigns.View"]
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
     }
 </div>
 
@@ -81,7 +86,10 @@
     private bool _loading = true;
     private bool _creating;
     private string _newName = string.Empty;
-    private string? _errorMessage;
+    private string _searchTerm = string.Empty;
+
+    private List<CampaignResponse> FilteredCampaigns =>
+        _campaigns.Where(c => TableFilter.Matches(_searchTerm, c.Name)).ToList();
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
@@ -98,17 +106,17 @@
         if (string.IsNullOrWhiteSpace(_newName)) return;
 
         _creating = true;
-        _errorMessage = null;
 
         var result = await CampaignService.CreateAsync(new CreateCampaignRequest { Name = _newName });
         if (result?.Data is not null)
         {
+            Toast.Success(L["Gm.Campaigns.CreateSuccess"]);
             _campaigns.Insert(0, result.Data);
             _newName = string.Empty;
         }
         else
         {
-            _errorMessage = L["Common.Error"];
+            Toast.Error(L["Common.Error"]);
         }
 
         _creating = false;

@@ -150,6 +150,8 @@
   <data name="Gm.Campaigns.Col.Name"><value>Nome</value></data>
   <data name="Gm.Campaigns.Col.CreatedAt"><value>Criada em</value></data>
   <data name="Gm.Campaigns.View"><value>Ver</value></data>
+  <data name="Gm.Campaigns.SearchPlaceholder"><value>Buscar campanhas…</value></data>
+  <data name="Gm.Campaigns.CreateSuccess"><value>Campanha criada.</value></data>
 
   <!-- Detalhe da Campanha do Mestre -->
   <data name="Gm.CampaignDetail.Members"><value>Membros</value></data>

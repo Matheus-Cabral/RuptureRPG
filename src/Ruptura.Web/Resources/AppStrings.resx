@@ -150,6 +150,8 @@
   <data name="Gm.Campaigns.Col.Name"><value>Name</value></data>
   <data name="Gm.Campaigns.Col.CreatedAt"><value>Created</value></data>
   <data name="Gm.Campaigns.View"><value>View</value></data>
+  <data name="Gm.Campaigns.SearchPlaceholder"><value>Search campaigns…</value></data>
+  <data name="Gm.Campaigns.CreateSuccess"><value>Campaign created.</value></data>
 
   <!-- GM Campaign Detail -->
   <data name="Gm.CampaignDetail.Members"><value>Members</value></data>
