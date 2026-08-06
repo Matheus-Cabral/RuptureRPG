@@ -58,6 +58,7 @@
   <data name="Landing.Hero.Concept"><value>Manage, as a Council, a permanent Guild of explorers in service of a deity. The Guild is the true protagonist. The characters who descend into the Dungeon are valuable — but expendable.</value></data>
   <data name="Landing.Hero.SignIn"><value>Sign In</value></data>
   <data name="Landing.Hero.GetStarted"><value>Get Started</value></data>
+  <data name="Landing.Pillars.Eyebrow"><value>System</value></data>
   <data name="Landing.Pillars.Title"><value>System Pillars</value></data>
   <data name="Landing.Pillars.Lethality.Title"><value>High Lethality</value></data>
   <data name="Landing.Pillars.Lethality.Desc"><value>Death is permanent and part of the game. Every expedition is a real gamble.</value></data>

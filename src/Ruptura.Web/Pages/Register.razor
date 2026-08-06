@@ -36,7 +36,7 @@
                 <div>@_error</div>
                 @if (_validationErrors.Length > 0)
                 {
-                    <ul class="mb-0 mt-1 ps-3" style="font-size:.8rem">
+                    <ul class="mb-0 mt-1 ps-3" style="font-size:var(--text-sm)">
                         @foreach (var err in _validationErrors)
                         {
                             <li>@err</li>

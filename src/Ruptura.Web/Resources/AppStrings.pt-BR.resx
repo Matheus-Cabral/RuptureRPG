@@ -58,6 +58,7 @@
   <data name="Landing.Hero.Concept"><value>Administre, como Conselho, uma Guilda permanente de exploradores a serviço de uma divindade. A Guilda é a verdadeira protagonista. Os personagens que descem à Dungeon são recursos valiosos — porém descartáveis.</value></data>
   <data name="Landing.Hero.SignIn"><value>Entrar</value></data>
   <data name="Landing.Hero.GetStarted"><value>Começar</value></data>
+  <data name="Landing.Pillars.Eyebrow"><value>Sistema</value></data>
   <data name="Landing.Pillars.Title"><value>Pilares do Sistema</value></data>
   <data name="Landing.Pillars.Lethality.Title"><value>Alta Letalidade</value></data>
   <data name="Landing.Pillars.Lethality.Desc"><value>A morte é definitiva e faz parte do jogo. Cada expedição é uma aposta real.</value></data>

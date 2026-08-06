@@ -1121,13 +1121,13 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 400; color: var(--te
     position: fixed;
     width: 100%;
     z-index: 9999;
-    color: #fff;
+    color: var(--danger-text);
     font-size: var(--text-sm);
     letter-spacing: 0.05em;
 }
-#blazor-error-ui .reload { color: #fff; text-decoration: underline; margin-left: 1rem; }
+#blazor-error-ui .reload { color: var(--danger-text); text-decoration: underline; margin-left: 1rem; }
 #blazor-error-ui .dismiss { float: right; cursor: pointer; }
-.blazor-error-boundary { background: var(--danger); padding: 1rem; color: #fff; }
+.blazor-error-boundary { background: var(--danger); padding: 1rem; color: var(--danger-text); }
 .blazor-error-boundary::after { content: "An error has occurred."; }
 
 /* ── Responsive ─────────────────────────────────────────────────────────────── */
