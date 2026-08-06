@@ -1137,6 +1137,24 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 400; color: var(--te
 
 /* Sidebar icon rail — 600–1023px collapses text, keeps a monogram medallion
    per item; the native title="" attribute on each link supplies the tooltip. */
+.nav-link-mono {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    border: 1px solid var(--sidebar-link);
+    border-radius: 50%;
+    font-family: var(--font-display);
+    font-size: var(--text-2xs);
+    color: var(--sidebar-link);
+}
+.nav-link.active .nav-link-mono {
+    border-color: var(--accent-on-dark);
+    color: #fff;
+}
+
 @media (min-width: 600px) and (max-width: 1023px) {
     .sidebar { width: var(--nav-width-rail); transform: none; }
     .main-wrapper { margin-left: var(--nav-width-rail); }
@@ -1154,24 +1172,6 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 400; color: var(--te
 
     .sidebar-footer { padding: 0.75rem 0.4rem; }
     .language-switcher { flex-direction: column; }
-}
-
-.nav-link-mono {
-    display: none;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    width: 26px;
-    height: 26px;
-    border: 1px solid var(--sidebar-link);
-    border-radius: 50%;
-    font-family: var(--font-display);
-    font-size: var(--text-2xs);
-    color: var(--sidebar-link);
-}
-.nav-link.active .nav-link-mono {
-    border-color: var(--accent-on-dark);
-    color: #fff;
 }
 
 /* Mobile */
