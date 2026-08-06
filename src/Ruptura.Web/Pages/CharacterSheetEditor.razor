@@ -109,6 +109,10 @@ else
         {
             <CharacterSheetGuildRegistryTab Data="_data" />
         }
+        else if (_activeTab == "journal")
+        {
+            <CharacterSheetJournalTab CharacterSheetId="SheetId" IsOwner="IsOwner" />
+        }
     </div>
 }
 
@@ -116,6 +120,7 @@ else
     [Parameter] public Guid SheetId { get; set; }
     [Parameter] public Guid CampaignId { get; set; }
     [Parameter] public bool CanEditStatus { get; set; }
+    [Parameter] public bool IsOwner { get; set; }
 
     private static readonly Dictionary<string, string> Tabs = new()
     {
@@ -128,7 +133,8 @@ else
         ["techniques"] = "Sheet.Tab.Techniques",
         ["equipment"] = "Sheet.Tab.Equipment",
         ["trial"] = "Sheet.Tab.Trial",
-        ["guildRegistry"] = "Sheet.Tab.GuildRegistry"
+        ["guildRegistry"] = "Sheet.Tab.GuildRegistry",
+        ["journal"] = "Sheet.Tab.Journal"
     };
 
     private bool _loading = true;

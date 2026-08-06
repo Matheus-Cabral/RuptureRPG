@@ -1,0 +1,218 @@
+@using Microsoft.Extensions.Localization
+@using Ruptura.Web.Resources
+@using Ruptura.Shared.Journal
+@inject IStringLocalizer<AppStrings> L
+@inject IJournalEntryClientService JournalService
+@inject IMediaClientService MediaService
+
+@if (_loading)
+{
+    <div class="ledger-empty"><span class="spinner-border spinner-border-sm me-2"></span>@L["Common.Loading"]</div>
+}
+else
+{
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <div class="alert-danger mb-4">@_errorMessage</div>
+    }
+
+    @if (IsOwner)
+    {
+        <div style="display:flex;flex-direction:column;gap:.5rem;max-width:600px;margin-bottom:1.5rem">
+            <textarea class="form-control" rows="3" placeholder="@L["Journal.NewEntryPlaceholder"]"
+                      @bind="_newText" @bind:event="oninput"></textarea>
+            <button class="btn btn-primary btn-sm" style="align-self:flex-start"
+                    @onclick="CreateAsync" disabled="@(_creating || string.IsNullOrWhiteSpace(_newText))">
+                @if (_creating) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                @L["Journal.Add"]
+            </button>
+        </div>
+    }
+
+    @if (_entries.Count == 0)
+    {
+        <div class="ledger-empty"><p>@L["Journal.Empty"]</p></div>
+    }
+    else
+    {
+        <div style="display:flex;flex-direction:column;gap:1.5rem">
+            @foreach (var entry in _entries)
+            {
+                <div style="border-top:1px solid var(--border);padding-top:1rem">
+                    <div style="color:var(--text-muted);font-size:.78rem;margin-bottom:.5rem">
+                        @entry.CreatedAt.ToLocalTime().ToString("dd/MM/yy HH:mm")
+                    </div>
+
+                    @if (_editingId == entry.Id)
+                    {
+                        <textarea class="form-control" rows="3" @bind="_editText" @bind:event="oninput"></textarea>
+                        <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin:.75rem 0">
+                            @foreach (var path in _editImagePaths.ToList())
+                            {
+                                <div style="position:relative">
+                                    <img src="@GetThumb(path)" style="width:80px;height:80px;object-fit:cover;border-radius:4px" />
+                                    <span class="btn btn-outline-secondary btn-sm" style="position:absolute;top:-8px;right:-8px;padding:0 6px"
+                                          @onclick="() => _editImagePaths.Remove(path)">✕</span>
+                                </div>
+                            }
+                        </div>
+                        <InputFile OnChange="e => UploadImageAsync(entry.Id, e)" accept="image/*" disabled="@_uploading" />
+                        @if (_uploading) { <span class="spinner-border spinner-border-sm ms-2"></span> @L["Journal.Uploading"] }
+                        <div style="display:flex;gap:.5rem;margin-top:.75rem">
+                            <button class="btn btn-primary btn-sm" @onclick="() => SaveEditAsync(entry.Id)">@L["Journal.Save"]</button>
+                            <button class="btn btn-outline-secondary btn-sm" @onclick="CancelEdit">@L["Journal.Cancel"]</button>
+                        </div>
+                    }
+                    else
+                    {
+                        <p style="white-space:pre-wrap">@entry.Text</p>
+                        @if (entry.ImagePaths.Count > 0)
+                        {
+                            <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.5rem">
+                                @foreach (var path in entry.ImagePaths)
+                                {
+                                    <img src="@GetThumb(path)" style="width:80px;height:80px;object-fit:cover;border-radius:4px" />
+                                }
+                            </div>
+                        }
+                        @if (IsOwner)
+                        {
+                            <div style="display:flex;gap:.5rem">
+                                <button class="btn btn-outline-secondary btn-sm" @onclick="() => StartEdit(entry)">@L["Journal.Edit"]</button>
+                                <button class="btn btn-outline-secondary btn-sm" @onclick="() => DeleteAsync(entry.Id)">@L["Journal.Delete"]</button>
+                            </div>
+                        }
+                    }
+                </div>
+            }
+        </div>
+    }
+}
+
+@code {
+    [Parameter] public Guid CharacterSheetId { get; set; }
+    [Parameter] public bool IsOwner { get; set; }
+
+    private List<JournalEntryResponse> _entries = [];
+    private readonly Dictionary<string, string?> _thumbCache = new();
+    private bool _loading = true;
+    private bool _creating;
+    private bool _uploading;
+    private string _newText = string.Empty;
+    private Guid? _editingId;
+    private string _editText = string.Empty;
+    private List<string> _editImagePaths = [];
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        var result = await JournalService.GetByCharacterSheetAsync(CharacterSheetId);
+        _entries = result?.Data?.ToList() ?? [];
+        foreach (var path in _entries.SelectMany(e => e.ImagePaths))
+            await EnsureThumbAsync(path);
+        _loading = false;
+    }
+
+    private async Task EnsureThumbAsync(string path)
+    {
+        if (_thumbCache.ContainsKey(path)) return;
+        _thumbCache[path] = await MediaService.GetDataUriAsync(path);
+    }
+
+    private string? GetThumb(string path) => _thumbCache.GetValueOrDefault(path);
+
+    private async Task CreateAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_newText)) return;
+
+        _creating = true;
+        _errorMessage = null;
+        var result = await JournalService.CreateAsync(CharacterSheetId, new CreateJournalEntryRequest { Text = _newText });
+
+        if (result?.Data is not null)
+        {
+            _newText = string.Empty;
+            await LoadAsync();
+            StartEdit(result.Data);
+        }
+        else
+        {
+            _errorMessage = result?.Message ?? L["Common.Error"];
+        }
+
+        _creating = false;
+    }
+
+    private void StartEdit(JournalEntryResponse entry)
+    {
+        _editingId = entry.Id;
+        _editText = entry.Text;
+        _editImagePaths = entry.ImagePaths.ToList();
+    }
+
+    private void CancelEdit()
+    {
+        _editingId = null;
+        _editText = string.Empty;
+        _editImagePaths = [];
+    }
+
+    private async Task SaveEditAsync(Guid entryId)
+    {
+        _errorMessage = null;
+        var result = await JournalService.UpdateAsync(CharacterSheetId, entryId,
+            new UpdateJournalEntryRequest { Text = _editText, ImagePaths = _editImagePaths });
+
+        if (result?.Data is not null)
+        {
+            CancelEdit();
+            await LoadAsync();
+        }
+        else
+        {
+            _errorMessage = result?.Message ?? L["Common.Error"];
+        }
+    }
+
+    private async Task DeleteAsync(Guid entryId)
+    {
+        _errorMessage = null;
+        var result = await JournalService.DeleteAsync(CharacterSheetId, entryId);
+
+        if (result?.Success == true)
+            await LoadAsync();
+        else
+            _errorMessage = result?.Message ?? L["Common.Error"];
+    }
+
+    private async Task UploadImageAsync(Guid entryId, InputFileChangeEventArgs e)
+    {
+        _uploading = true;
+        _errorMessage = null;
+
+        await using var stream = e.File.OpenReadStream(maxAllowedSize: 20 * 1024 * 1024);
+        var result = await MediaService.UploadAsync(stream, e.File.Name, "JournalEntryImage", entryId);
+
+        if (result?.Data is not null)
+        {
+            var refreshed = await JournalService.GetByCharacterSheetAsync(CharacterSheetId);
+            _entries = refreshed?.Data?.ToList() ?? _entries;
+            var updatedEntry = _entries.FirstOrDefault(x => x.Id == entryId);
+            if (updatedEntry is not null)
+            {
+                _editImagePaths = updatedEntry.ImagePaths.ToList();
+                foreach (var path in updatedEntry.ImagePaths)
+                    await EnsureThumbAsync(path);
+            }
+        }
+        else
+        {
+            _errorMessage = result?.Message ?? L["Common.Error"];
+        }
+
+        _uploading = false;
+    }
+}

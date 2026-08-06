@@ -197,6 +197,7 @@
   <data name="Sheet.Tab.Equipment"><value>Equipamento</value></data>
   <data name="Sheet.Tab.Trial"><value>Provação de Atributo</value></data>
   <data name="Sheet.Tab.GuildRegistry"><value>Registro da Guilda</value></data>
+  <data name="Sheet.Tab.Journal"><value>Diário</value></data>
   <data name="Sheet.Identity.Origin"><value>Origem</value></data>
   <data name="Sheet.Identity.Background"><value>Histórico</value></data>
   <data name="Sheet.Identity.Lineage"><value>Linhagem</value></data>
@@ -255,4 +256,13 @@
   <data name="Campaigns.OpenCharacter"><value>Abrir Personagem</value></data>
   <data name="Character.AwaitingGrant"><value>Seu Mestre ainda não concedeu um personagem a você.</value></data>
   <data name="Nav.Campaigns.Player"><value>Minhas Campanhas</value></data>
+  <data name="Journal.Empty"><value>Nenhuma entrada no diário ainda.</value></data>
+  <data name="Journal.NewEntryPlaceholder"><value>O que aconteceu hoje...</value></data>
+  <data name="Journal.Add"><value>Adicionar Entrada</value></data>
+  <data name="Journal.Edit"><value>Editar</value></data>
+  <data name="Journal.Save"><value>Salvar</value></data>
+  <data name="Journal.Cancel"><value>Cancelar</value></data>
+  <data name="Journal.Delete"><value>Apagar</value></data>
+  <data name="Journal.AddImage"><value>Adicionar Imagem</value></data>
+  <data name="Journal.Uploading"><value>Enviando…</value></data>
 </root>

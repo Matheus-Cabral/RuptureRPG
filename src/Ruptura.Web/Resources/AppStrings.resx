@@ -197,6 +197,7 @@
   <data name="Sheet.Tab.Equipment"><value>Equipment</value></data>
   <data name="Sheet.Tab.Trial"><value>Attribute Trial</value></data>
   <data name="Sheet.Tab.GuildRegistry"><value>Guild Registry</value></data>
+  <data name="Sheet.Tab.Journal"><value>Journal</value></data>
   <data name="Sheet.Identity.Origin"><value>Origin</value></data>
   <data name="Sheet.Identity.Background"><value>Background</value></data>
   <data name="Sheet.Identity.Lineage"><value>Lineage</value></data>
@@ -255,4 +256,13 @@
   <data name="Campaigns.OpenCharacter"><value>Open Character</value></data>
   <data name="Character.AwaitingGrant"><value>Your Game Master hasn't granted you a character yet.</value></data>
   <data name="Nav.Campaigns.Player"><value>My Campaigns</value></data>
+  <data name="Journal.Empty"><value>No journal entries yet.</value></data>
+  <data name="Journal.NewEntryPlaceholder"><value>What happened today...</value></data>
+  <data name="Journal.Add"><value>Add Entry</value></data>
+  <data name="Journal.Edit"><value>Edit</value></data>
+  <data name="Journal.Save"><value>Save</value></data>
+  <data name="Journal.Cancel"><value>Cancel</value></data>
+  <data name="Journal.Delete"><value>Delete</value></data>
+  <data name="Journal.AddImage"><value>Add Image</value></data>
+  <data name="Journal.Uploading"><value>Uploading…</value></data>
 </root>
