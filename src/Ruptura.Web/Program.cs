@@ -42,6 +42,7 @@ builder.Services.AddScoped<ICatalogClientService, CatalogClientService>();
 builder.Services.AddScoped<ICharacterSheetClientService, CharacterSheetClientService>();
 builder.Services.AddScoped<IJournalEntryClientService, JournalEntryClientService>();
 builder.Services.AddScoped<IMediaClientService, MediaClientService>();
+builder.Services.AddScoped<INotificationClientService, NotificationClientService>();
 
 var host = builder.Build();
 
