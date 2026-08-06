@@ -172,6 +172,8 @@
   <data name="Gm.CampaignDetail.Status.Dead"><value>Morto</value></data>
   <data name="Gm.CampaignDetail.Status.Retired"><value>Aposentado</value></data>
   <data name="Gm.CampaignDetail.OpenSheet"><value>Abrir</value></data>
+  <data name="Gm.CampaignDetail.AssignSuccess"><value>Jogador adicionado à campanha.</value></data>
+  <data name="Gm.CampaignDetail.GrantSuccess"><value>Personagem concedido.</value></data>
 
   <!-- Catálogo do Mestre -->
   <data name="Gm.Catalog.Title"><value>Catálogo</value></data>

@@ -172,6 +172,8 @@
   <data name="Gm.CampaignDetail.Status.Dead"><value>Dead</value></data>
   <data name="Gm.CampaignDetail.Status.Retired"><value>Retired</value></data>
   <data name="Gm.CampaignDetail.OpenSheet"><value>Open</value></data>
+  <data name="Gm.CampaignDetail.AssignSuccess"><value>Player assigned to the campaign.</value></data>
+  <data name="Gm.CampaignDetail.GrantSuccess"><value>Character granted.</value></data>
 
   <!-- GM Catalog -->
   <data name="Gm.Catalog.Title"><value>Catalog</value></data>
