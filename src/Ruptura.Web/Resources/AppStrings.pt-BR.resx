@@ -130,8 +130,15 @@
   <!-- Comum -->
   <data name="Common.Loading"><value>Carregando…</value></data>
   <data name="Common.Error"><value>Algo deu errado. Por favor, tente novamente.</value></data>
+  <data name="Common.Close"><value>Fechar</value></data>
+  <data name="Nav.ToggleMenu"><value>Alternar menu</value></data>
+  <data name="Theme.Switcher.Label"><value>Tema</value></data>
+  <data name="Theme.Light"><value>Claro</value></data>
+  <data name="Theme.System"><value>Sistema</value></data>
+  <data name="Theme.Dark"><value>Escuro</value></data>
 
   <!-- Campanhas do Mestre -->
+  <data name="Nav.Section.GameMaster"><value>Mestre</value></data>
   <data name="Nav.Campaigns"><value>Campanhas</value></data>
   <data name="Gm.Campaigns.Title"><value>Campanhas</value></data>
   <data name="Gm.Campaigns.NamePlaceholder"><value>Nome da campanha</value></data>
@@ -175,6 +182,13 @@
   <data name="Gm.Catalog.Cancel"><value>Cancelar</value></data>
   <data name="Gm.Catalog.Delete"><value>Apagar</value></data>
   <data name="Gm.Catalog.Archived"><value>Arquivado</value></data>
+  <data name="Gm.Catalog.SearchPlaceholder"><value>Buscar catálogo…</value></data>
+  <data name="Gm.Catalog.NoResults"><value>Nenhuma entrada corresponde à busca.</value></data>
+  <data name="Gm.Catalog.DeleteConfirm.Title"><value>Excluir entrada?</value></data>
+  <data name="Gm.Catalog.DeleteConfirm.Message"><value>Isso vai excluir "{0}" permanentemente. Essa ação não pode ser desfeita.</value></data>
+  <data name="Gm.Catalog.DeleteSuccess"><value>Entrada excluída.</value></data>
+  <data name="Gm.Catalog.CreateSuccess"><value>Entrada criada.</value></data>
+  <data name="Gm.Catalog.SaveSuccess"><value>Entrada salva.</value></data>
 
   <!-- Editor de Ficha de Personagem -->
   <data name="Sheet.Loading"><value>Carregando ficha…</value></data>

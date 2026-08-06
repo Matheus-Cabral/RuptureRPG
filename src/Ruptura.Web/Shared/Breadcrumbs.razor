@@ -1,0 +1,28 @@
+@if (Items is { Count: > 0 })
+{
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+        @for (var i = 0; i < Items.Count; i++)
+        {
+            var item = Items[i];
+            var isLast = i == Items.Count - 1;
+            <span class="breadcrumb-item">
+                @if (!isLast && item.Href is not null)
+                {
+                    <a href="@item.Href">@item.Text</a>
+                }
+                else
+                {
+                    <span aria-current="page">@item.Text</span>
+                }
+            </span>
+            @if (!isLast)
+            {
+                <span class="breadcrumb-sep" aria-hidden="true">/</span>
+            }
+        }
+    </nav>
+}
+
+@code {
+    [Parameter, EditorRequired] public List<BreadcrumbItem> Items { get; set; } = [];
+}

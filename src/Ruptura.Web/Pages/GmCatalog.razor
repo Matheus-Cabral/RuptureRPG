@@ -5,6 +5,8 @@
 @using Ruptura.Shared.Catalog
 @inject IStringLocalizer<AppStrings> L
 @inject ICatalogClientService CatalogService
+@inject ToastService Toast
+@inject ConfirmService Confirm
 
 <PageTitle>@L["Gm.Catalog.Title"] — RUPTURA</PageTitle>
 
@@ -30,9 +32,7 @@
 
     @if (_loading)
     {
-        <div class="ledger-empty">
-            <span class="spinner-border spinner-border-sm me-2"></span>@L["Common.Loading"]
-        </div>
+        <LoadingIndicator Text="@L["Common.Loading"]" />
     }
     else if (_entries.Count == 0)
     {
@@ -42,41 +42,52 @@
     }
     else
     {
-        <div class="ledger-table-wrap">
-            <table class="ledger-table">
-                <thead>
-                    <tr>
-                        <th>@L["Gm.CampaignDetail.Col.Name"]</th>
-                        <th>@L["Gm.Catalog.TypeLabel"]</th>
-                        <th>DataJson</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var entry in _entries)
-                    {
+        <TableSearchBox @bind-Value="_searchTerm" Placeholder="@L["Gm.Catalog.SearchPlaceholder"]" />
+
+        @if (FilteredEntries.Count == 0)
+        {
+            <div class="ledger-empty">
+                <p>@L["Gm.Catalog.NoResults"]</p>
+            </div>
+        }
+        else
+        {
+            <div class="ledger-table-wrap">
+                <table class="ledger-table stack-mobile">
+                    <thead>
                         <tr>
-                            <td>@entry.Name</td>
-                            <td>@(entry.IsGlobal ? L["Gm.Catalog.Official"] : L["Gm.Catalog.Homebrew"])</td>
-                            <td style="color:var(--text-muted);font-size:.75rem;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-                                @entry.DataJson
-                            </td>
-                            <td>
-                                @if (entry.IsArchived)
-                                {
-                                    <span style="color:var(--text-muted)">@L["Gm.Catalog.Archived"]</span>
-                                }
-                                else if (!entry.IsGlobal)
-                                {
-                                    <button class="btn btn-outline-secondary btn-sm" @onclick="() => StartEdit(entry)">@L["Gm.Catalog.Edit"]</button>
-                                    <button class="btn btn-outline-secondary btn-sm" @onclick="() => DeleteAsync(entry.Id)">@L["Gm.Catalog.Delete"]</button>
-                                }
-                            </td>
+                            <th>@L["Gm.CampaignDetail.Col.Name"]</th>
+                            <th>@L["Gm.Catalog.TypeLabel"]</th>
+                            <th>DataJson</th>
+                            <th></th>
                         </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
+                    </thead>
+                    <tbody>
+                        @foreach (var entry in FilteredEntries)
+                        {
+                            <tr>
+                                <td data-label="@L["Gm.CampaignDetail.Col.Name"]">@entry.Name</td>
+                                <td data-label="@L["Gm.Catalog.TypeLabel"]">@(entry.IsGlobal ? L["Gm.Catalog.Official"] : L["Gm.Catalog.Homebrew"])</td>
+                                <td data-label="DataJson" style="color:var(--text-muted);font-size:var(--text-sm);max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                                    @entry.DataJson
+                                </td>
+                                <td data-label="">
+                                    @if (entry.IsArchived)
+                                    {
+                                        <span style="color:var(--text-muted)">@L["Gm.Catalog.Archived"]</span>
+                                    }
+                                    else if (!entry.IsGlobal)
+                                    {
+                                        <button class="btn btn-outline-secondary btn-sm" @onclick="() => StartEdit(entry)">@L["Gm.Catalog.Edit"]</button>
+                                        <button class="btn btn-outline-secondary btn-sm" @onclick="() => DeleteAsync(entry.Id, entry.Name)">@L["Gm.Catalog.Delete"]</button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
     }
 
     <div class="section-header" style="margin-top:2rem">
@@ -115,6 +126,10 @@
     private string _formName = string.Empty;
     private string _formDataJson = "{}";
     private string? _errorMessage;
+    private string _searchTerm = string.Empty;
+
+    private List<CatalogEntryResponse> FilteredEntries =>
+        _entries.Where(e => TableFilter.Matches(_searchTerm, e.Name, e.DataJson)).ToList();
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
@@ -122,6 +137,7 @@
     {
         _selectedType = e.Value?.ToString() ?? Types[0];
         CancelEdit();
+        _searchTerm = string.Empty;
         await LoadAsync();
     }
 
@@ -162,41 +178,53 @@
 
         _saving = true;
         _errorMessage = null;
+        var wasCreate = _editingId is null;
 
-        var result = _editingId is null
+        var result = wasCreate
             ? await CatalogService.CreateAsync(new CreateCatalogEntryRequest
             {
                 CampaignId = CampaignId, Type = _selectedType, Name = _formName, DataJson = _formDataJson
             })
-            : await CatalogService.UpdateAsync(_editingId.Value, new UpdateCatalogEntryRequest
+            : await CatalogService.UpdateAsync(_editingId!.Value, new UpdateCatalogEntryRequest
             {
                 Name = _formName, DataJson = _formDataJson
             });
 
         if (result?.Data is not null)
         {
+            Toast.Success(wasCreate ? L["Gm.Catalog.CreateSuccess"] : L["Gm.Catalog.SaveSuccess"]);
             CancelEdit();
             await LoadAsync();
         }
         else
         {
-            _errorMessage = result?.Message ?? L["Common.Error"];
+            var message = result?.Message ?? L["Common.Error"];
+            Toast.Error(message);
         }
 
         _saving = false;
     }
 
-    private async Task DeleteAsync(Guid id)
+    private async Task DeleteAsync(Guid id, string name)
     {
+        var confirmed = await Confirm.AskAsync(
+            L["Gm.Catalog.DeleteConfirm.Title"],
+            L["Gm.Catalog.DeleteConfirm.Message", name],
+            L["Gm.Catalog.Delete"],
+            L["Gm.Catalog.Cancel"]);
+        if (!confirmed) return;
+
         _errorMessage = null;
         var result = await CatalogService.DeleteAsync(id);
         if (result?.Success == true)
         {
+            Toast.Success(L["Gm.Catalog.DeleteSuccess"]);
             await LoadAsync();
         }
         else
         {
-            _errorMessage = result?.Message ?? L["Common.Error"];
+            var message = result?.Message ?? L["Common.Error"];
+            Toast.Error(message);
         }
     }
 }

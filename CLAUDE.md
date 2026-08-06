@@ -100,6 +100,12 @@ Domain ← Application ← Infrastructure ← API
 **Settings binding:**
 - `JwtSettings` is bound via `configuration.GetSection(nameof(JwtSettings))` → key in `appsettings.json` must be `"JwtSettings"` (not `"Jwt"`)
 
+**Design system (`src/Ruptura.Web/wwwroot/css/app.css`):**
+- CSS custom-property tokens drive the whole visual language — colors, spacing, the type scale (`--text-2xs` through `--text-3xl`). `--text-2xs` (11px) is the floor; never introduce a smaller font size.
+- `ToastService`/`ConfirmService` (DI-scoped, `Services/`) + `ToastContainer`/`ConfirmDialog` (`Layout/`, mounted once in `MainLayout`) are the app-wide feedback pattern — inject and call `Toast.Success/Error(...)` or `await Confirm.AskAsync(...)` instead of building bespoke alert/dialog UI.
+- Reusable non-layout components (search box, loading states, breadcrumbs) live in `Shared/`.
+- `.ledger-table.stack-mobile` turns a table into a stacked mobile card view, but requires a `data-label="..."` attribute on every `<td>` matching its column header.
+
 ---
 
 ## Stack

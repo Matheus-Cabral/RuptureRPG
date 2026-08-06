@@ -46,6 +46,55 @@ window.ruptura = {
         } catch {
             return false;
         }
+    },
+
+    // ── Keyboard shortcuts ───────────────────────────────────────────────────
+
+    bindGlobalEscape: function (dotNetRef) {
+        const handler = function (e) {
+            if (e.key === 'Escape') {
+                dotNetRef.invokeMethodAsync('OnGlobalEscape');
+            }
+        };
+        document.addEventListener('keydown', handler);
+        window._rupturaEscapeHandler = handler;
+    },
+
+    unbindGlobalEscape: function () {
+        if (window._rupturaEscapeHandler) {
+            document.removeEventListener('keydown', window._rupturaEscapeHandler);
+            delete window._rupturaEscapeHandler;
+        }
+    },
+
+    bindSearchShortcut: function (inputElement) {
+        const handler = function (e) {
+            // '/' is a literal character, so it must not hijack typing in any
+            // other field. Ctrl+K/Cmd+K's whole purpose is to jump to search
+            // from anywhere — including from inside another input — so it is
+            // intentionally exempt from the "typing" guard.
+            if (e.key === '/') {
+                const active = document.activeElement;
+                const typing = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable);
+                if (typing) return;
+                e.preventDefault();
+                inputElement.focus();
+                return;
+            }
+            if (e.key && e.key.toLowerCase() === 'k' && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                inputElement.focus();
+            }
+        };
+        document.addEventListener('keydown', handler);
+        inputElement._rupturaShortcutHandler = handler;
+    },
+
+    unbindSearchShortcut: function (inputElement) {
+        if (inputElement && inputElement._rupturaShortcutHandler) {
+            document.removeEventListener('keydown', inputElement._rupturaShortcutHandler);
+            delete inputElement._rupturaShortcutHandler;
+        }
     }
 };
 

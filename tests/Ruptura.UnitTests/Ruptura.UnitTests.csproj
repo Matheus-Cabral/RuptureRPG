@@ -31,6 +31,7 @@
     <ProjectReference Include="..\..\src\Ruptura.Infrastructure\Ruptura.Infrastructure.csproj" />
     <!-- Only for unit-testing MediaController.ExceedsSizeLimit (Finding 4) in isolation. -->
     <ProjectReference Include="..\..\src\Ruptura.API\Ruptura.API.csproj" />
+    <ProjectReference Include="..\..\src\Ruptura.Web\Ruptura.Web.csproj" />
   </ItemGroup>
 
 </Project>

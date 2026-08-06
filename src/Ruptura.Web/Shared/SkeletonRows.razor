@@ -1,0 +1,14 @@
+@for (var r = 0; r < Rows; r++)
+{
+    <tr class="skeleton-row" aria-hidden="true">
+        @for (var c = 0; c < Columns; c++)
+        {
+            <td><span class="skeleton-bar"></span></td>
+        }
+    </tr>
+}
+
+@code {
+    [Parameter] public int Rows { get; set; } = 4;
+    [Parameter] public int Columns { get; set; } = 3;
+}

@@ -1,0 +1,41 @@
+@inject ToastService Toast
+@inject IStringLocalizer<AppStrings> L
+@implements IDisposable
+
+<div class="toast-stack" aria-live="polite" aria-atomic="false">
+    @foreach (var msg in Toast.Messages)
+    {
+        <div class="toast-item toast-@msg.Level.ToString().ToLowerInvariant()" role="status">
+            <span class="toast-text">@msg.Text</span>
+            <button class="toast-close" aria-label="@L["Common.Close"]" @onclick="() => Toast.Dismiss(msg.Id)">×</button>
+        </div>
+    }
+</div>
+
+@code {
+    private const int AutoDismissMs = 5000;
+    private readonly HashSet<Guid> _scheduled = [];
+
+    protected override void OnInitialized() => Toast.OnChange += HandleChange;
+
+    private void HandleChange()
+    {
+        foreach (var msg in Toast.Messages)
+        {
+            if (_scheduled.Add(msg.Id))
+            {
+                _ = AutoDismissAsync(msg.Id);
+            }
+        }
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task AutoDismissAsync(Guid id)
+    {
+        await Task.Delay(AutoDismissMs);
+        Toast.Dismiss(id);
+        _scheduled.Remove(id);
+    }
+
+    public void Dispose() => Toast.OnChange -= HandleChange;
+}
