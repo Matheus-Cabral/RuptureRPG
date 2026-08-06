@@ -133,15 +133,15 @@
 
     @if (_members.Count > 0)
     {
-        <div style="display:flex;gap:.5rem;margin-top:1rem;max-width:480px">
-            <select class="form-select" @bind="_selectedGrantPlayerId">
+        <div style="display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1rem;max-width:480px">
+            <select class="form-select" style="flex:1 1 140px" @bind="_selectedGrantPlayerId">
                 <option value="@Guid.Empty">—</option>
                 @foreach (var member in _members)
                 {
                     <option value="@member.PlayerId">@member.DisplayName</option>
                 }
             </select>
-            <input class="form-control" placeholder="@L["Gm.CampaignDetail.CharacterNamePlaceholder"]"
+            <input class="form-control" style="flex:1 1 140px" placeholder="@L["Gm.CampaignDetail.CharacterNamePlaceholder"]"
                    @bind="_newCharacterName" @bind:event="oninput" />
             <button class="btn btn-primary btn-sm" @onclick="GrantAsync"
                     disabled="@(_granting || _selectedGrantPlayerId == Guid.Empty || string.IsNullOrWhiteSpace(_newCharacterName))">
