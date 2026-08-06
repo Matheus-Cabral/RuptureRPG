@@ -28,6 +28,7 @@ builder.Services.AddScoped<AuthenticationStateProvider, JwtAuthStateProvider>();
 // Theme
 builder.Services.AddScoped<ThemeService>();
 builder.Services.AddScoped<ToastService>();
+builder.Services.AddScoped<ConfirmService>();
 
 // HTTP client with JWT handler
 builder.Services.AddTransient<JwtAuthorizationHandler>();
