@@ -71,7 +71,7 @@ else
     @if (FilteredCodes.Count == 0)
     {
         <div class="ledger-empty">
-            <p>@L["Gm.Invites.Empty"]</p>
+            <p>@L["Gm.Invites.NoResults"]</p>
         </div>
     }
     else
@@ -161,6 +161,7 @@ else
         if (result?.Data is not null)
         {
             _newCode = result.Data;
+            _searchTerm = string.Empty;
             _codes.Insert(0, result.Data);
         }
         else
