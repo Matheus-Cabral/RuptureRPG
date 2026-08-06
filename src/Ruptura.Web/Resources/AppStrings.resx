@@ -183,6 +183,7 @@
   <data name="Gm.Catalog.Delete"><value>Delete</value></data>
   <data name="Gm.Catalog.Archived"><value>Archived</value></data>
   <data name="Gm.Catalog.SearchPlaceholder"><value>Search catalog…</value></data>
+  <data name="Gm.Catalog.NoResults"><value>No entries match your search.</value></data>
   <data name="Gm.Catalog.DeleteConfirm.Title"><value>Delete entry?</value></data>
   <data name="Gm.Catalog.DeleteConfirm.Message"><value>This will permanently delete "{0}". This cannot be undone.</value></data>
   <data name="Gm.Catalog.DeleteSuccess"><value>Entry deleted.</value></data>

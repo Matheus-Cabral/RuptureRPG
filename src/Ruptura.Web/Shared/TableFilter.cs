@@ -6,6 +6,8 @@ public static class TableFilter
     {
         if (string.IsNullOrWhiteSpace(term)) return true;
 
+        term = term.Trim();
+
         foreach (var field in fields)
         {
             if (field is not null && field.Contains(term, StringComparison.OrdinalIgnoreCase))

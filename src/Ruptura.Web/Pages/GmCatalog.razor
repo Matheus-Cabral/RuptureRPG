@@ -47,7 +47,7 @@
         @if (FilteredEntries.Count == 0)
         {
             <div class="ledger-empty">
-                <p>@L["Gm.Catalog.Empty"]</p>
+                <p>@L["Gm.Catalog.NoResults"]</p>
             </div>
         }
         else
@@ -199,7 +199,6 @@
         else
         {
             var message = result?.Message ?? L["Common.Error"];
-            _errorMessage = message;
             Toast.Error(message);
         }
 
@@ -225,7 +224,6 @@
         else
         {
             var message = result?.Message ?? L["Common.Error"];
-            _errorMessage = message;
             Toast.Error(message);
         }
     }

@@ -31,4 +31,10 @@ public class TableFilterTests
     {
         TableFilter.Matches("gob", null, "Goblin").Should().BeTrue();
     }
+
+    [Fact]
+    public void Matches_TrimsLeadingAndTrailingWhitespace_FromTerm()
+    {
+        TableFilter.Matches(" gob ", "Goblin").Should().BeTrue();
+    }
 }

@@ -183,6 +183,7 @@
   <data name="Gm.Catalog.Delete"><value>Apagar</value></data>
   <data name="Gm.Catalog.Archived"><value>Arquivado</value></data>
   <data name="Gm.Catalog.SearchPlaceholder"><value>Buscar catálogo…</value></data>
+  <data name="Gm.Catalog.NoResults"><value>Nenhuma entrada corresponde à busca.</value></data>
   <data name="Gm.Catalog.DeleteConfirm.Title"><value>Excluir entrada?</value></data>
   <data name="Gm.Catalog.DeleteConfirm.Message"><value>Isso vai excluir "{0}" permanentemente. Essa ação não pode ser desfeita.</value></data>
   <data name="Gm.Catalog.DeleteSuccess"><value>Entrada excluída.</value></data>

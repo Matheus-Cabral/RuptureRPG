@@ -69,10 +69,19 @@ window.ruptura = {
 
     bindSearchShortcut: function (inputElement) {
         const handler = function (e) {
-            const active = document.activeElement;
-            const typing = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable);
-            if (typing) return;
-            if (e.key === '/' || (e.key.toLowerCase() === 'k' && (e.ctrlKey || e.metaKey))) {
+            // '/' is a literal character, so it must not hijack typing in any
+            // other field. Ctrl+K/Cmd+K's whole purpose is to jump to search
+            // from anywhere — including from inside another input — so it is
+            // intentionally exempt from the "typing" guard.
+            if (e.key === '/') {
+                const active = document.activeElement;
+                const typing = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable);
+                if (typing) return;
+                e.preventDefault();
+                inputElement.focus();
+                return;
+            }
+            if (e.key && e.key.toLowerCase() === 'k' && (e.ctrlKey || e.metaKey)) {
                 e.preventDefault();
                 inputElement.focus();
             }
