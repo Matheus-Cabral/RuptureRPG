@@ -265,4 +265,13 @@
   <data name="Journal.Delete"><value>Delete</value></data>
   <data name="Journal.AddImage"><value>Add Image</value></data>
   <data name="Journal.Uploading"><value>Uploading…</value></data>
+
+  <!-- GM Notifications -->
+  <data name="Nav.Notifications"><value>Notifications</value></data>
+  <data name="Gm.Notifications.Title"><value>Notifications</value></data>
+  <data name="Gm.Notifications.Empty"><value>No pending notifications.</value></data>
+  <data name="Gm.Notifications.Col.Character"><value>Character</value></data>
+  <data name="Gm.Notifications.Col.CreatedAt"><value>Since</value></data>
+  <data name="Gm.Notifications.Promote"><value>Promote</value></data>
+  <data name="Gm.Notifications.Dismiss"><value>Dismiss</value></data>
 </root>

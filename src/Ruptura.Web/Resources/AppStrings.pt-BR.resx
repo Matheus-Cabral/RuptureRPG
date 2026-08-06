@@ -265,4 +265,13 @@
   <data name="Journal.Delete"><value>Apagar</value></data>
   <data name="Journal.AddImage"><value>Adicionar Imagem</value></data>
   <data name="Journal.Uploading"><value>Enviando…</value></data>
+
+  <!-- Notificações do Mestre -->
+  <data name="Nav.Notifications"><value>Notificações</value></data>
+  <data name="Gm.Notifications.Title"><value>Notificações</value></data>
+  <data name="Gm.Notifications.Empty"><value>Nenhuma notificação pendente.</value></data>
+  <data name="Gm.Notifications.Col.Character"><value>Personagem</value></data>
+  <data name="Gm.Notifications.Col.CreatedAt"><value>Desde</value></data>
+  <data name="Gm.Notifications.Promote"><value>Promover</value></data>
+  <data name="Gm.Notifications.Dismiss"><value>Descartar</value></data>
 </root>
