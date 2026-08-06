@@ -189,12 +189,8 @@
         _showSuggestions = false;
     }
 
-    protected override async Task OnInitializedAsync() => await LoadAsync();
-
-    private async Task LoadAsync()
+    protected override async Task OnInitializedAsync()
     {
-        _loading = true;
-
         var campaignsResult = await CampaignService.GetMineAsync();
         var campaignName = campaignsResult?.Data?.FirstOrDefault(c => c.Id == Id)?.Name;
         _breadcrumbs =
@@ -202,6 +198,13 @@
             new BreadcrumbItem(L["Nav.Campaigns"], "/gm/campaigns"),
             new BreadcrumbItem(campaignName ?? L["Gm.CampaignDetail.Members"], null)
         ];
+
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
 
         var membersResult = await CampaignService.GetMembersAsync(Id);
         _members = membersResult?.Data?.ToList() ?? [];

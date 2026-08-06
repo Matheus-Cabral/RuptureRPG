@@ -27,6 +27,7 @@
 - Adding a `Breadcrumbs` trail to `GmCharacterSheet.razor` — deferred for the same reason: doing it well needs an extra sheet-name fetch that's better designed alongside that phase's own work, not bolted on here.
 - Adding `TableSearchBox` to `GmCampaignDetail`'s members/character-sheets tables — these are scoped to one campaign (naturally small), unlike the global Players/Campaigns/Invites lists. Can be added later if a campaign's roster grows large enough to need it.
 - No backend changes. `ICampaignClientService` already exposes `GetMineAsync()` (a GM's own campaigns), which Task 4 uses to resolve a campaign's display name — no new API endpoint is added.
+- `TableSearchBox` on `GmNotifications` — the spec (§6.4, §8) names this page as a search target, but its grouped-by-campaign table layout raises design questions a rushed bolt-on shouldn't answer implicitly (does filtering hide whole campaign groups with zero matches? does it filter the group header text too?). Deferred to a follow-up decision rather than silently dropped.
 
 ---
 
