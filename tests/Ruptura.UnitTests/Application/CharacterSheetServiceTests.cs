@@ -414,6 +414,74 @@ public class CharacterSheetServiceTests
     }
 
     [Fact]
+    public async Task UpdateAsync_AsOwnerAttemptingToChangeRanking_ReturnsFailureAndDoesNotSave()
+    {
+        var ownerId = Guid.NewGuid();
+        var campaign = new Campaign { Id = Guid.NewGuid(), GameMasterId = Guid.NewGuid() };
+        var sheet = BuildAliveSheet(ownerId, campaign.Id);
+        _sheetRepoMock.Setup(r => r.GetByIdAsync(sheet.Id, It.IsAny<CancellationToken>())).ReturnsAsync(sheet);
+        _campaignRepoMock.Setup(r => r.GetByIdAsync(campaign.Id, It.IsAny<CancellationToken>())).ReturnsAsync(campaign);
+
+        var changedData = new CharacterSheetData();
+        changedData.GuildRegistry.Ranking = "Ferro";
+
+        var result = await _sut.UpdateAsync(ownerId, sheet.Id, new UpdateCharacterSheetRequest
+        {
+            CharacterName = "New Name", DataJson = JsonSerializer.Serialize(changedData),
+            IsDead = false, IsRetired = false
+        });
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(ErrorCodes.CharacterSheet.OnlyGameMasterCanChangeStatus);
+        sheet.CharacterName.Should().Be("Old Name");
+        _sheetRepoMock.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_AsGameMaster_CanChangeRanking()
+    {
+        var gmId = Guid.NewGuid();
+        var campaign = new Campaign { Id = Guid.NewGuid(), GameMasterId = gmId };
+        var sheet = BuildAliveSheet(Guid.NewGuid(), campaign.Id);
+        _sheetRepoMock.Setup(r => r.GetByIdAsync(sheet.Id, It.IsAny<CancellationToken>())).ReturnsAsync(sheet);
+        _campaignRepoMock.Setup(r => r.GetByIdAsync(campaign.Id, It.IsAny<CancellationToken>())).ReturnsAsync(campaign);
+        _sheetRepoMock.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+
+        var changedData = new CharacterSheetData();
+        changedData.GuildRegistry.Ranking = "Ferro";
+
+        var result = await _sut.UpdateAsync(gmId, sheet.Id, new UpdateCharacterSheetRequest
+        {
+            CharacterName = "Old Name", DataJson = JsonSerializer.Serialize(changedData),
+            IsDead = false, IsRetired = false
+        });
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Data.GuildRegistry.Ranking.Should().Be("Ferro");
+    }
+
+    [Fact]
+    public async Task UpdateAsync_AsOwnerLeavingRankingUnchanged_Succeeds()
+    {
+        var ownerId = Guid.NewGuid();
+        var campaign = new Campaign { Id = Guid.NewGuid(), GameMasterId = Guid.NewGuid() };
+        var sheet = BuildAliveSheet(ownerId, campaign.Id); // default Ranking = "Bronze"
+        _sheetRepoMock.Setup(r => r.GetByIdAsync(sheet.Id, It.IsAny<CancellationToken>())).ReturnsAsync(sheet);
+        _campaignRepoMock.Setup(r => r.GetByIdAsync(campaign.Id, It.IsAny<CancellationToken>())).ReturnsAsync(campaign);
+        _sheetRepoMock.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+
+        var unchangedData = new CharacterSheetData(); // still default "Bronze"
+
+        var result = await _sut.UpdateAsync(ownerId, sheet.Id, new UpdateCharacterSheetRequest
+        {
+            CharacterName = "New Name", DataJson = JsonSerializer.Serialize(unchangedData),
+            IsDead = false, IsRetired = false
+        });
+
+        result.IsSuccess.Should().BeTrue();
+    }
+
+    [Fact]
     public async Task UpdateAsync_AsUnrelatedCaller_ReturnsNotFound()
     {
         var campaign = new Campaign { Id = Guid.NewGuid(), GameMasterId = Guid.NewGuid() };

@@ -164,7 +164,11 @@ public class CharacterSheetService(
         if (!isOwner && !isGameMaster)
             return Result.Failure<CharacterSheetResponse>(ErrorCodes.CharacterSheet.NotFound);
 
-        var statusChanged = request.IsDead != sheet.IsDead || request.IsRetired != sheet.IsRetired;
+        var currentRanking = DeserializeSheetData(sheet.DataJson).GuildRegistry.Ranking;
+        var incomingRanking = DeserializeSheetData(request.DataJson).GuildRegistry.Ranking;
+        var statusChanged = request.IsDead != sheet.IsDead
+            || request.IsRetired != sheet.IsRetired
+            || incomingRanking != currentRanking;
         if (statusChanged && !isGameMaster)
             return Result.Failure<CharacterSheetResponse>(ErrorCodes.CharacterSheet.OnlyGameMasterCanChangeStatus);
 
