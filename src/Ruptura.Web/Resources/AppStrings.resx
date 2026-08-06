@@ -295,4 +295,6 @@
   <data name="Gm.Notifications.Col.CreatedAt"><value>Since</value></data>
   <data name="Gm.Notifications.Promote"><value>Promote</value></data>
   <data name="Gm.Notifications.Dismiss"><value>Dismiss</value></data>
+  <data name="Gm.Notifications.PromoteSuccess"><value>Character promoted.</value></data>
+  <data name="Gm.Notifications.DismissSuccess"><value>Notification dismissed.</value></data>
 </root>

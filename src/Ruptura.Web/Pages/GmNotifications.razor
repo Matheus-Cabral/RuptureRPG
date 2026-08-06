@@ -5,6 +5,7 @@
 @using Ruptura.Shared.Notifications
 @inject IStringLocalizer<AppStrings> L
 @inject INotificationClientService NotificationService
+@inject ToastService Toast
 
 <PageTitle>@L["Gm.Notifications.Title"] — RUPTURA</PageTitle>
 
@@ -13,16 +14,9 @@
         <h1>@L["Gm.Notifications.Title"]</h1>
     </div>
 
-    @if (!string.IsNullOrEmpty(_errorMessage))
-    {
-        <div class="alert-danger mb-4">@_errorMessage</div>
-    }
-
     @if (_loading)
     {
-        <div class="ledger-empty">
-            <span class="spinner-border spinner-border-sm me-2"></span>@L["Common.Loading"]
-        </div>
+        <LoadingIndicator Text="@L["Common.Loading"]" />
     }
     else if (_groups.Count == 0)
     {
@@ -37,7 +31,7 @@
             <div style="margin-bottom:1.5rem">
                 <h2 class="section-title">@group.CampaignName</h2>
                 <div class="ledger-table-wrap">
-                    <table class="ledger-table">
+                    <table class="ledger-table stack-mobile">
                         <thead>
                             <tr>
                                 <th>@L["Gm.Notifications.Col.Character"]</th>
@@ -49,11 +43,11 @@
                             @foreach (var notification in group.Notifications)
                             {
                                 <tr>
-                                    <td>@notification.CharacterName</td>
-                                    <td style="color:var(--text-muted);font-size:.78rem;white-space:nowrap">
+                                    <td data-label="@L["Gm.Notifications.Col.Character"]">@notification.CharacterName</td>
+                                    <td data-label="@L["Gm.Notifications.Col.CreatedAt"]" style="color:var(--text-muted);font-size:var(--text-xs);white-space:nowrap">
                                         @notification.CreatedAt.ToLocalTime().ToString("dd/MM/yy HH:mm")
                                     </td>
-                                    <td style="display:flex;gap:.5rem">
+                                    <td data-label="" style="display:flex;gap:.5rem">
                                         <button class="btn btn-primary btn-sm" @onclick="() => PromoteAsync(notification.Id)" disabled="@_busy">
                                             @L["Gm.Notifications.Promote"]
                                         </button>
@@ -75,7 +69,6 @@
     private List<NotificationGroupResponse> _groups = [];
     private bool _loading = true;
     private bool _busy;
-    private string? _errorMessage;
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
@@ -90,12 +83,13 @@
     private async Task PromoteAsync(Guid id)
     {
         _busy = true;
-        _errorMessage = null;
         try
         {
             var result = await NotificationService.PromoteAsync(id);
-            if (result is null || !result.Success)
-                _errorMessage = result?.Message ?? L["Common.Error"];
+            if (result is not null && result.Success)
+                Toast.Success(L["Gm.Notifications.PromoteSuccess"]);
+            else
+                Toast.Error(result?.Message ?? L["Common.Error"]);
         }
         finally
         {
@@ -107,12 +101,13 @@
     private async Task DismissAsync(Guid id)
     {
         _busy = true;
-        _errorMessage = null;
         try
         {
             var result = await NotificationService.DismissAsync(id);
-            if (result is null || !result.Success)
-                _errorMessage = result?.Message ?? L["Common.Error"];
+            if (result is not null && result.Success)
+                Toast.Success(L["Gm.Notifications.DismissSuccess"]);
+            else
+                Toast.Error(result?.Message ?? L["Common.Error"]);
         }
         finally
         {

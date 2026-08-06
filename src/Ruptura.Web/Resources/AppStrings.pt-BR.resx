@@ -295,4 +295,6 @@
   <data name="Gm.Notifications.Col.CreatedAt"><value>Desde</value></data>
   <data name="Gm.Notifications.Promote"><value>Promover</value></data>
   <data name="Gm.Notifications.Dismiss"><value>Descartar</value></data>
+  <data name="Gm.Notifications.PromoteSuccess"><value>Personagem promovido.</value></data>
+  <data name="Gm.Notifications.DismissSuccess"><value>Notificação descartada.</value></data>
 </root>
