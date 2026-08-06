@@ -58,4 +58,10 @@ public static class ErrorCodes
         public const string TooManyImages = "Media.TooManyImages";
         public const string NotFound = "Media.NotFound";
     }
+
+    public static class Notification
+    {
+        public const string NotFound = "Notification.NotFound";
+        public const string NotPromotable = "Notification.NotPromotable";
+    }
 }
