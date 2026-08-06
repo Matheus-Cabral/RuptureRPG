@@ -8,47 +8,56 @@
     <AuthorizeView>
         <Authorized>
             <span class="nav-section-label">@L["Nav.Dashboard"]</span>
-            <NavLink class="nav-link" href="/dashboard" Match="NavLinkMatch.All">
-                @L["Nav.Dashboard"]
+            <NavLink class="nav-link" href="/dashboard" Match="NavLinkMatch.All" title="@L["Nav.Dashboard"]">
+                <span class="nav-link-mono" aria-hidden="true">@Initial(L["Nav.Dashboard"])</span>
+                <span class="nav-link-text">@L["Nav.Dashboard"]</span>
             </NavLink>
 
             <AuthorizeView Roles="Player">
                 <Authorized Context="playerCtx">
-                    <NavLink class="nav-link" href="/campaigns">
-                        @L["Nav.Campaigns.Player"]
+                    <NavLink class="nav-link" href="/campaigns" title="@L["Nav.Campaigns.Player"]">
+                        <span class="nav-link-mono" aria-hidden="true">@Initial(L["Nav.Campaigns.Player"])</span>
+                        <span class="nav-link-text">@L["Nav.Campaigns.Player"]</span>
                     </NavLink>
                 </Authorized>
             </AuthorizeView>
 
             <AuthorizeView Roles="GameMaster">
                 <Authorized Context="gmCtx">
-                    <span class="nav-section-label" style="margin-top:.75rem">Mestre</span>
-                    <NavLink class="nav-link" href="/gm/players">
-                        @L["Nav.Players"]
+                    <span class="nav-section-label" style="margin-top:.75rem">@L["Nav.Section.GameMaster"]</span>
+                    <NavLink class="nav-link" href="/gm/players" title="@L["Nav.Players"]">
+                        <span class="nav-link-mono" aria-hidden="true">@Initial(L["Nav.Players"])</span>
+                        <span class="nav-link-text">@L["Nav.Players"]</span>
                     </NavLink>
-                    <NavLink class="nav-link" href="/gm/campaigns">
-                        @L["Nav.Campaigns"]
+                    <NavLink class="nav-link" href="/gm/campaigns" title="@L["Nav.Campaigns"]">
+                        <span class="nav-link-mono" aria-hidden="true">@Initial(L["Nav.Campaigns"])</span>
+                        <span class="nav-link-text">@L["Nav.Campaigns"]</span>
                     </NavLink>
-                    <NavLink class="nav-link" href="/gm/notifications">
-                        @L["Nav.Notifications"]
+                    <NavLink class="nav-link" href="/gm/notifications" title="@L["Nav.Notifications"]">
+                        <span class="nav-link-mono" aria-hidden="true">@Initial(L["Nav.Notifications"])</span>
+                        <span class="nav-link-text">@L["Nav.Notifications"]</span>
                     </NavLink>
                 </Authorized>
             </AuthorizeView>
 
             <div style="flex:1"></div>
-            <button class="nav-btn-link" @onclick="LogoutAsync">
-                @L["Nav.Logout"]
+            <button class="nav-btn-link" @onclick="LogoutAsync" title="@L["Nav.Logout"]">
+                <span class="nav-link-mono" aria-hidden="true">@Initial(L["Nav.Logout"])</span>
+                <span class="nav-link-text">@L["Nav.Logout"]</span>
             </button>
         </Authorized>
         <NotAuthorized>
-            <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">
-                @L["Nav.Home"]
+            <NavLink class="nav-link" href="/" Match="NavLinkMatch.All" title="@L["Nav.Home"]">
+                <span class="nav-link-mono" aria-hidden="true">@Initial(L["Nav.Home"])</span>
+                <span class="nav-link-text">@L["Nav.Home"]</span>
             </NavLink>
-            <NavLink class="nav-link" href="/login">
-                @L["Nav.Login"]
+            <NavLink class="nav-link" href="/login" title="@L["Nav.Login"]">
+                <span class="nav-link-mono" aria-hidden="true">@Initial(L["Nav.Login"])</span>
+                <span class="nav-link-text">@L["Nav.Login"]</span>
             </NavLink>
-            <NavLink class="nav-link" href="/register">
-                @L["Nav.Register"]
+            <NavLink class="nav-link" href="/register" title="@L["Nav.Register"]">
+                <span class="nav-link-mono" aria-hidden="true">@Initial(L["Nav.Register"])</span>
+                <span class="nav-link-text">@L["Nav.Register"]</span>
             </NavLink>
         </NotAuthorized>
     </AuthorizeView>
@@ -60,4 +69,7 @@
         await AuthService.LogoutAsync();
         Nav.NavigateTo("/login");
     }
+
+    private static string Initial(string label) =>
+        string.IsNullOrEmpty(label) ? "?" : label[..1].ToUpperInvariant();
 }

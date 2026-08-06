@@ -132,6 +132,7 @@
   <data name="Common.Error"><value>Something went wrong. Please try again.</value></data>
 
   <!-- GM Campaigns -->
+  <data name="Nav.Section.GameMaster"><value>Game Master</value></data>
   <data name="Nav.Campaigns"><value>Campaigns</value></data>
   <data name="Gm.Campaigns.Title"><value>Campaigns</value></data>
   <data name="Gm.Campaigns.NamePlaceholder"><value>Campaign name</value></data>

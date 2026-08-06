@@ -1135,7 +1135,44 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 400; color: var(--te
     }
 }
 
-/* Tablet: handled by Task 2 (sidebar rail — depends on NavMenu markup) */
+/* Sidebar icon rail — 600–1023px collapses text, keeps a monogram medallion
+   per item; the native title="" attribute on each link supplies the tooltip. */
+@media (min-width: 600px) and (max-width: 1023px) {
+    .sidebar { width: var(--nav-width-rail); transform: none; }
+    .main-wrapper { margin-left: var(--nav-width-rail); }
+    .top-bar { left: var(--nav-width-rail); }
+
+    .brand-tagline,
+    .nav-section-label,
+    .nav-link-text { display: none; }
+
+    .sidebar-brand { padding: 1.25rem 0.5rem; text-align: center; }
+    .sidebar-nav a.nav-link,
+    .nav-btn-link { justify-content: center; padding: 0.65rem; }
+
+    .nav-link-mono { display: flex; }
+
+    .sidebar-footer { padding: 0.75rem 0.4rem; }
+    .language-switcher { flex-direction: column; }
+}
+
+.nav-link-mono {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    border: 1px solid var(--sidebar-link);
+    border-radius: 50%;
+    font-family: var(--font-display);
+    font-size: var(--text-2xs);
+    color: var(--sidebar-link);
+}
+.nav-link.active .nav-link-mono {
+    border-color: var(--accent-on-dark);
+    color: #fff;
+}
 
 /* Mobile */
 @media (max-width: 599px) {

@@ -132,6 +132,7 @@
   <data name="Common.Error"><value>Algo deu errado. Por favor, tente novamente.</value></data>
 
   <!-- Campanhas do Mestre -->
+  <data name="Nav.Section.GameMaster"><value>Mestre</value></data>
   <data name="Nav.Campaigns"><value>Campanhas</value></data>
   <data name="Gm.Campaigns.Title"><value>Campanhas</value></data>
   <data name="Gm.Campaigns.NamePlaceholder"><value>Nome da campanha</value></data>
