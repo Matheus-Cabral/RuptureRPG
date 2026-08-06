@@ -27,13 +27,15 @@
     --bg-nav       : #15100B;
     --text         : #1A1511;
     --text-muted   : #57504A;
-    --text-faint   : #847A70;
+    --text-faint   : #6B6259;
     --border       : #CEC8BE;
     --border-strong: #A09690;
 
     --primary      : #7A1B1B;
     --primary-dark : #5A1313;
-    --accent       : #8A6A22;
+    --link         : var(--primary);      /* body-link color, AA-verified against --bg per theme */
+    --link-hover   : var(--primary-dark);
+    --accent       : #7E6020;
     --accent-dim   : #6E551B;
     --accent-on-dark: #D4AF5A; /* fixed value — for decorative use on the always-dark sidebar/hero, not theme-dependent */
 
@@ -41,6 +43,7 @@
     --danger-dark  : #8C1E17;
     --danger-bg    : rgba(179,38,30,0.08);
     --danger-border: rgba(179,38,30,0.25);
+    --danger-text  : #fff;                 /* .btn-danger text color — AA-verified per theme */
     --success      : #2E7D32;
     --info         : #1A5FA8;
 
@@ -64,12 +67,14 @@
     --bg-surface   : #1C1813;
     --text         : #F0EAE0;
     --text-muted   : #B8AFA5;
-    --text-faint   : #7A7168;
+    --text-faint   : #8F857A;
     --border       : #302A24;
     --border-strong: #443C34;
 
     --primary      : #B23A2E;
     --primary-dark : #C94E40;
+    --link         : #D46356;              /* own AA-verified value — --primary at 3.26:1 fails vs dark --bg */
+    --link-hover   : #E0796D;
     --accent       : #D4AF5A;
     --accent-dim   : #A9863F;
 
@@ -77,6 +82,7 @@
     --danger-dark  : #F5847A;
     --danger-bg    : rgba(242,104,92,0.12);
     --danger-border: rgba(242,104,92,0.3);
+    --danger-text  : #1A1511;              /* #fff on --danger is 3.04:1 — fails AA */
     --success      : #6FCF8A;
     --info         : #7AB4F0;
 
@@ -90,12 +96,14 @@
         --bg-surface   : #1C1813;
         --text         : #F0EAE0;
         --text-muted   : #B8AFA5;
-        --text-faint   : #7A7168;
+        --text-faint   : #8F857A;
         --border       : #302A24;
         --border-strong: #443C34;
 
         --primary      : #B23A2E;
         --primary-dark : #C94E40;
+        --link         : #D46356;
+        --link-hover   : #E0796D;
         --accent       : #D4AF5A;
         --accent-dim   : #A9863F;
 
@@ -103,6 +111,7 @@
         --danger-dark  : #F5847A;
         --danger-bg    : rgba(242,104,92,0.12);
         --danger-border: rgba(242,104,92,0.3);
+        --danger-text  : #1A1511;
         --success      : #6FCF8A;
         --info         : #7AB4F0;
 
@@ -129,8 +138,8 @@ body {
     -webkit-font-smoothing: antialiased;
 }
 
-a { color: var(--primary); text-decoration: none; }
-a:hover { color: var(--primary-dark); }
+a { color: var(--link); text-decoration: none; }
+a:hover { color: var(--link-hover); }
 
 h1, h2, h3 { font-family: var(--font-display); font-weight: 400; color: var(--text); }
 
@@ -169,7 +178,7 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 400; color: var(--te
 .btn-danger {
     background: var(--danger) !important;
     border: 1px solid var(--danger) !important;
-    color: #fff !important;
+    color: var(--danger-text) !important;
 }
 .btn-danger:hover, .btn-danger:focus {
     background: var(--danger-dark) !important;
@@ -297,7 +306,7 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 400; color: var(--te
     font-size: var(--text-2xs);
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: rgba(255,255,255,0.4);
+    color: rgba(255,255,255,0.5);
     margin-top: 0.3rem;
     display: block;
 }
@@ -1129,9 +1138,10 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 400; color: var(--te
     .btn, .hamburger, .copy-btn, .theme-btn, .lang-btn,
     .sidebar-nav a.nav-link, .nav-btn-link, .toast-close {
         min-height: 44px;
-    }
-    .btn, .sidebar-nav a.nav-link, .nav-btn-link {
         min-width: 44px;
+    }
+    .toast-close {
+        align-self: center;
     }
 }
 
@@ -1197,6 +1207,10 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 400; color: var(--te
     .hero-title { letter-spacing: 0.15em; }
     .ledger-stats { gap: 1.5rem; }
     .pillars-grid { grid-template-columns: 1fr; }
+
+    /* Toast stack: fixed right offset + max-width push the stack off the
+       left edge on very narrow phones — go full-width instead. */
+    .toast-stack { left: 1.25rem; max-width: none; }
 
     /* Ledger tables become stacked cards — one per row, labelled by the
        column header via a data attribute the page sets on each <td>. */
