@@ -3,6 +3,7 @@
 @using Ruptura.Shared.CharacterSheets
 @inject IStringLocalizer<AppStrings> L
 @inject ICharacterSheetClientService SheetService
+@inject IMediaClientService MediaService
 
 @if (_loading)
 {
@@ -30,7 +31,14 @@ else
         </div>
         <div>
             <label class="form-label">@L["Sheet.PortraitLabel"]</label>
-            <input class="form-control" @bind="_portraitImagePath" @bind:event="oninput" />
+            <div style="display:flex;align-items:center;gap:.5rem">
+                @if (_portraitDataUri is not null)
+                {
+                    <img src="@_portraitDataUri" style="width:48px;height:48px;object-fit:cover;border-radius:4px" />
+                }
+                <InputFile OnChange="UploadPortraitAsync" accept="image/*" disabled="@_uploadingPortrait" />
+                @if (_uploadingPortrait) { <span class="spinner-border spinner-border-sm"></span> }
+            </div>
         </div>
         <div>
             <span class="section-title" style="display:block">@L["Sheet.RankLabel"]</span>
@@ -146,6 +154,8 @@ else
     private CharacterDerivedStats? _derived;
     private string _characterName = string.Empty;
     private string? _portraitImagePath;
+    private string? _portraitDataUri;
+    private bool _uploadingPortrait;
     private bool _isDead;
     private bool _isRetired;
     private string _activeTab = "identity";
@@ -169,6 +179,7 @@ else
             _derived = result.Data.DerivedStats;
             _characterName = result.Data.CharacterName;
             _portraitImagePath = result.Data.PortraitImagePath;
+            _portraitDataUri = await MediaService.GetDataUriAsync(_portraitImagePath);
             _isDead = result.Data.IsDead;
             _isRetired = result.Data.IsRetired;
         }
@@ -203,5 +214,26 @@ else
         }
 
         _saving = false;
+    }
+
+    private async Task UploadPortraitAsync(InputFileChangeEventArgs e)
+    {
+        _uploadingPortrait = true;
+        _errorMessage = null;
+
+        await using var stream = e.File.OpenReadStream(maxAllowedSize: 20 * 1024 * 1024);
+        var result = await MediaService.UploadAsync(stream, e.File.Name, "CharacterSheetPortrait", SheetId);
+
+        if (result?.Data is not null)
+        {
+            _portraitImagePath = result.Data.Path;
+            _portraitDataUri = await MediaService.GetDataUriAsync(_portraitImagePath);
+        }
+        else
+        {
+            _errorMessage = result?.Message ?? L["Common.Error"];
+        }
+
+        _uploadingPortrait = false;
     }
 }
