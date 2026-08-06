@@ -131,6 +131,7 @@
   <data name="Common.Loading"><value>Carregando…</value></data>
   <data name="Common.Error"><value>Algo deu errado. Por favor, tente novamente.</value></data>
   <data name="Common.Close"><value>Fechar</value></data>
+  <data name="Nav.ToggleMenu"><value>Alternar menu</value></data>
   <data name="Theme.Switcher.Label"><value>Tema</value></data>
   <data name="Theme.Light"><value>Claro</value></data>
   <data name="Theme.System"><value>Sistema</value></data>

@@ -3,7 +3,10 @@
 @using Ruptura.Web.Resources
 @inject IStringLocalizer<AppStrings> L
 @inject ThemeService ThemeService
+@inject ConfirmService ConfirmSvc
+@inject IJSRuntime JS
 @inject AuthenticationStateProvider AuthStateProvider
+@implements IAsyncDisposable
 
 <div class="app-shell">
 
@@ -29,7 +32,7 @@
     <!-- Topbar (sibling of sidebar, both fixed) -->
     <header class="top-bar">
         <button class="hamburger" @onclick="() => _sidebarOpen = !_sidebarOpen"
-                aria-label="Menu">
+                aria-label="@L["Nav.ToggleMenu"]">
             <span></span><span></span><span></span>
         </button>
         <span class="top-bar-title">@_pageTitle</span>
@@ -53,6 +56,9 @@
         @Body
     </main>
 
+    <ToastContainer />
+    <ConfirmDialog />
+
 </div>
 
 @code {
@@ -60,6 +66,7 @@
     private string _pageTitle = string.Empty;
     private string _displayName = string.Empty;
     private string _role = string.Empty;
+    private DotNetObjectReference<MainLayout>? _selfRef;
 
     protected override async Task OnInitializedAsync()
     {
@@ -67,5 +74,44 @@
         var state = await AuthStateProvider.GetAuthenticationStateAsync();
         _displayName = state.User.FindFirst("name")?.Value ?? string.Empty;
         _role        = state.User.FindFirst("role")?.Value ?? string.Empty;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _selfRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("ruptura.bindGlobalEscape", _selfRef);
+        }
+    }
+
+    [JSInvokable]
+    public void OnGlobalEscape()
+    {
+        if (ConfirmSvc.Current is not null)
+        {
+            ConfirmSvc.Resolve(false);
+        }
+        else if (_sidebarOpen)
+        {
+            _sidebarOpen = false;
+        }
+        StateHasChanged();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_selfRef is not null)
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("ruptura.unbindGlobalEscape");
+            }
+            catch (JSDisconnectedException)
+            {
+                // circuit already gone — nothing to clean up client-side
+            }
+            _selfRef.Dispose();
+        }
     }
 }
