@@ -182,6 +182,12 @@
   <data name="Gm.Catalog.Cancel"><value>Cancelar</value></data>
   <data name="Gm.Catalog.Delete"><value>Apagar</value></data>
   <data name="Gm.Catalog.Archived"><value>Arquivado</value></data>
+  <data name="Gm.Catalog.SearchPlaceholder"><value>Buscar catálogo…</value></data>
+  <data name="Gm.Catalog.DeleteConfirm.Title"><value>Excluir entrada?</value></data>
+  <data name="Gm.Catalog.DeleteConfirm.Message"><value>Isso vai excluir "{0}" permanentemente. Essa ação não pode ser desfeita.</value></data>
+  <data name="Gm.Catalog.DeleteSuccess"><value>Entrada excluída.</value></data>
+  <data name="Gm.Catalog.CreateSuccess"><value>Entrada criada.</value></data>
+  <data name="Gm.Catalog.SaveSuccess"><value>Entrada salva.</value></data>
 
   <!-- Editor de Ficha de Personagem -->
   <data name="Sheet.Loading"><value>Carregando ficha…</value></data>

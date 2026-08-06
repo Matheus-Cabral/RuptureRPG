@@ -182,6 +182,12 @@
   <data name="Gm.Catalog.Cancel"><value>Cancel</value></data>
   <data name="Gm.Catalog.Delete"><value>Delete</value></data>
   <data name="Gm.Catalog.Archived"><value>Archived</value></data>
+  <data name="Gm.Catalog.SearchPlaceholder"><value>Search catalog…</value></data>
+  <data name="Gm.Catalog.DeleteConfirm.Title"><value>Delete entry?</value></data>
+  <data name="Gm.Catalog.DeleteConfirm.Message"><value>This will permanently delete "{0}". This cannot be undone.</value></data>
+  <data name="Gm.Catalog.DeleteSuccess"><value>Entry deleted.</value></data>
+  <data name="Gm.Catalog.CreateSuccess"><value>Entry created.</value></data>
+  <data name="Gm.Catalog.SaveSuccess"><value>Entry saved.</value></data>
 
   <!-- Character Sheet Editor -->
   <data name="Sheet.Loading"><value>Loading character sheet…</value></data>
