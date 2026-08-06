@@ -40,6 +40,8 @@ builder.Services.AddScoped<IInviteClientService, InviteClientService>();
 builder.Services.AddScoped<ICampaignClientService, CampaignClientService>();
 builder.Services.AddScoped<ICatalogClientService, CatalogClientService>();
 builder.Services.AddScoped<ICharacterSheetClientService, CharacterSheetClientService>();
+builder.Services.AddScoped<IJournalEntryClientService, JournalEntryClientService>();
+builder.Services.AddScoped<IMediaClientService, MediaClientService>();
 
 var host = builder.Build();
 
