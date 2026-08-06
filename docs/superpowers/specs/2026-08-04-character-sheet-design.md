@@ -135,6 +135,8 @@ CharacterSheet
 
 `IsDead`/`IsRetired` são colunas reais (não dentro do `DataJson`) porque precisam ser consultadas eficientemente pela regra de unicidade — diferente do "Estado" narrativo (ativo/ferido/ausente/desaparecido), que continua livre dentro do `DataJson.GuildRegistry.State` como campo descritivo, sem efeito mecânico.
 
+**`GuildRegistry.Ranking` é só-Mestre, decidido no sub-plan #5:** ao contrário do resto do `DataJson` (editável por dono-ou-Mestre), `Ranking` segue a mesma regra de `IsDead`/`IsRetired` — mesmo vivendo dentro do blob, não como coluna real. Como não há coluna dedicada para comparar antes/depois, `CharacterSheetService.UpdateAsync` desserializa tanto o `DataJson` atual quanto o recebido só o suficiente para extrair `GuildRegistry.Ranking`; se o valor mudou e quem chama não é o Mestre da Campaign, a request inteira falha (mesma semântica tudo-ou-nada de `IsDead`/`IsRetired`). Motivo: sub-plan #3 deixou `Ranking` editável por dono-ou-Mestre, o que conflita com a promoção controlada pelo Mestre desenhada em §4.5 — um jogador não pode simplesmente digitar o próximo Ranking e ignorar a notificação/aprovação do Mestre.
+
 #### 4.3.1 `CharacterSheetData` (estrutura do `DataJson`)
 
 ```
@@ -196,9 +198,13 @@ Notification
 ├─ CreatedAt
 ```
 
-**Gatilho**: ao salvar uma `CharacterSheet`, o motor recalcula o NP; se o NP ultrapassar o teto da faixa do `Ranking` atual (tabela §6.8 — Bronze 40–70, Ferro 70–105, Aço 105–145, Prata 145–195, Ouro 195–260, Mithril 260–340, Adamante 340–430, Lendário 430–550+) e não existir notificação `RankPromotionAvailable` não-lida para essa ficha, cria uma.
+**Gatilho**: ao salvar uma `CharacterSheet`, o motor recalcula o NP; se o NP ultrapassar o teto da faixa do `Ranking` atual (tabela §6.8 — Bronze 40–70, Ferro 70–105, Aço 105–145, Prata 145–195, Ouro 195–260, Mithril 260–340, Adamante 340–430, Lendário 430–550+) e não existir notificação `RankPromotionAvailable` não-lida para essa ficha, cria uma. Lendário não tem teto (faixa aberta) — nunca dispara. A tabela de tetos e a sequência de Rankings vivem em `NotificationService` (não em `CharacterStatsCalculator`): é uma regra de negócio de gravação (quando notificar), não um stat derivado exibido na ficha.
 
-**Ação semi-automática**: a notificação tem duas resoluções possíveis pelo Mestre — (a) abrir a ficha e mudar o `Ranking` manualmente, ou (b) clicar "Promover" na própria notificação, que chama `POST /api/notifications/{id}/promote`: avança o `Ranking` **exatamente um degrau** na sequência oficial (nunca pula direto pro degrau compatível com o NP atual, mesmo que o NP já qualifique para mais — mantém o princípio de crescimento suave do GDD) e marca a notificação como lida. Se o NP ainda exceder o novo teto após a promoção, uma nova notificação é gerada naturalmente na próxima recalculação — sem necessidade de lógica especial.
+**Ação semi-automática**: a notificação tem duas resoluções possíveis pelo Mestre — (a) abrir a ficha e mudar o `Ranking` manualmente (agora só-Mestre, ver §4.3), ou (b) clicar "Promover" na própria notificação, que chama `POST /api/notifications/{id}/promote`: avança o `Ranking` **exatamente um degrau** na sequência oficial (nunca pula direto pro degrau compatível com o NP atual, mesmo que o NP já qualifique para mais — mantém o princípio de crescimento suave do GDD) e marca a notificação como lida. Se o NP ainda exceder o novo teto após a promoção, uma nova notificação é gerada naturalmente na próxima recalculação — sem necessidade de lógica especial. `DELETE`-like "descartar": `POST /api/notifications/{id}/dismiss` marca como lida sem tocar no `Ranking` — o Mestre decidiu não promover agora.
+
+**Autorização de `PromoteAsync`/`DismissAsync`**: comparar `notification.RecipientUserId == callerId` já basta — uma notificação só é criada com `RecipientUserId` = o Mestre da própria Campaign, então essa checagem prova posse sem precisar carregar a `Campaign` de novo.
+
+**FKs (decidido no sub-plan #5)**: `CampaignId` ganha FK real para `Campaign.Id` com `ON DELETE CASCADE` (mesma lógica do `CatalogEntry.CampaignId` — apagar a campanha apaga suas notificações). `RelatedCharacterSheetId` ganha FK real para `CharacterSheet.Id` com `ON DELETE SET NULL` (é nullable; perder a ficha não deveria apagar o histórico de notificação, só a referência). `RecipientUserId` continua `Guid` solto, sem FK — segue a convenção do resto do repo de não referenciar as tabelas do Identity (`Campaign.GameMasterId`, `CharacterSheet.OwnerId`).
 
 **UI**: `/gm/notifications`, agrupada por Campaign (cabeçalho por campanha, notificações não-lidas dentro), sem tempo real — busca ao carregar a página, mesmo padrão do resto do app (sem SignalR no stack hoje).
 
@@ -245,6 +251,7 @@ Os bônus específicos de cada arma/armadura (`AttackBonus`/`DamageBonus`/`Defen
 |---|---|---|---|
 | `CharacterSheet` (geral) | Dono ou Mestre da Campaign | Dono ou Mestre | Mestre |
 | `CharacterSheet.IsDead/IsRetired` | Dono ou Mestre | **Só Mestre** | — |
+| `CharacterSheet.GuildRegistry.Ranking` | Dono ou Mestre | **Só Mestre** | — |
 | `CharacterJournalEntry` | Dono ou Mestre | **Só dono** | Só dono |
 | `CatalogEntry` (oficial, `CampaignId=null`) | Todos autenticados | — (seed, imutável) | — |
 | `CatalogEntry` (homebrew da Campaign) | Membros da Campaign | **Só Mestre** | Só Mestre |
@@ -254,7 +261,7 @@ Os bônus específicos de cada arma/armadura (`AttackBonus`/`DamageBonus`/`Defen
 | `CampaignMembership` | Mestre + membros | Mestre | Mestre |
 | `Notification` | O próprio Mestre destinatário | — (gerada pelo sistema) | Mestre marca como lida |
 
-Validação de campo restrito (`IsDead`/`IsRetired`) acontece no `CharacterSheetService`: se quem chama não é o Mestre da Campaign e o payload tenta mudar esses dois campos, a request falha (`Result.Failure`) — o resto do payload segue normalmente.
+Validação de campo restrito (`IsDead`/`IsRetired`/`GuildRegistry.Ranking`) acontece no `CharacterSheetService`: se quem chama não é o Mestre da Campaign e o payload tenta mudar algum desses três campos, a request falha (`Result.Failure`) — o resto do payload segue normalmente. `IsDead`/`IsRetired` são colunas reais, comparadas diretamente; `Ranking` exige desserializar `DataJson` (atual e recebido) para extrair e comparar `GuildRegistry.Ranking`, já que não tem coluna própria.
 
 Endpoints principais:
 ```
@@ -309,6 +316,8 @@ Tipos aceitos: jpg/png/webp/**gif**, validados por assinatura de bytes (magic nu
 
 **Diário e retrato (sub-plan #4):** a aba Diário só mostra os controles de escrita (criar/editar/apagar entrada) quando quem está vendo é o **dono** da ficha — diferente de `CanEditStatus` (que só controla `IsDead`/`IsRetired`), o componente `CharacterSheetEditor` ganha um parâmetro `IsOwner` próprio para isso; um Mestre vendo a ficha de um jogador enxerga o Diário, mas só em modo leitura. O campo de retrato no cabeçalho, hoje um `<input>` de texto puro (path/URL), vira um upload de arquivo de verdade com preview, usando o mesmo fluxo de `/api/media`.
 
+**Ranking só-Mestre (sub-plan #5):** o `<select>` de Ranking em `CharacterSheetGuildRegistryTab` passa a usar o mesmo `CanEditStatus` já usado por `IsDead`/`IsRetired` no cabeçalho — dono vê o valor como texto somente-leitura, Mestre vê o `<select>` editável.
+
 ## 9. Testes
 
 - **Unit (`Ruptura.UnitTests`)**: `CharacterStatsCalculator` (tabela de casos com os exemplos do GDD/PDF — modificadores, PV, Defesa Passiva, Deslocamento, Ataque/Dano, capacidade de carga, NP); permissões em `CharacterSheetService` (dono/Mestre editam geral; só Mestre muda `IsDead`/`IsRetired`; só dono escreve diário); regra de personagem único vivo em `CampaignService`; gatilho de notificação de promoção de Ranking.
@@ -334,6 +343,10 @@ Tipos aceitos: jpg/png/webp/**gif**, validados por assinatura de bytes (magic nu
 - Upload de retrato substitui o arquivo antigo (apaga do disco antes de gravar o novo) — não deixa órfãos.
 - Edição de entrada de diário é completa (texto + imagens juntos), não só-texto — uma única forma de editar, sem endpoint separado para adicionar/remover imagem de uma entrada existente.
 - Lista de diário é sempre mais recente primeiro.
+- Sub-plan #5 escopo (decidido 2026-08-06): `Notification` (entidade + `NotificationService`) + gatilho de promoção no `CharacterSheetService.UpdateAsync` + endpoints de promover/descartar + `/gm/notifications`. Fecha a lacuna deixada pelo sub-plan #3: `GuildRegistry.Ranking` passa a ser só-Mestre (mesma regra tudo-ou-nada de `IsDead`/`IsRetired`), tanto no `CharacterSheetGuildRegistryTab` (UI) quanto no `CharacterSheetService.UpdateAsync` (servidor) — ver §4.3 e §6. Sem essa restrição, a promoção controlada pelo Mestre desenhada aqui não faria sentido (o jogador poderia simplesmente digitar o próximo Ranking).
+- `Notification.CampaignId` ganha FK real com `ON DELETE CASCADE`; `Notification.RelatedCharacterSheetId` ganha FK real com `ON DELETE SET NULL` (nullable, não deveria apagar histórico); `RecipientUserId` continua `Guid` solto (convenção do repo de não referenciar tabelas do Identity).
+- Tabela de tetos de NP por Ranking (para o gatilho de notificação) e a sequência de avanço vivem em `NotificationService`, não em `CharacterStatsCalculator` — é regra de quando notificar, não um stat derivado exibido na ficha.
+- Autorização de `promote`/`dismiss` usa só `notification.RecipientUserId == callerId` — não precisa recarregar a `Campaign`, já que uma notificação só existe com o Mestre da própria campanha como destinatário.
 
 ## 11. Próximos passos (fora desta spec)
 
