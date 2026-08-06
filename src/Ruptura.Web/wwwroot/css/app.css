@@ -1181,6 +1181,18 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 400; color: var(--te
     .top-bar { left: 0; }
     .main-wrapper { margin-left: 0; min-height: calc(100vh - var(--topbar-h)); }
     .hamburger { display: flex; }
+
+    /* User chip: role badge dropped for space; name truncates instead of
+       wrapping, which would otherwise overflow the fixed-height top bar. */
+    .user-role-badge { display: none; }
+    .user-chip-name {
+        display: block;
+        max-width: 140px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
     .page-content { padding: 1.25rem 1rem; }
     .hero-title { letter-spacing: 0.15em; }
     .ledger-stats { gap: 1.5rem; }
