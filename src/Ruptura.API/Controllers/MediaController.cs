@@ -20,6 +20,7 @@ namespace Ruptura.API.Controllers;
 public class MediaController(
     ICharacterSheetService characterSheetService,
     IJournalEntryService journalEntryService,
+    IGuildSheetService guildService,
     IFileStorageService fileStorage,
     IOptions<MediaSettings> mediaSettings,
     IStringLocalizer<SharedResources> localizer) : ControllerBase
@@ -77,6 +78,37 @@ public class MediaController(
             return Ok(ApiResponse<MediaUploadResponse>.Ok(new MediaUploadResponse { Path = relativePath }));
         }
 
+        if (parsedType == MediaEntityType.GuildEmblem)
+        {
+            var authorized = await guildService.AuthorizeGuildAccessByIdAsync(callerId, entityId, ct);
+            if (authorized.IsFailure)
+                return NotFound(ApiResponse.Fail(localizer[authorized.Error!]));
+
+            var guild = authorized.Value!;
+            var existing = System.Text.Json.JsonSerializer
+                .Deserialize<Ruptura.Shared.Guilds.GuildSheetData>(
+                    guild.DataJson,
+                    new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web))?
+                .Identity?.EmblemImagePath;
+            if (!string.IsNullOrEmpty(existing))
+                await fileStorage.DeleteAsync(existing, ct);
+
+            var relativePath = $"guild-sheets/{entityId}/emblem-{Guid.NewGuid()}{extension}";
+            await using (var stream = file.OpenReadStream())
+                await fileStorage.SaveAsync(stream, relativePath, ct);
+
+            var setResult = await guildService.SetEmblemPathAsync(entityId, relativePath, ct);
+            if (setResult.IsFailure)
+            {
+                // The file was already saved to disk but the entity mutation failed —
+                // delete it rather than leave an orphaned file the client believes is linked.
+                await fileStorage.DeleteAsync(relativePath, ct);
+                return BadRequest(ApiResponse.Fail(localizer[setResult.Error!]));
+            }
+
+            return Ok(ApiResponse<MediaUploadResponse>.Ok(new MediaUploadResponse { Path = relativePath }));
+        }
+
         // MediaEntityType.JournalEntryImage
         var authorizedEntry = await journalEntryService.AuthorizeWriteAsync(callerId, entityId, ct);
         if (authorizedEntry.IsFailure)
@@ -116,6 +148,7 @@ public class MediaController(
         {
             "character-sheets" => (await characterSheetService.AuthorizeAccessAsync(callerId, entityId, ct)) as Result,
             "journal-entries" => (await journalEntryService.AuthorizeReadAsync(callerId, entityId, ct)) as Result,
+            "guild-sheets" => (await guildService.AuthorizeGuildAccessByIdAsync(callerId, entityId, ct)) as Result,
             _ => null
         };
 

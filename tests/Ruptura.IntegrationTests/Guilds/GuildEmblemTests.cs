@@ -1,0 +1,129 @@
+using System.Net;
+using System.Net.Http.Json;
+using Bogus;
+using FluentAssertions;
+using Ruptura.IntegrationTests.Helpers;
+using Ruptura.Shared.Campaigns;
+using Ruptura.Shared.Common;
+using Ruptura.Shared.Guilds;
+using Ruptura.Shared.Invites;
+using Ruptura.Shared.Media;
+
+namespace Ruptura.IntegrationTests.Guilds;
+
+public class GuildEmblemTests(IntegrationTestFactory factory)
+    : IClassFixture<IntegrationTestFactory>
+{
+    private static readonly Faker Faker = new();
+
+    // A minimal, valid 1x1 PNG (correct magic bytes) — mirrors MediaControllerTests.TinyPng.
+    private static readonly byte[] TinyPng =
+    [
+        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D,
+        0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+        0x08, 0x02, 0x00, 0x00, 0x00, 0x90, 0x77, 0x53, 0xDE, 0x00, 0x00, 0x00,
+        0x0C, 0x49, 0x44, 0x41, 0x54, 0x08, 0xD7, 0x63, 0xF8, 0xCF, 0xC0, 0x00,
+        0x00, 0x03, 0x01, 0x01, 0x00, 0x18, 0xDD, 0x8D, 0xB0, 0x00, 0x00, 0x00,
+        0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82
+    ];
+
+    private static MultipartFormDataContent BuildUploadForm(string entityType, Guid entityId, byte[]? bytes = null)
+    {
+        var content = new MultipartFormDataContent();
+        var fileContent = new ByteArrayContent(bytes ?? TinyPng);
+        content.Add(fileContent, "file", "upload.png");
+        content.Add(new StringContent(entityType), "entityType");
+        content.Add(new StringContent(entityId.ToString()), "entityId");
+        return content;
+    }
+
+    private async Task<(HttpClient Client, CampaignResponse Campaign, string PlayerToken, string GmToken)>
+        SetUpCampaignWithMemberAsync()
+    {
+        var client = factory.CreateClient();
+        var gm = await AuthHelper.RegisterGameMasterAsync(client, Faker.Internet.Email());
+        AuthHelper.SetBearerToken(client, gm.AccessToken);
+
+        var campaignResponse = await client.PostAsJsonAsync("api/campaigns", new CreateCampaignRequest { Name = "Emblem Test" });
+        var campaign = (await campaignResponse.Content.ReadFromJsonAsync<ApiResponse<CampaignResponse>>())!.Data!;
+
+        var inviteResponse = await client.PostAsync("api/invites", null);
+        var inviteCode = (await inviteResponse.Content.ReadFromJsonAsync<ApiResponse<InviteCodeResponse>>())!.Data!.Code;
+        var player = await AuthHelper.RegisterPlayerAsync(client, inviteCode, Faker.Internet.Email());
+        await client.PostAsJsonAsync($"api/campaigns/{campaign.Id}/members", new AssignMemberRequest { PlayerId = player.User.Id });
+
+        return (client, campaign, player.AccessToken, gm.AccessToken);
+    }
+
+    private static async Task<GuildSheetResponse> GetGuildAsync(HttpClient client, Guid campaignId)
+    {
+        var response = await client.GetAsync($"api/campaigns/{campaignId}/guild");
+        return (await response.Content.ReadFromJsonAsync<ApiResponse<GuildSheetResponse>>())!.Data!;
+    }
+
+    [Fact]
+    public async Task Upload_EmblemAsMember_SavesFileAndUpdatesGuildBlob()
+    {
+        var (client, campaign, playerToken, _) = await SetUpCampaignWithMemberAsync();
+        AuthHelper.SetBearerToken(client, playerToken);
+        var guildId = (await GetGuildAsync(client, campaign.Id)).Id;
+
+        var response = await client.PostAsync("api/media", BuildUploadForm("GuildEmblem", guildId));
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var upload = (await response.Content.ReadFromJsonAsync<ApiResponse<MediaUploadResponse>>())!.Data!;
+        upload.Path.Should().StartWith($"guild-sheets/{guildId}/emblem-");
+        File.Exists(Path.Combine(factory.MediaRoot, upload.Path)).Should().BeTrue();
+
+        var guild = await GetGuildAsync(client, campaign.Id);
+        guild.Data.Identity.EmblemImagePath.Should().Be(upload.Path);
+    }
+
+    [Fact]
+    public async Task Upload_EmblemAsNonMember_Returns404()
+    {
+        var (client, campaign, playerToken, _) = await SetUpCampaignWithMemberAsync();
+        AuthHelper.SetBearerToken(client, playerToken);
+        var guildId = (await GetGuildAsync(client, campaign.Id)).Id;
+
+        var outsider = await AuthHelper.RegisterGameMasterAsync(client, Faker.Internet.Email());
+        AuthHelper.SetBearerToken(client, outsider.AccessToken);
+
+        var response = await client.PostAsync("api/media", BuildUploadForm("GuildEmblem", guildId));
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task Download_EmblemAsMember_Returns200WithImageBytes()
+    {
+        var (client, campaign, playerToken, _) = await SetUpCampaignWithMemberAsync();
+        AuthHelper.SetBearerToken(client, playerToken);
+        var guildId = (await GetGuildAsync(client, campaign.Id)).Id;
+        var uploadResponse = await client.PostAsync("api/media", BuildUploadForm("GuildEmblem", guildId));
+        var upload = (await uploadResponse.Content.ReadFromJsonAsync<ApiResponse<MediaUploadResponse>>())!.Data!;
+
+        var downloadResponse = await client.GetAsync($"api/media/{upload.Path}");
+
+        downloadResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var bytes = await downloadResponse.Content.ReadAsByteArrayAsync();
+        bytes.Should().BeEquivalentTo(TinyPng);
+    }
+
+    [Fact]
+    public async Task Download_EmblemAsNonMember_Returns404()
+    {
+        var (client, campaign, playerToken, _) = await SetUpCampaignWithMemberAsync();
+        AuthHelper.SetBearerToken(client, playerToken);
+        var guildId = (await GetGuildAsync(client, campaign.Id)).Id;
+        var uploadResponse = await client.PostAsync("api/media", BuildUploadForm("GuildEmblem", guildId));
+        var upload = (await uploadResponse.Content.ReadFromJsonAsync<ApiResponse<MediaUploadResponse>>())!.Data!;
+
+        var outsider = await AuthHelper.RegisterGameMasterAsync(client, Faker.Internet.Email());
+        AuthHelper.SetBearerToken(client, outsider.AccessToken);
+
+        var downloadResponse = await client.GetAsync($"api/media/{upload.Path}");
+
+        downloadResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+}

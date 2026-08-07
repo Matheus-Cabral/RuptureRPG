@@ -138,6 +138,41 @@ public class GuildSheetService(
         return Result.Success();
     }
 
+    public async Task<Result<GuildSheet>> AuthorizeGuildAccessByIdAsync(
+        Guid callerId, Guid guildSheetId, CancellationToken ct = default)
+    {
+        var guild = await guildRepo.GetByIdAsync(guildSheetId, ct);
+        if (guild is null)
+            return Result.Failure<GuildSheet>(ErrorCodes.Guild.NotFound);
+
+        var campaign = await campaignRepo.GetByIdAsync(guild.CampaignId, ct);
+        var isGm = campaign?.GameMasterId == callerId;
+        var isMember = isGm || await membershipRepo.ExistsAsync(guild.CampaignId, callerId, ct);
+        if (!isMember)
+            return Result.Failure<GuildSheet>(ErrorCodes.Guild.NotFound);
+
+        return Result.Success(guild);
+    }
+
+    // No auth of its own — MediaController authorizes via AuthorizeGuildAccessByIdAsync first
+    // (mirrors CharacterSheetService.SetPortraitPathAsync). Sets Identity.EmblemImagePath inside
+    // the blob (there is no dedicated column), preserving all other blob data.
+    public async Task<Result> SetEmblemPathAsync(Guid guildSheetId, string path, CancellationToken ct = default)
+    {
+        var guild = await guildRepo.GetByIdAsync(guildSheetId, ct);
+        if (guild is null)
+            return Result.Failure(ErrorCodes.Guild.NotFound);
+
+        var data = Deserialize(guild.DataJson);
+        data.Identity.EmblemImagePath = path;
+        guild.DataJson = JsonSerializer.Serialize(data, JsonOpts);
+        guild.UpdatedAt = DateTime.UtcNow;
+
+        guildRepo.Update(guild);
+        await guildRepo.SaveChangesAsync(ct);
+        return Result.Success();
+    }
+
     // Shared-write auth (GM or campaign member) + guild resolution, reused by every guild mutation.
     private async Task<Result<GuildSheet>> AuthorizeAsync(Guid callerId, Guid campaignId, CancellationToken ct)
     {
