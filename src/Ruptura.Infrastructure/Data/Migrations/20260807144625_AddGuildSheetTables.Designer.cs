@@ -12,7 +12,7 @@ using Ruptura.Infrastructure.Data;
 namespace Ruptura.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260807143502_AddGuildSheetTables")]
+    [Migration("20260807144625_AddGuildSheetTables")]
     partial class AddGuildSheetTables
     {
         /// <inheritdoc />
@@ -2170,14 +2170,14 @@ namespace Ruptura.Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<byte[]>("RowVersion")
-                        .IsConcurrencyToken()
-                        .IsRequired()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("bytea");
-
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.HasKey("Id");
 

@@ -13,7 +13,4 @@ public class GuildSheet
     // doctrines, Knowledge, Legado, FloorsConquered) — see Ruptura.Shared.Guilds.GuildSheetData.
     // High-churn lists live in dedicated child tables, not here.
     public string DataJson { get; set; } = "{}";
-
-    // Optimistic concurrency for the blob under shared write (GM + all campaign members).
-    public byte[] RowVersion { get; set; } = [];
 }

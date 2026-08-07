@@ -20,6 +20,8 @@ public class GuildSheetConfiguration : IEntityTypeConfiguration<GuildSheet>
             .OnDelete(DeleteBehavior.Cascade);
 
         // Optimistic concurrency for the blob under shared write.
-        builder.Property(g => g.RowVersion).IsRowVersion();
+        // Uses PostgreSQL's xmin system column via a shadow token — no physical
+        // RowVersion column, and Postgres updates xmin automatically on every UPDATE.
+        builder.UseXminAsConcurrencyToken();
     }
 }

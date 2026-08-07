@@ -21,13 +21,13 @@ namespace Ruptura.Infrastructure.Data.Migrations
                 nullable: false,
                 defaultValue: new Guid("00000000-0000-0000-0000-000000000000"));
 
-            migrationBuilder.AddColumn<byte[]>(
-                name: "RowVersion",
+            migrationBuilder.AddColumn<uint>(
+                name: "xmin",
                 table: "GuildSheets",
-                type: "bytea",
+                type: "xid",
                 rowVersion: true,
                 nullable: false,
-                defaultValue: new byte[0]);
+                defaultValue: 0u);
 
             migrationBuilder.CreateTable(
                 name: "CraftingOrders",
@@ -222,7 +222,7 @@ namespace Ruptura.Infrastructure.Data.Migrations
                 table: "GuildSheets");
 
             migrationBuilder.DropColumn(
-                name: "RowVersion",
+                name: "xmin",
                 table: "GuildSheets");
 
             migrationBuilder.CreateTable(
