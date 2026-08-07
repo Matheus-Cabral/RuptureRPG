@@ -20,8 +20,13 @@ public class GuildSheetConfiguration : IEntityTypeConfiguration<GuildSheet>
             .OnDelete(DeleteBehavior.Cascade);
 
         // Optimistic concurrency for the blob under shared write.
-        // Uses PostgreSQL's xmin system column via a shadow token — no physical
-        // RowVersion column, and Postgres updates xmin automatically on every UPDATE.
-        builder.UseXminAsConcurrencyToken();
+        // Maps PostgreSQL's xmin system column to a round-trippable CLR token so
+        // the read DTO can return it and the write can require it (guards the
+        // cross-request stale write, not just the in-request window).
+        builder.Property(g => g.Version)
+            .HasColumnName("xmin")
+            .HasColumnType("xid")
+            .ValueGeneratedOnAddOrUpdate()
+            .IsConcurrencyToken();
     }
 }

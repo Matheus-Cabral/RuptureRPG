@@ -51,4 +51,23 @@ public class GuildSchemaTests(IntegrationTestFactory factory)
         var act = async () => await db.SaveChangesAsync();
         await act.Should().ThrowAsync<DbUpdateException>();
     }
+
+    [Fact]
+    public async Task DuplicateBuildingForSameInstallation_ViolatesUniqueIndex()
+    {
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        var campaign = new Campaign { Id = Guid.NewGuid(), Name = "Dup Building", GameMasterId = Guid.NewGuid() };
+        db.Campaigns.Add(campaign);
+        var guild = new GuildSheet { Id = Guid.NewGuid(), CampaignId = campaign.Id, GuildName = "G", CreatedByGameMasterId = campaign.GameMasterId };
+        db.GuildSheets.Add(guild);
+        var installationId = Guid.NewGuid();
+        db.GuildBuildings.Add(new GuildBuilding { Id = Guid.NewGuid(), GuildSheetId = guild.Id, CatalogEntryId = installationId, Level = 1 });
+        await db.SaveChangesAsync();
+
+        db.GuildBuildings.Add(new GuildBuilding { Id = Guid.NewGuid(), GuildSheetId = guild.Id, CatalogEntryId = installationId, Level = 3 });
+        var act = async () => await db.SaveChangesAsync();
+        await act.Should().ThrowAsync<DbUpdateException>();
+    }
 }

@@ -8,7 +8,9 @@ public class GuildBuildingConfiguration : IEntityTypeConfiguration<GuildBuilding
 {
     public void Configure(EntityTypeBuilder<GuildBuilding> builder)
     {
-        builder.HasIndex(b => b.GuildSheetId);
+        builder.HasIndex(b => new { b.GuildSheetId, b.CatalogEntryId })
+            .IsUnique()
+            .HasDatabaseName("ux_guild_buildings_sheet_installation");
         builder.HasOne<GuildSheet>()
             .WithMany()
             .HasForeignKey(b => b.GuildSheetId)

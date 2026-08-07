@@ -13,4 +13,8 @@ public class GuildSheet
     // doctrines, Knowledge, Legado, FloorsConquered) — see Ruptura.Shared.Guilds.GuildSheetData.
     // High-churn lists live in dedicated child tables, not here.
     public string DataJson { get; set; } = "{}";
+
+    // Postgres xmin system column, surfaced as a round-trippable optimistic-concurrency
+    // token (sub-plan #3 returns it in the read DTO and requires it on write).
+    public uint Version { get; set; }
 }
