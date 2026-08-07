@@ -183,8 +183,12 @@ public class GuildSheet
     // High-churn lists live in dedicated child tables, not here.
     public string DataJson { get; set; } = "{}";
 
-    // Optimistic concurrency for the blob under shared write (GM + all campaign members).
-    public byte[] RowVersion { get; set; } = [];
+    // Optimistic concurrency for the blob under shared write (GM + all campaign members)
+    // is provided by Postgres xmin, mapped to a CLR property `Version` in the EF config
+    // (see Task 2). NOTE: superseded during execution — the original `byte[] RowVersion` +
+    // `.IsRowVersion()` is inert on PostgreSQL, and the shadow `UseXminAsConcurrencyToken()`
+    // can't round-trip. Final: `public uint Version { get; set; }` mapped to the `xmin`
+    // system column. See spec §6.
 }
 ```
 

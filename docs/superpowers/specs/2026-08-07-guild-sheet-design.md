@@ -93,13 +93,13 @@ ResearchProject
 CraftingOrder
   Category: enum { Forja, Alquimia, Encantamento, Engenharia, Artefatos }
   ItemName: string
-  Quality: enum { Comum, Superior, Raro, Épico, Lendário, Divino }
+  Quality: string   // "Comum|Superior|Raro|Épico|Lendário|Divino" — plain string (accented values aren't valid C# enum identifiers)
   ProgressDays: int
   RequiredDays: int
-  Status: enum { EmAndamento, Concluído, Cancelado }
+  Status: enum { EmAndamento, Concluido, Cancelado }   // unaccented identifier; UI localizes display
 
 Expedition
-  Kind: enum { Principal, Secundária }
+  Kind: enum { Principal, Secundaria }   // unaccented identifier; UI localizes display
   Date: DateTime
   Participants: string
   Objective: string
@@ -233,7 +233,7 @@ New `GuildController` (`/api/guilds` + `/api/campaigns/{campaignId}/guild`):
 
 Requires adding `ICampaignMembershipRepository.GetByPlayerAsync(playerId)` (additive; flagged missing in project memory).
 
-**Concurrency:** child-entity writes are per-row (inherently safe). Blob writes use Postgres's `xmin` system column as the concurrency token (`UseXminAsConcurrencyToken()`, no physical column) — a stale blob update returns a conflict the UI resolves by refetch-and-retry (no silent lost update, unlike the character sheet's known gap). *(A `bytea RowVersion` mapped via `.IsRowVersion()` is inert on PostgreSQL — it never auto-updates — so xmin is used instead; decided during sub-plan #1, Task 2.)*
+**Concurrency:** child-entity writes are per-row (inherently safe). Blob writes use Postgres's `xmin` system column as the concurrency token, mapped to a **round-trippable CLR property** `GuildSheet.Version` (`uint`, `HasColumnName("xmin")`, `ValueGeneratedOnAddOrUpdate().IsConcurrencyToken()`) — **not** the shadow-only `UseXminAsConcurrencyToken()`, whose token can't leave the server and so only guards the in-request load-modify-save window. To actually protect the shared-write case the spec cares about (user A loads, user B saves, user A saves stale), sub-plan #3 **must** surface `Version` in the read DTO and require it on write, and the §8 conflict test must exercise that **cross-request** stale-write path, not just an in-request race. *(A `bytea RowVersion` via `.IsRowVersion()` is inert on PostgreSQL; the shadow xmin token is real but too narrow — both were rejected during sub-plan #1. Decided Task 2 + final review.)*
 
 ---
 
@@ -301,7 +301,7 @@ Reuse the design-system toolkit: `ToastService`, `ConfirmService`, `LoadingIndic
 
 ## 11. Open Items / Decisions to Confirm in the Plan
 
-1. **Portão modeling** — it is the fixed, non-constructible dungeon core (§10.3.1). Options: seed it as a level-fixed installation flagged non-upgradeable, or exclude it from the constructible catalog entirely. Lean: seed it, flag `NonConstructible: true`, exclude from the "add building" picker.
+1. **Portão modeling — RESOLVED (sub-plan #1).** Seeded as a level-fixed installation flagged `NonConstructible: true` (weight 1). **Sub-plan #2's calculator MUST exclude `NonConstructible: true` entries from CG's Infra term AND from the CS active-building cap count** — the GDD gives Portão `Peso —` and counts 19 constructible installations, so it must not add to Infra. Excluded from the "add building" picker in the UI. *(GuildBuilding also carries a unique index on `(GuildSheetId, CatalogEntryId)` — one building of each installation type per guild; decided at final review, sub-plan #1.)*
 2. **"Qualified workers" definition** for CG's Logística term — which worker types count as qualified (Artesãos/Pesquisadores/Instrutores/Médicos/Administradores, i.e. non-Operário?). Confirm against GDD intent when writing the plan.
 3. **"Converted strategic materials" valuation** for CG's Recursos term — needs a concrete conversion rule (exchange base 1 Moeda de Pacto = 10 Prata is the only fixed rate). Confirm the material→value mapping or make it a summed manual field.
 4. **Emblem upload** reuses `IFileStorageService` with a new `guild-sheets/{id}/...` path prefix + a matching `AuthorizeGuildAccessAsync` check in `MediaController` (same path-encoded authorization pattern).
