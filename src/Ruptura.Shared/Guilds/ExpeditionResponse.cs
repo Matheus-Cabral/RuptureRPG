@@ -1,11 +1,9 @@
-using Ruptura.Domain.Enums;
-
 namespace Ruptura.Shared.Guilds;
 
 public class ExpeditionResponse
 {
     public Guid Id { get; set; }
-    public ExpeditionKind Kind { get; set; }
+    public string Kind { get; set; } = string.Empty;  // "Principal" | "Secundaria"
     public DateTime Date { get; set; }
     public string Participants { get; set; } = string.Empty;
     public string Objective { get; set; } = string.Empty;
