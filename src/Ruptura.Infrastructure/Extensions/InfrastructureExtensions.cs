@@ -79,6 +79,7 @@ public static class InfrastructureExtensions
         services.AddScoped<IGuildSheetRepository, GuildSheetRepository>();
         services.AddScoped<IGuildBuildingRepository, GuildBuildingRepository>();
         services.AddScoped<IGuildStaffRepository, GuildStaffRepository>();
+        services.AddScoped<IExpeditionRepository, ExpeditionRepository>();
         services.AddScoped<INotificationRepository, NotificationRepository>();
 
         // Validators

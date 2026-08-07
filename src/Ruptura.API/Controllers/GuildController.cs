@@ -55,4 +55,43 @@ public class GuildController(
 
         return Ok(ApiResponse<GuildSheetResponse>.Ok(result.Value!, localizer["Guild.Saved"]));
     }
+
+    [HttpPost("campaigns/{campaignId:guid}/guild/expeditions")]
+    [ProducesResponseType(typeof(ApiResponse<ExpeditionResponse>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> AddExpedition(
+        Guid campaignId, [FromBody] CreateExpeditionRequest request, CancellationToken ct)
+    {
+        var callerId = Guid.Parse(User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
+        var result = await guildService.AddExpeditionAsync(callerId, campaignId, request, ct);
+        if (result.IsFailure)
+            return NotFound(ApiResponse.Fail(localizer[result.Error!]));
+        return StatusCode(StatusCodes.Status201Created, ApiResponse<ExpeditionResponse>.Ok(result.Value!));
+    }
+
+    [HttpPut("campaigns/{campaignId:guid}/guild/expeditions/{expeditionId:guid}")]
+    [ProducesResponseType(typeof(ApiResponse<ExpeditionResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateExpedition(
+        Guid campaignId, Guid expeditionId, [FromBody] UpdateExpeditionRequest request, CancellationToken ct)
+    {
+        var callerId = Guid.Parse(User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
+        var result = await guildService.UpdateExpeditionAsync(callerId, campaignId, expeditionId, request, ct);
+        if (result.IsFailure)
+            return NotFound(ApiResponse.Fail(localizer[result.Error!]));
+        return Ok(ApiResponse<ExpeditionResponse>.Ok(result.Value!));
+    }
+
+    [HttpDelete("campaigns/{campaignId:guid}/guild/expeditions/{expeditionId:guid}")]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteExpedition(
+        Guid campaignId, Guid expeditionId, CancellationToken ct)
+    {
+        var callerId = Guid.Parse(User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
+        var result = await guildService.DeleteExpeditionAsync(callerId, campaignId, expeditionId, ct);
+        if (result.IsFailure)
+            return NotFound(ApiResponse.Fail(localizer[result.Error!]));
+        return Ok(ApiResponse.Ok());
+    }
 }
