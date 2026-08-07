@@ -4,10 +4,11 @@
 @inject IStringLocalizer<AppStrings> L
 @inject ICharacterSheetClientService SheetService
 @inject IMediaClientService MediaService
+@inject ToastService Toast
 
 @if (_loading)
 {
-    <div class="ledger-empty"><span class="spinner-border spinner-border-sm me-2"></span>@L["Sheet.Loading"]</div>
+    <LoadingIndicator Text="@L["Sheet.Loading"]" />
 }
 else if (_sheet is null)
 {
@@ -15,15 +16,6 @@ else if (_sheet is null)
 }
 else
 {
-    @if (!string.IsNullOrEmpty(_errorMessage))
-    {
-        <div class="alert-danger mb-4">@_errorMessage</div>
-    }
-    @if (!string.IsNullOrEmpty(_successMessage))
-    {
-        <div class="mb-4" style="color:var(--text-muted);font-size:.85rem">@_successMessage</div>
-    }
-
     <div style="display:flex;flex-wrap:wrap;gap:1rem;align-items:flex-end;margin-bottom:1.5rem">
         <div>
             <label class="form-label">@L["Sheet.NameLabel"]</label>
@@ -148,7 +140,6 @@ else
     private bool _loading = true;
     private bool _saving;
     private string? _errorMessage;
-    private string? _successMessage;
     private CharacterSheetResponse? _sheet;
     private CharacterSheetData _data = new();
     private CharacterDerivedStats? _derived;
@@ -189,8 +180,6 @@ else
     private async Task SaveAsync()
     {
         _saving = true;
-        _errorMessage = null;
-        _successMessage = null;
 
         var result = await SheetService.UpdateAsync(SheetId, new UpdateCharacterSheetRequest
         {
@@ -205,11 +194,11 @@ else
             _sheet = result.Data;
             _data = result.Data.Data;
             _derived = result.Data.DerivedStats;
-            _successMessage = L["Sheet.Saved"];
+            Toast.Success(L["Sheet.Saved"]);
         }
         else
         {
-            _errorMessage = result?.Message ?? L["Common.Error"];
+            Toast.Error(result?.Message ?? L["Common.Error"]);
         }
 
         _saving = false;
@@ -218,7 +207,6 @@ else
     private async Task UploadPortraitAsync(InputFileChangeEventArgs e)
     {
         _uploadingPortrait = true;
-        _errorMessage = null;
 
         try
         {
@@ -229,15 +217,16 @@ else
             {
                 _portraitImagePath = result.Data.Path;
                 _portraitDataUri = await MediaService.GetDataUriAsync(_portraitImagePath);
+                Toast.Success(L["Sheet.PortraitUploaded"]);
             }
             else
             {
-                _errorMessage = result?.Message ?? L["Common.Error"];
+                Toast.Error(result?.Message ?? L["Common.Error"]);
             }
         }
         catch (Exception)
         {
-            _errorMessage = L["Common.Error"];
+            Toast.Error(L["Common.Error"]);
         }
         finally
         {

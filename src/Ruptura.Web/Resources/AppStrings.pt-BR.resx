@@ -207,6 +207,7 @@
   <data name="Sheet.Saved"><value>Salvo.</value></data>
   <data name="Sheet.NameLabel"><value>Nome do Personagem</value></data>
   <data name="Sheet.PortraitLabel"><value>Retrato (caminho ou URL)</value></data>
+  <data name="Sheet.PortraitUploaded"><value>Retrato atualizado.</value></data>
   <data name="Sheet.RankLabel"><value>Ranking</value></data>
   <data name="Sheet.NpLabel"><value>NP</value></data>
   <data name="Sheet.MarkDead"><value>Morto</value></data>
