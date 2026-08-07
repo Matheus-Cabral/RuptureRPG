@@ -1,0 +1,75 @@
+@using Microsoft.Extensions.Localization
+@using Ruptura.Web.Resources
+@using Ruptura.Shared.Guilds
+@inject IStringLocalizer<AppStrings> L
+
+<div style="display:flex;flex-direction:column;gap:1.5rem">
+    <div style="display:flex;flex-wrap:wrap;gap:1rem;align-items:flex-start">
+        <div>
+            <label class="form-label">@L["Guild.Influence.PrestigeValue"]</label>
+            <input type="number" class="form-control" @bind="Data.Prestige.Value" />
+        </div>
+        <div style="flex:1;min-width:240px">
+            <label class="form-label">@L["Guild.Influence.PrestigeNotes"]</label>
+            <textarea class="form-control" rows="2" @bind="Data.Prestige.Notes" @bind:event="oninput"></textarea>
+        </div>
+    </div>
+
+    <div>
+        <span class="section-title" style="display:block;margin-bottom:.5rem">@L["Guild.Influence.Relations"]</span>
+        <div class="ledger-table-wrap">
+            <table class="ledger-table stack-mobile">
+                <thead>
+                    <tr>
+                        <th>@L["Guild.Influence.Name"]</th>
+                        <th>@L["Guild.Influence.Kind"]</th>
+                        <th>@L["Guild.Influence.Reputation"]</th>
+                        <th>@L["Guild.Influence.Notes"]</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var relation in Data.Influence)
+                    {
+                        <tr>
+                            <td data-label="@L["Guild.Influence.Name"]">
+                                <input class="form-control" @bind="relation.Name" @bind:event="oninput" />
+                            </td>
+                            <td data-label="@L["Guild.Influence.Kind"]">
+                                <select class="form-select" @bind="relation.Kind">
+                                    @foreach (var (value, key) in Kinds)
+                                    {
+                                        <option value="@value">@L[key]</option>
+                                    }
+                                </select>
+                            </td>
+                            <td data-label="@L["Guild.Influence.Reputation"]">
+                                <input type="number" min="-100" max="100" class="form-control" @bind="relation.Reputation" />
+                            </td>
+                            <td data-label="@L["Guild.Influence.Notes"]">
+                                <input class="form-control" @bind="relation.Notes" @bind:event="oninput" />
+                            </td>
+                            <td data-label="">
+                                <button class="btn btn-outline-secondary btn-sm" @onclick="() => Data.Influence.Remove(relation)">@L["Guild.Remove"]</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <button class="btn btn-primary btn-sm" style="margin-top:.75rem" @onclick='() => Data.Influence.Add(new InfluenceRelation { Kind = "Cidade" })'>@L["Guild.Influence.AddRelation"]</button>
+    </div>
+</div>
+
+@code {
+    [Parameter] public GuildSheetData Data { get; set; } = new();
+
+    // Influence kinds (stored value, localization key). ASCII keys avoid accents in resx names.
+    private static readonly (string Value, string Key)[] Kinds =
+    [
+        ("Cidade", "Guild.Influence.Kind.Cidade"),
+        ("Facção", "Guild.Influence.Kind.Faccao"),
+        ("Guilda", "Guild.Influence.Kind.Guilda"),
+        ("Divindade", "Guild.Influence.Kind.Divindade")
+    ];
+}

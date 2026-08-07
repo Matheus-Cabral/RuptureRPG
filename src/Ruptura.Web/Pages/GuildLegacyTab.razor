@@ -1,0 +1,43 @@
+@using Microsoft.Extensions.Localization
+@using Ruptura.Web.Resources
+@using Ruptura.Shared.Guilds
+@inject IStringLocalizer<AppStrings> L
+
+<div>
+    <div class="ledger-table-wrap">
+        <table class="ledger-table stack-mobile">
+            <thead>
+                <tr>
+                    <th>@L["Guild.Legacy.Title"]</th>
+                    <th>@L["Guild.Legacy.Description"]</th>
+                    <th>@L["Guild.Legacy.PermanentBenefit"]</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var feat in Data.Legado)
+                {
+                    <tr>
+                        <td data-label="@L["Guild.Legacy.Title"]">
+                            <input class="form-control" @bind="feat.Title" @bind:event="oninput" />
+                        </td>
+                        <td data-label="@L["Guild.Legacy.Description"]">
+                            <input class="form-control" @bind="feat.Description" @bind:event="oninput" />
+                        </td>
+                        <td data-label="@L["Guild.Legacy.PermanentBenefit"]">
+                            <input class="form-control" @bind="feat.PermanentBenefit" @bind:event="oninput" />
+                        </td>
+                        <td data-label="">
+                            <button class="btn btn-outline-secondary btn-sm" @onclick="() => Data.Legado.Remove(feat)">@L["Guild.Remove"]</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <button class="btn btn-primary btn-sm" style="margin-top:.75rem" @onclick="() => Data.Legado.Add(new LegacyFeat())">@L["Guild.Legacy.Add"]</button>
+</div>
+
+@code {
+    [Parameter] public GuildSheetData Data { get; set; } = new();
+}

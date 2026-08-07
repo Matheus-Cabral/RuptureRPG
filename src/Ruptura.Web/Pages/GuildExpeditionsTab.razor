@@ -1,0 +1,231 @@
+@using Microsoft.Extensions.Localization
+@using Ruptura.Web.Resources
+@using Ruptura.Shared.Guilds
+@inject IStringLocalizer<AppStrings> L
+@inject IGuildClientService GuildService
+@inject ToastService Toast
+@inject ConfirmService Confirm
+
+<div style="display:flex;flex-direction:column;gap:1.5rem">
+    @if (_editing is not null)
+    {
+        <div style="border:1px solid var(--border);border-radius:6px;padding:1rem;display:flex;flex-direction:column;gap:.75rem;max-width:640px">
+            <div style="display:flex;flex-wrap:wrap;gap:1rem">
+                <div>
+                    <label class="form-label">@L["Guild.Expedition.Kind"]</label>
+                    <select class="form-select" @bind="_editing.Kind">
+                        @foreach (var (value, key) in Kinds)
+                        {
+                            <option value="@value">@L[key]</option>
+                        }
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">@L["Guild.Expedition.Date"]</label>
+                    <input type="date" class="form-control" @bind="_editing.Date" />
+                </div>
+            </div>
+            <div>
+                <label class="form-label">@L["Guild.Expedition.Participants"]</label>
+                <input class="form-control" @bind="_editing.Participants" @bind:event="oninput" />
+            </div>
+            <div>
+                <label class="form-label">@L["Guild.Expedition.Objective"]</label>
+                <input class="form-control" @bind="_editing.Objective" @bind:event="oninput" />
+            </div>
+            <div>
+                <label class="form-label">@L["Guild.Expedition.Result"]</label>
+                <input class="form-control" @bind="_editing.Result" @bind:event="oninput" />
+            </div>
+            <div>
+                <label class="form-label">@L["Guild.Expedition.Losses"]</label>
+                <input class="form-control" @bind="_editing.Losses" @bind:event="oninput" />
+            </div>
+            <div>
+                <label class="form-label">@L["Guild.Expedition.ResourcesGained"]</label>
+                <input class="form-control" @bind="_editing.ResourcesGained" @bind:event="oninput" />
+            </div>
+            <div style="display:flex;gap:.5rem">
+                <button class="btn btn-primary btn-sm" @onclick="SaveAsync" disabled="@_saving">
+                    @if (_saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                    @L["Guild.Expedition.Save"]
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" @onclick="CancelEdit">@L["Guild.Expedition.Cancel"]</button>
+            </div>
+        </div>
+    }
+    else
+    {
+        <button class="btn btn-primary btn-sm" style="align-self:flex-start" @onclick="StartCreate">@L["Guild.Expedition.Add"]</button>
+    }
+
+    @if (Expeditions.Count == 0)
+    {
+        <div class="ledger-empty"><p>@L["Guild.Expedition.Empty"]</p></div>
+    }
+    else
+    {
+        <div class="ledger-table-wrap">
+            <table class="ledger-table stack-mobile">
+                <thead>
+                    <tr>
+                        <th>@L["Guild.Expedition.Kind"]</th>
+                        <th>@L["Guild.Expedition.Date"]</th>
+                        <th>@L["Guild.Expedition.Objective"]</th>
+                        <th>@L["Guild.Expedition.Result"]</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var expedition in Expeditions)
+                    {
+                        <tr>
+                            <td data-label="@L["Guild.Expedition.Kind"]">@L[KindKey(expedition.Kind)]</td>
+                            <td data-label="@L["Guild.Expedition.Date"]">@expedition.Date.ToLocalTime().ToString("dd/MM/yy")</td>
+                            <td data-label="@L["Guild.Expedition.Objective"]">@expedition.Objective</td>
+                            <td data-label="@L["Guild.Expedition.Result"]">@expedition.Result</td>
+                            <td data-label="">
+                                <div style="display:flex;gap:.5rem">
+                                    <button class="btn btn-outline-secondary btn-sm" @onclick="() => StartEdit(expedition)">@L["Guild.Expedition.Edit"]</button>
+                                    <button class="btn btn-outline-secondary btn-sm" @onclick="() => DeleteAsync(expedition.Id)">@L["Guild.Remove"]</button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public Guid CampaignId { get; set; }
+    [Parameter] public List<ExpeditionResponse> Expeditions { get; set; } = [];
+    [Parameter] public EventCallback OnChanged { get; set; }
+
+    // Expedition kinds (wire value, localization key).
+    private static readonly (string Value, string Key)[] Kinds =
+    [
+        ("Principal", "Guild.Expedition.Kind.Principal"),
+        ("Secundaria", "Guild.Expedition.Kind.Secundaria")
+    ];
+
+    private static string KindKey(string kind) =>
+        kind == "Secundaria" ? "Guild.Expedition.Kind.Secundaria" : "Guild.Expedition.Kind.Principal";
+
+    // Editing model reused for both create and update; _editingId null while creating.
+    private ExpeditionForm? _editing;
+    private Guid? _editingId;
+    private bool _saving;
+
+    private void StartCreate()
+    {
+        _editingId = null;
+        _editing = new ExpeditionForm { Kind = "Principal", Date = DateTime.Today };
+    }
+
+    private void StartEdit(ExpeditionResponse expedition)
+    {
+        _editingId = expedition.Id;
+        _editing = new ExpeditionForm
+        {
+            Kind = expedition.Kind,
+            Date = expedition.Date.ToLocalTime().Date,
+            Participants = expedition.Participants,
+            Objective = expedition.Objective,
+            Result = expedition.Result,
+            Losses = expedition.Losses,
+            ResourcesGained = expedition.ResourcesGained
+        };
+    }
+
+    private void CancelEdit()
+    {
+        _editing = null;
+        _editingId = null;
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_editing is null) return;
+
+        _saving = true;
+
+        if (_editingId is null)
+        {
+            var result = await GuildService.AddExpeditionAsync(CampaignId, new CreateExpeditionRequest
+            {
+                Kind = _editing.Kind,
+                Date = _editing.Date,
+                Participants = _editing.Participants,
+                Objective = _editing.Objective,
+                Result = _editing.Result,
+                Losses = _editing.Losses,
+                ResourcesGained = _editing.ResourcesGained
+            });
+            await HandleResult(result?.Data is not null, result?.Message);
+        }
+        else
+        {
+            var result = await GuildService.UpdateExpeditionAsync(CampaignId, _editingId.Value, new UpdateExpeditionRequest
+            {
+                Kind = _editing.Kind,
+                Date = _editing.Date,
+                Participants = _editing.Participants,
+                Objective = _editing.Objective,
+                Result = _editing.Result,
+                Losses = _editing.Losses,
+                ResourcesGained = _editing.ResourcesGained
+            });
+            await HandleResult(result?.Data is not null, result?.Message);
+        }
+
+        _saving = false;
+    }
+
+    private async Task HandleResult(bool success, string? message)
+    {
+        if (success)
+        {
+            Toast.Success(L["Guild.Expedition.Saved"]);
+            CancelEdit();
+            await OnChanged.InvokeAsync();
+        }
+        else
+        {
+            Toast.Error(message ?? L["Common.Error"]);
+        }
+    }
+
+    private async Task DeleteAsync(Guid expeditionId)
+    {
+        var confirmed = await Confirm.AskAsync(
+            L["Guild.Expedition.DeleteConfirm.Title"],
+            L["Guild.Expedition.DeleteConfirm.Message"],
+            L["Guild.Remove"],
+            L["Guild.Expedition.Cancel"]);
+        if (!confirmed) return;
+
+        var result = await GuildService.DeleteExpeditionAsync(CampaignId, expeditionId);
+        if (result?.Success == true)
+        {
+            Toast.Success(L["Guild.Expedition.Deleted"]);
+            await OnChanged.InvokeAsync();
+        }
+        else
+        {
+            Toast.Error(result?.Message ?? L["Common.Error"]);
+        }
+    }
+
+    private class ExpeditionForm
+    {
+        public string Kind { get; set; } = "Principal";
+        public DateTime Date { get; set; } = DateTime.Today;
+        public string Participants { get; set; } = string.Empty;
+        public string Objective { get; set; } = string.Empty;
+        public string Result { get; set; } = string.Empty;
+        public string Losses { get; set; } = string.Empty;
+        public string ResourcesGained { get; set; } = string.Empty;
+    }
+}

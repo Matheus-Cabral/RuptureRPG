@@ -1,0 +1,78 @@
+@using Microsoft.Extensions.Localization
+@using Ruptura.Web.Resources
+@using Ruptura.Shared.Guilds
+@inject IStringLocalizer<AppStrings> L
+
+<div style="display:flex;flex-direction:column;gap:1.5rem">
+    <div style="display:flex;flex-wrap:wrap;gap:1rem">
+        <div>
+            <label class="form-label">@L["Guild.Resources.Silver"]</label>
+            <input type="number" class="form-control" @bind="Data.Resources.Silver" />
+        </div>
+        <div>
+            <label class="form-label">@L["Guild.Resources.PactCoins"]</label>
+            <input type="number" class="form-control" @bind="Data.Resources.PactCoins" />
+        </div>
+        <div>
+            <label class="form-label">@L["Guild.Resources.DimensionalFragments"]</label>
+            <input type="number" class="form-control" @bind="Data.Resources.DimensionalFragments" />
+        </div>
+    </div>
+
+    <div style="max-width:600px">
+        <label class="form-label">@L["Guild.Resources.StrategicReserveNotes"]</label>
+        <textarea class="form-control" rows="2" @bind="Data.Resources.StrategicReserveNotes" @bind:event="oninput"></textarea>
+    </div>
+
+    <div>
+        <span class="section-title" style="display:block;margin-bottom:.5rem">@L["Guild.Resources.Materials"]</span>
+        <div class="ledger-table-wrap">
+            <table class="ledger-table stack-mobile">
+                <thead>
+                    <tr>
+                        <th>@L["Guild.Resources.MaterialName"]</th>
+                        <th>@L["Guild.Resources.MaterialQty"]</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var material in Data.Resources.Materials)
+                    {
+                        <tr>
+                            <td data-label="@L["Guild.Resources.MaterialName"]">
+                                <input class="form-control" @bind="material.Name" @bind:event="oninput" />
+                            </td>
+                            <td data-label="@L["Guild.Resources.MaterialQty"]">
+                                <input type="number" class="form-control" @bind="material.Quantity" />
+                            </td>
+                            <td data-label="">
+                                <button class="btn btn-outline-secondary btn-sm" @onclick="() => Data.Resources.Materials.Remove(material)">@L["Guild.Remove"]</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <button class="btn btn-primary btn-sm" style="margin-top:.75rem" @onclick="() => Data.Resources.Materials.Add(new MaterialStock())">@L["Guild.Resources.AddMaterial"]</button>
+    </div>
+
+    <div>
+        <span class="section-title" style="display:block;margin-bottom:.5rem">@L["Guild.Resources.Artifacts"]</span>
+        <div style="display:flex;flex-direction:column;gap:.5rem;max-width:600px">
+            @for (var i = 0; i < Data.Resources.Artifacts.Count; i++)
+            {
+                var index = i;
+                <div style="display:flex;gap:.5rem">
+                    <input class="form-control" value="@Data.Resources.Artifacts[index]"
+                           @onchange="e => Data.Resources.Artifacts[index] = e.Value?.ToString() ?? string.Empty" />
+                    <button class="btn btn-outline-secondary btn-sm" @onclick="() => Data.Resources.Artifacts.RemoveAt(index)">@L["Guild.Remove"]</button>
+                </div>
+            }
+        </div>
+        <button class="btn btn-primary btn-sm" style="margin-top:.75rem" @onclick="() => Data.Resources.Artifacts.Add(string.Empty)">@L["Guild.Resources.AddArtifact"]</button>
+    </div>
+</div>
+
+@code {
+    [Parameter] public GuildSheetData Data { get; set; } = new();
+}

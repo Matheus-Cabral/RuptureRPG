@@ -6,6 +6,7 @@
 @inject IStringLocalizer<AppStrings> L
 @inject ICampaignClientService CampaignService
 @inject IGuildClientService GuildService
+@inject IMediaClientService MediaService
 @inject ToastService Toast
 
 <PageTitle>@(_guild?.GuildName ?? L["Guild.Title"]) — RUPTURA</PageTitle>
@@ -23,17 +24,95 @@
     }
     else
     {
-        <div class="page-heading"><h1>@_guild.GuildName</h1></div>
-        <GuildCapacitiesPanel Stats="_guild.DerivedStats" />
+        <div style="display:flex;flex-wrap:wrap;gap:1rem;align-items:flex-end;margin-bottom:1.5rem">
+            <div>
+                <label class="form-label">@L["Guild.NameLabel"]</label>
+                <input class="form-control" @bind="_guildName" @bind:event="oninput" />
+            </div>
+            <div>
+                <label class="form-label">@L["Guild.EmblemLabel"]</label>
+                <div style="display:flex;align-items:center;gap:.5rem">
+                    @if (_emblemDataUri is not null)
+                    {
+                        <img src="@_emblemDataUri" style="width:48px;height:48px;object-fit:cover;border-radius:4px" />
+                    }
+                    <InputFile OnChange="UploadEmblemAsync" accept="image/*" disabled="@_uploadingEmblem" />
+                    @if (_uploadingEmblem) { <span class="spinner-border spinner-border-sm"></span> }
+                </div>
+            </div>
+            <button class="btn btn-primary btn-sm" @onclick="SaveAsync" disabled="@_saving">
+                @if (_saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                @L["Guild.Save"]
+            </button>
+        </div>
+
+        <ul class="nav nav-tabs">
+            @foreach (var tab in Tabs)
+            {
+                <li class="nav-item">
+                    <button class="nav-link @(_activeTab == tab.Key ? "active" : "")" @onclick="() => _activeTab = tab.Key">
+                        @L[tab.Value]
+                    </button>
+                </li>
+            }
+        </ul>
+
+        <div style="padding:1.5rem 0">
+            @if (_activeTab == "capacities")
+            {
+                <GuildCapacitiesPanel Stats="_guild.DerivedStats" />
+            }
+            else if (_activeTab == "identity")
+            {
+                <GuildIdentityTab Data="_data" CampaignId="CampaignId" />
+            }
+            else if (_activeTab == "resources")
+            {
+                <GuildResourcesTab Data="_data" />
+            }
+            else if (_activeTab == "influence")
+            {
+                <GuildInfluenceTab Data="_data" />
+            }
+            else if (_activeTab == "knowledge")
+            {
+                <GuildKnowledgeTab Data="_data" />
+            }
+            else if (_activeTab == "legacy")
+            {
+                <GuildLegacyTab Data="_data" />
+            }
+            else if (_activeTab == "expeditions")
+            {
+                <GuildExpeditionsTab CampaignId="CampaignId" Expeditions="_guild.Expeditions" OnChanged="ReloadGuildAsync" />
+            }
+        </div>
     }
 </div>
 
 @code {
     [Parameter] public Guid CampaignId { get; set; }
 
+    private static readonly Dictionary<string, string> Tabs = new()
+    {
+        ["capacities"] = "Guild.Tab.Capacities",
+        ["identity"] = "Guild.Tab.Identity",
+        ["resources"] = "Guild.Tab.Resources",
+        ["influence"] = "Guild.Tab.Influence",
+        ["knowledge"] = "Guild.Tab.Knowledge",
+        ["legacy"] = "Guild.Tab.Legacy",
+        ["expeditions"] = "Guild.Tab.Expeditions"
+    };
+
     private GuildSheetResponse? _guild;
+    private GuildSheetData _data = new();
     private List<BreadcrumbItem> _breadcrumbs = [];
+    private string _guildName = string.Empty;
+    private string? _emblemDataUri;
+    private bool _uploadingEmblem;
     private bool _loading = true;
+    private bool _saving;
+    private string _activeTab = "capacities";
 
     protected override async Task OnInitializedAsync()
     {
@@ -45,13 +124,95 @@
             new BreadcrumbItem(campaignName ?? L["Guild.Title"], null)
         ];
 
+        await LoadGuildAsync();
+        _loading = false;
+    }
+
+    private async Task LoadGuildAsync()
+    {
         var result = await GuildService.GetGuildAsync(CampaignId);
         _guild = result?.Data;
         if (_guild is null)
         {
             Toast.Error(result?.Message ?? L["Guild.LoadError"]);
+            return;
         }
 
-        _loading = false;
+        _data = _guild.Data;
+        _guildName = _guild.GuildName;
+        _emblemDataUri = await MediaService.GetDataUriAsync(_data.Identity.EmblemImagePath);
+    }
+
+    // Refetch after a child (expedition) mutation so DerivedStats/Version stay current.
+    private async Task ReloadGuildAsync() => await LoadGuildAsync();
+
+    private async Task SaveAsync()
+    {
+        if (_guild is null) return;
+
+        _saving = true;
+
+        var result = await GuildService.UpdateGuildAsync(CampaignId, new UpdateGuildSheetRequest
+        {
+            GuildName = _guildName,
+            DataJson = System.Text.Json.JsonSerializer.Serialize(_data),
+            Version = _guild.Version
+        });
+
+        if (result.Response?.Data is not null)
+        {
+            _guild = result.Response.Data;
+            _data = _guild.Data;
+            _guildName = _guild.GuildName;
+            Toast.Success(L["Guild.Saved"]);
+        }
+        else if (result.IsConflict)
+        {
+            Toast.Error(L["Guild.Conflict"]);
+            await LoadGuildAsync();
+        }
+        else
+        {
+            Toast.Error(result.Response?.Message ?? L["Common.Error"]);
+        }
+
+        _saving = false;
+    }
+
+    private async Task UploadEmblemAsync(InputFileChangeEventArgs e)
+    {
+        if (_guild is null) return;
+
+        _uploadingEmblem = true;
+
+        try
+        {
+            await using var stream = e.File.OpenReadStream(maxAllowedSize: Ruptura.Shared.Media.MediaLimits.ClientMaxUploadBytes);
+            var result = await MediaService.UploadAsync(stream, e.File.Name, "GuildEmblem", _guild.Id);
+
+            if (result?.Data is not null)
+            {
+                _data.Identity.EmblemImagePath = result.Data.Path;
+                _emblemDataUri = await MediaService.GetDataUriAsync(_data.Identity.EmblemImagePath);
+                // The upload persists the emblem server-side and bumps the row's xmin, so the
+                // last-known Version is now stale — refresh it (keeping in-progress blob edits in
+                // _data) so the next Save doesn't spuriously 409.
+                var refreshed = await GuildService.GetGuildAsync(CampaignId);
+                if (refreshed?.Data is not null) _guild = refreshed.Data;
+                Toast.Success(L["Guild.EmblemUploaded"]);
+            }
+            else
+            {
+                Toast.Error(result?.Message ?? L["Common.Error"]);
+            }
+        }
+        catch (Exception)
+        {
+            Toast.Error(L["Common.Error"]);
+        }
+        finally
+        {
+            _uploadingEmblem = false;
+        }
     }
 }

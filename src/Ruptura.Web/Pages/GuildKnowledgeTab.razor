@@ -1,0 +1,38 @@
+@using Microsoft.Extensions.Localization
+@using Ruptura.Web.Resources
+@using Ruptura.Shared.Guilds
+@inject IStringLocalizer<AppStrings> L
+
+<div style="display:flex;flex-direction:column;gap:1.5rem">
+    @foreach (var (labelKey, items, addKey) in Lists)
+    {
+        <div>
+            <span class="section-title" style="display:block;margin-bottom:.5rem">@L[labelKey]</span>
+            <div style="display:flex;flex-direction:column;gap:.5rem;max-width:600px">
+                @for (var i = 0; i < items.Count; i++)
+                {
+                    var index = i;
+                    <div style="display:flex;gap:.5rem">
+                        <input class="form-control" value="@items[index]"
+                               @onchange="e => items[index] = e.Value?.ToString() ?? string.Empty" />
+                        <button class="btn btn-outline-secondary btn-sm" @onclick="() => items.RemoveAt(index)">@L["Guild.Remove"]</button>
+                    </div>
+                }
+            </div>
+            <button class="btn btn-primary btn-sm" style="margin-top:.75rem" @onclick="() => items.Add(string.Empty)">@L[addKey]</button>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public GuildSheetData Data { get; set; } = new();
+
+    private IEnumerable<(string LabelKey, List<string> Items, string AddKey)> Lists =>
+    [
+        ("Guild.Knowledge.Maps", Data.Knowledge.Maps, "Guild.Knowledge.AddMap"),
+        ("Guild.Knowledge.Recipes", Data.Knowledge.Recipes, "Guild.Knowledge.AddRecipe"),
+        ("Guild.Knowledge.CataloguedEnemies", Data.Knowledge.CataloguedEnemies, "Guild.Knowledge.AddEnemy"),
+        ("Guild.Knowledge.DefeatedBosses", Data.Knowledge.DefeatedBosses, "Guild.Knowledge.AddBoss"),
+        ("Guild.Knowledge.HistoricalRecords", Data.Knowledge.HistoricalRecords, "Guild.Knowledge.AddRecord")
+    ];
+}
