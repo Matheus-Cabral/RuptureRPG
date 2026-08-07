@@ -9,4 +9,8 @@ public interface IGuildSheetRepository : IRepository<GuildSheet>
 
     // Detach a tracked entity so a failed INSERT is not re-attempted by a later SaveChanges in the same scope.
     void Detach(GuildSheet entity);
+
+    // Set the xmin OriginalValue so EF emits UPDATE ... WHERE "Id" = @id AND xmin = @expectedVersion,
+    // turning a concurrent write (advanced xmin) into a DbUpdateConcurrencyException (0 rows matched).
+    void SetExpectedVersion(GuildSheet guild, uint expectedVersion);
 }

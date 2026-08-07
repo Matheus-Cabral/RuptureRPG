@@ -38,6 +38,48 @@ public class GuildSheetService(
         return Result.Success(await MapToResponseAsync(guildResult.Value!, ct));
     }
 
+    public async Task<Result<GuildSheetResponse>> UpdateAsync(
+        Guid callerId, Guid campaignId, UpdateGuildSheetRequest request, CancellationToken ct = default)
+    {
+        var campaign = await campaignRepo.GetByIdAsync(campaignId, ct);
+        if (campaign is null)
+            return Result.Failure<GuildSheetResponse>(ErrorCodes.Guild.NotFound);
+
+        var isGm = campaign.GameMasterId == callerId;
+        var isMember = isGm || await membershipRepo.ExistsAsync(campaignId, callerId, ct);
+        if (!isMember)
+            return Result.Failure<GuildSheetResponse>(ErrorCodes.Guild.NotFound); // hide existence
+
+        var guild = await guildRepo.GetByCampaignAsync(campaignId, ct);
+        if (guild is null)
+            return Result.Failure<GuildSheetResponse>(ErrorCodes.Guild.NotFound);
+
+        // EmblemImagePath is server-authoritative — preserve the stored value, ignore the
+        // client's (emblem changes only via POST /api/media). Mirrors PortraitImagePath.
+        var stored = Deserialize(guild.DataJson);
+        var incoming = Deserialize(request.DataJson);
+        incoming.Identity.EmblemImagePath = stored.Identity.EmblemImagePath;
+
+        guild.GuildName = request.GuildName;
+        guild.DataJson = JsonSerializer.Serialize(incoming, JsonOpts);
+        guild.UpdatedAt = DateTime.UtcNow;
+
+        guildRepo.SetExpectedVersion(guild, request.Version);
+        guildRepo.Update(guild);
+        try
+        {
+            await guildRepo.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // A concurrent write advanced xmin → UPDATE matched 0 rows. The caller's payload is
+            // built on a stale version; reject rather than silently clobber the winner's changes.
+            return Result.Failure<GuildSheetResponse>(ErrorCodes.Guild.Conflict);
+        }
+
+        return Result.Success(await MapToResponseAsync(guild, ct));
+    }
+
     private async Task<Result<GuildSheet>> GetOrCreateAsync(Campaign campaign, CancellationToken ct)
     {
         var existing = await guildRepo.GetByCampaignAsync(campaign.Id, ct);
@@ -112,6 +154,11 @@ public class GuildSheetService(
         data.Resources.Artifacts ??= [];
         data.ActiveDoctrineIds ??= [];
         data.Knowledge ??= new GuildKnowledge();
+        data.Knowledge.Maps ??= [];
+        data.Knowledge.Recipes ??= [];
+        data.Knowledge.CataloguedEnemies ??= [];
+        data.Knowledge.DefeatedBosses ??= [];
+        data.Knowledge.HistoricalRecords ??= [];
         data.Legado ??= [];
         return data;
     }

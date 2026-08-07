@@ -67,6 +67,8 @@
   <!-- Guild -->
   <data name="Guild.NotFound"><value>Guild not found.</value></data>
   <data name="Guild.Forbidden"><value>You do not have access to this guild.</value></data>
+  <data name="Guild.Saved"><value>Guild sheet saved successfully.</value></data>
+  <data name="Guild.Conflict"><value>This guild sheet was modified by someone else. Reload and try again.</value></data>
 
   <!-- Journal -->
   <data name="Journal.NotFound"><value>Journal entry not found.</value></data>

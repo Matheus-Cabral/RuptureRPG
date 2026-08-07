@@ -67,6 +67,8 @@
   <!-- Guild -->
   <data name="Guild.NotFound"><value>Guilda não encontrada.</value></data>
   <data name="Guild.Forbidden"><value>Você não tem acesso a esta guilda.</value></data>
+  <data name="Guild.Saved"><value>Ficha da guilda salva com sucesso.</value></data>
+  <data name="Guild.Conflict"><value>Esta ficha da guilda foi modificada por outra pessoa. Recarregue e tente novamente.</value></data>
 
   <!-- Journal -->
   <data name="Journal.NotFound"><value>Entrada de diário não encontrada.</value></data>

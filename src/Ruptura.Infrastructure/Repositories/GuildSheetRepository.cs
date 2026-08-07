@@ -12,4 +12,7 @@ public class GuildSheetRepository(AppDbContext db)
         await Set.FirstOrDefaultAsync(g => g.CampaignId == campaignId, ct);
 
     public void Detach(GuildSheet entity) => Db.Entry(entity).State = EntityState.Detached;
+
+    public void SetExpectedVersion(GuildSheet guild, uint expectedVersion) =>
+        db.Entry(guild).Property(g => g.Version).OriginalValue = expectedVersion;
 }
