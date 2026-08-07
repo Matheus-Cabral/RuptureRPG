@@ -72,6 +72,7 @@ public static class InfrastructureExtensions
         services.AddScoped<ICatalogEntryRepository, CatalogEntryRepository>();
         services.AddScoped<ICharacterSheetRepository, CharacterSheetRepository>();
         services.AddScoped<ICharacterJournalEntryRepository, CharacterJournalEntryRepository>();
+        services.AddScoped<IGuildSheetRepository, GuildSheetRepository>();
         services.AddScoped<INotificationRepository, NotificationRepository>();
 
         // Validators
