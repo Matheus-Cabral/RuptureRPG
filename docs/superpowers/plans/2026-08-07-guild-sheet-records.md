@@ -17,6 +17,7 @@
 - **Optimistic concurrency via `xmin` `Version`:** the update requires the client's `Version` and enforces it as the concurrency token (`db.Entry(guild).Property(g => g.Version).OriginalValue = request.Version`); a mismatch → `DbUpdateConcurrencyException` → `ErrorCodes.Guild.Conflict` → HTTP 409. This is the load-bearing improvement over the character sheet's known lost-update gap — the integration test MUST exercise the **cross-request** stale-write path (load v1 → other write bumps to v2 → save with v1 → 409).
 - **Deepen the blob non-null guard:** sub-plan #2's `GuildSheetService.Deserialize` guards only one level. This plan binds `Knowledge.*` and `Influence[]` in the UI, so extend the guard to guarantee every `GuildKnowledge` list (`Maps`, `Recipes`, `CataloguedEnemies`, `DefeatedBosses`, `HistoricalRecords`) is non-null. (`Influence` is a `List<InfluenceRelation>` already guarded at the top level; its elements are non-null by List semantics.)
 - **`Expedition.Date` is `timestamptz`:** normalize any incoming `DateTime` to UTC at the service boundary (`DateTime.SpecifyKind(value, DateTimeKind.Utc)` if `Kind != Utc`) — Npgsql throws on a non-UTC `Kind`.
+- **`Ruptura.Shared` must NOT reference `Ruptura.Domain`** (clean-architecture boundary; established convention — existing DTOs expose enums as `string`, e.g. `CatalogEntryResponse.Type`). Expedition DTOs carry `Kind` as `string` ("Principal"/"Secundaria"); the service maps string↔`ExpeditionKind`. Do not add a `Shared→Domain` ProjectReference.
 - **`DataJson` is sent as a string** in the request (client serializes `GuildSheetData`), matching `UpdateCharacterSheetRequest`. Blob deserialization uses `JsonSerializerDefaults.Web`; catalog `DataJson` (unchanged here) uses default options — do not unify.
 - **Every visible string via `IStringLocalizer`**, added to BOTH Web resx files (English default + pt-BR). API error strings in BOTH API resx files.
 - **Integration tests** use `WebApplicationFactory<Program>` + Testcontainers (`IntegrationTestFactory`, `IClassFixture<>`, `parallelizeTestCollections: false`). Lone Serilog "logger already frozen" flake = known pre-existing race; re-run once.
@@ -84,14 +85,12 @@ public class UpdateGuildSheetRequest
 
 `src/Ruptura.Shared/Guilds/ExpeditionResponse.cs`:
 ```csharp
-using Ruptura.Domain.Enums;
-
 namespace Ruptura.Shared.Guilds;
 
 public class ExpeditionResponse
 {
     public Guid Id { get; set; }
-    public ExpeditionKind Kind { get; set; }
+    public string Kind { get; set; } = string.Empty; // "Principal" | "Secundaria" — string, NOT the Domain enum (Shared must not reference Domain)
     public DateTime Date { get; set; }
     public string Participants { get; set; } = string.Empty;
     public string Objective { get; set; } = string.Empty;
@@ -102,13 +101,11 @@ public class ExpeditionResponse
 ```
 `src/Ruptura.Shared/Guilds/CreateExpeditionRequest.cs`:
 ```csharp
-using Ruptura.Domain.Enums;
-
 namespace Ruptura.Shared.Guilds;
 
 public class CreateExpeditionRequest
 {
-    public ExpeditionKind Kind { get; set; }
+    public string Kind { get; set; } = string.Empty; // "Principal" | "Secundaria" — string, NOT the Domain enum (Shared must not reference Domain)
     public DateTime Date { get; set; }
     public string Participants { get; set; } = string.Empty;
     public string Objective { get; set; } = string.Empty;
@@ -119,13 +116,11 @@ public class CreateExpeditionRequest
 ```
 `src/Ruptura.Shared/Guilds/UpdateExpeditionRequest.cs`:
 ```csharp
-using Ruptura.Domain.Enums;
-
 namespace Ruptura.Shared.Guilds;
 
 public class UpdateExpeditionRequest
 {
-    public ExpeditionKind Kind { get; set; }
+    public string Kind { get; set; } = string.Empty; // "Principal" | "Secundaria" — string, NOT the Domain enum (Shared must not reference Domain)
     public DateTime Date { get; set; }
     public string Participants { get; set; } = string.Empty;
     public string Objective { get; set; } = string.Empty;
@@ -413,7 +408,7 @@ Implement in `GuildSheetService.cs` (inject `IExpeditionRepository expeditionRep
 ```csharp
     private static DateTime Utc(DateTime d) => d.Kind == DateTimeKind.Utc ? d : DateTime.SpecifyKind(d, DateTimeKind.Utc);
 ```
-Map `Expedition` → `ExpeditionResponse` with a private helper, and include the guild's expeditions in `MapToResponseAsync` (`response.Expeditions = (await expeditionRepo.GetByGuildAsync(guild.Id, ct)).Select(MapExpedition).ToList();`).
+**Map string↔enum at the service boundary:** the DTOs carry `Kind` as `string` ("Principal"/"Secundaria") — Shared must not reference the Domain `ExpeditionKind`. On write, `Enum.TryParse<ExpeditionKind>(request.Kind, out var kind)` (default to `ExpeditionKind.Principal` on an unrecognized value, or return a validation failure — implementer's choice, but never throw). On read, `entity.Kind.ToString()`. Map `Expedition` → `ExpeditionResponse` with a private helper, and include the guild's expeditions in `MapToResponseAsync` (`response.Expeditions = (await expeditionRepo.GetByGuildAsync(guild.Id, ct)).Select(MapExpedition).ToList();`).
 
 - [ ] **Step 5: Controller endpoints**
 
