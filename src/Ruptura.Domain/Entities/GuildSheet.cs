@@ -3,13 +3,17 @@ namespace Ruptura.Domain.Entities;
 public class GuildSheet
 {
     public Guid Id { get; set; }
+    public Guid CampaignId { get; set; }              // real FK + unique index (1 guild per campaign)
     public string GuildName { get; set; } = string.Empty;
     public Guid CreatedByGameMasterId { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-    // Sheet data — populated in later iterations
+    // Stable, low-churn modules (Identity, Prestige, Influence, Resources, active
+    // doctrines, Knowledge, Legado, FloorsConquered) — see Ruptura.Shared.Guilds.GuildSheetData.
+    // High-churn lists live in dedicated child tables, not here.
     public string DataJson { get; set; } = "{}";
 
-    public ICollection<GuildMembership> Memberships { get; set; } = [];
+    // Optimistic concurrency for the blob under shared write (GM + all campaign members).
+    public byte[] RowVersion { get; set; } = [];
 }

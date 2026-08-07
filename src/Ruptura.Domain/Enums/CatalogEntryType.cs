@@ -10,5 +10,7 @@ public enum CatalogEntryType
     Skill,
     Spell,
     Technique,
-    EquipmentItem
+    EquipmentItem,
+    Installation,
+    Doctrine
 }
