@@ -156,21 +156,46 @@ public class GuildSheetService(
 
     // No auth of its own — MediaController authorizes via AuthorizeGuildAccessByIdAsync first
     // (mirrors CharacterSheetService.SetPortraitPathAsync). Sets Identity.EmblemImagePath inside
-    // the blob (there is no dedicated column), preserving all other blob data.
-    public async Task<Result> SetEmblemPathAsync(Guid guildSheetId, string path, CancellationToken ct = default)
+    // the blob (there is no dedicated column), preserving all other blob data. Version-checkpointed:
+    // a stale expectedVersion → Guild.Conflict rather than a lost update or an unhandled 500.
+    public async Task<Result<uint>> SetEmblemPathAsync(
+        Guid guildSheetId, string path, uint expectedVersion, CancellationToken ct = default)
     {
         var guild = await guildRepo.GetByIdAsync(guildSheetId, ct);
         if (guild is null)
-            return Result.Failure(ErrorCodes.Guild.NotFound);
+            return Result.Failure<uint>(ErrorCodes.Guild.NotFound);
 
         var data = Deserialize(guild.DataJson);
         data.Identity.EmblemImagePath = path;
         guild.DataJson = JsonSerializer.Serialize(data, JsonOpts);
         guild.UpdatedAt = DateTime.UtcNow;
 
+        guildRepo.SetExpectedVersion(guild, expectedVersion);
         guildRepo.Update(guild);
-        await guildRepo.SaveChangesAsync(ct);
-        return Result.Success();
+        try
+        {
+            await guildRepo.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // A concurrent write advanced xmin → UPDATE matched 0 rows. Reject rather than
+            // reintroduce the lost-update the write path already guards against.
+            return Result.Failure<uint>(ErrorCodes.Guild.Conflict);
+        }
+
+        // xmin is refreshed on the tracked entity after SaveChanges (ValueGeneratedOnAddOrUpdate).
+        return Result.Success(guild.Version);
+    }
+
+    // Reads the current emblem path through the guarded Deserialize so MediaController does not
+    // deserialize the blob inline (closes the duplicate-parse minor).
+    public async Task<Result<string?>> GetEmblemPathAsync(Guid guildSheetId, CancellationToken ct = default)
+    {
+        var guild = await guildRepo.GetByIdAsync(guildSheetId, ct);
+        if (guild is null)
+            return Result.Failure<string?>(ErrorCodes.Guild.NotFound);
+
+        return Result.Success<string?>(Deserialize(guild.DataJson).Identity.EmblemImagePath);
     }
 
     // Shared-write auth (GM or campaign member) + guild resolution, reused by every guild mutation.
@@ -189,8 +214,13 @@ public class GuildSheetService(
     }
 
     // Npgsql rejects a non-UTC Kind on a timestamptz column; normalize before saving.
-    private static DateTime Utc(DateTime d) =>
-        d.Kind == DateTimeKind.Utc ? d : DateTime.SpecifyKind(d, DateTimeKind.Utc);
+    // Local → convert instant-preserving; Unspecified → assume already UTC and just stamp the Kind.
+    private static DateTime Utc(DateTime d) => d.Kind switch
+    {
+        DateTimeKind.Utc => d,
+        DateTimeKind.Local => d.ToUniversalTime(),
+        _ => DateTime.SpecifyKind(d, DateTimeKind.Utc)
+    };
 
     // Shared must not reference the Domain enum, so Kind is a string on the wire; parse leniently.
     private static ExpeditionKind ParseKind(string kind) =>

@@ -208,8 +208,10 @@ public class GuildUpdateTests(IntegrationTestFactory factory)
         final.Data.Identity.EmblemImagePath.Should().Be(emblemPath);
     }
 
+    // The structural validator (fix #1/#5) now rejects a null Knowledge list at the boundary
+    // rather than silently coercing it on write — a null module/list is a malformed payload.
     [Fact]
-    public async Task Update_WithNullKnowledgeList_Returns200AndGetReturnsEmptyList()
+    public async Task Update_WithNullKnowledgeList_Returns400AndGuildNotCorrupted()
     {
         var (client, campaign, _, _, gmToken) = await SetUpCampaignWithMemberAsync();
         AuthHelper.SetBearerToken(client, gmToken);
@@ -224,9 +226,71 @@ public class GuildUpdateTests(IntegrationTestFactory factory)
 
         var response = await client.PutAsJsonAsync($"api/campaigns/{campaign.Id}/guild", request);
 
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        // The guild is untouched and still readable.
         var final = await GetGuildAsync(client, campaign.Id);
         final.Data.Knowledge.Maps.Should().NotBeNull();
-        final.Data.Knowledge.Maps.Should().BeEmpty();
+    }
+
+    // ── Fix #1/#5: malformed / null-list-element DataJson is rejected structurally at save time ──
+
+    [Fact]
+    public async Task Update_WithGarbageDataJson_Returns400AndGuildNotWiped()
+    {
+        var (client, campaign, _, _, gmToken) = await SetUpCampaignWithMemberAsync();
+        AuthHelper.SetBearerToken(client, gmToken);
+
+        var current = await GetGuildAsync(client, campaign.Id);
+        current.Data.Prestige.Value = 55;
+        var seed = new UpdateGuildSheetRequest
+        {
+            GuildName = "Seeded",
+            DataJson = Serialize(current.Data),
+            Version = current.Version
+        };
+        (await client.PutAsJsonAsync($"api/campaigns/{campaign.Id}/guild", seed))
+            .StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var seeded = await GetGuildAsync(client, campaign.Id);
+        var garbage = new UpdateGuildSheetRequest
+        {
+            GuildName = "Wipe Attempt",
+            DataJson = "garbage",
+            Version = seeded.Version
+        };
+
+        var response = await client.PutAsJsonAsync($"api/campaigns/{campaign.Id}/guild", garbage);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        // Not a 200, not a wipe — the seeded state stands and GET still succeeds.
+        var final = await GetGuildAsync(client, campaign.Id);
+        final.GuildName.Should().Be("Seeded");
+        final.Data.Prestige.Value.Should().Be(55);
+    }
+
+    [Fact]
+    public async Task Update_WithNullMaterialElement_Returns400AndGetStill200()
+    {
+        var (client, campaign, _, _, gmToken) = await SetUpCampaignWithMemberAsync();
+        AuthHelper.SetBearerToken(client, gmToken);
+
+        var current = await GetGuildAsync(client, campaign.Id);
+        var request = new UpdateGuildSheetRequest
+        {
+            GuildName = current.GuildName,
+            DataJson = """{"resources":{"materials":[null]}}""",
+            Version = current.Version
+        };
+
+        var response = await client.PutAsJsonAsync($"api/campaigns/{campaign.Id}/guild", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        // The guild was not corrupted by the rejected payload.
+        var final = await GetGuildAsync(client, campaign.Id);
+        final.Should().NotBeNull();
+        final.Data.Resources.Materials.Should().NotBeNull();
     }
 }

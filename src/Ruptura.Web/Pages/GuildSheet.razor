@@ -84,7 +84,7 @@
             }
             else if (_activeTab == "expeditions")
             {
-                <GuildExpeditionsTab CampaignId="CampaignId" Expeditions="_guild.Expeditions" OnChanged="ReloadGuildAsync" />
+                <GuildExpeditionsTab CampaignId="CampaignId" Expeditions="_guild.Expeditions" OnChanged="RefreshExpeditionsAsync" />
             }
         </div>
     }
@@ -143,8 +143,18 @@
         _emblemDataUri = await MediaService.GetDataUriAsync(_data.Identity.EmblemImagePath);
     }
 
-    // Refetch after a child (expedition) mutation so DerivedStats/Version stay current.
-    private async Task ReloadGuildAsync() => await LoadGuildAsync();
+    // After a child (expedition) mutation, refresh ONLY the expedition list and the concurrency
+    // token — re-GETting into _data/_guildName would wipe the user's unsaved blob/name edits.
+    private async Task RefreshExpeditionsAsync()
+    {
+        if (_guild is null) return;
+        var refreshed = await GuildService.GetGuildAsync(CampaignId);
+        if (refreshed?.Data is not null)
+        {
+            _guild.Expeditions = refreshed.Data.Expeditions;
+            _guild.Version = refreshed.Data.Version;
+        }
+    }
 
     private async Task SaveAsync()
     {
@@ -188,22 +198,28 @@
         try
         {
             await using var stream = e.File.OpenReadStream(maxAllowedSize: Ruptura.Shared.Media.MediaLimits.ClientMaxUploadBytes);
-            var result = await MediaService.UploadAsync(stream, e.File.Name, "GuildEmblem", _guild.Id);
+            var result = await MediaService.UploadEmblemAsync(stream, e.File.Name, _guild.Id, _guild.Version);
 
-            if (result?.Data is not null)
+            if (result.Response?.Data is not null)
             {
-                _data.Identity.EmblemImagePath = result.Data.Path;
+                _data.Identity.EmblemImagePath = result.Response.Data.Path;
                 _emblemDataUri = await MediaService.GetDataUriAsync(_data.Identity.EmblemImagePath);
-                // The upload persists the emblem server-side and bumps the row's xmin, so the
-                // last-known Version is now stale — refresh it (keeping in-progress blob edits in
-                // _data) so the next Save doesn't spuriously 409.
-                var refreshed = await GuildService.GetGuildAsync(CampaignId);
-                if (refreshed?.Data is not null) _guild = refreshed.Data;
+                // The upload bumped the row's xmin and returned the new token — adopt it in place
+                // (keeping in-progress _data/_guildName edits) so the next Save doesn't spuriously
+                // 409. No re-GET, which would clobber those edits.
+                if (result.Response.Data.Version is { } newVersion) _guild.Version = newVersion;
                 Toast.Success(L["Guild.EmblemUploaded"]);
+            }
+            else if (result.IsConflict)
+            {
+                // Someone else advanced the guild between our last load and this upload — the emblem
+                // write was rejected server-side (file cleaned up there). Reload the latest state.
+                Toast.Error(L["Guild.Conflict"]);
+                await LoadGuildAsync();
             }
             else
             {
-                Toast.Error(result?.Message ?? L["Common.Error"]);
+                Toast.Error(result.Response?.Message ?? L["Common.Error"]);
             }
         }
         catch (Exception)

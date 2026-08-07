@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Json;
 using Ruptura.Shared.Common;
 using Ruptura.Shared.Media;
@@ -33,6 +34,33 @@ public class MediaClientService(IHttpClientFactory factory) : IMediaClientServic
         {
             return null;
         }
+    }
+
+    public async Task<MediaUploadResult> UploadEmblemAsync(
+        Stream content, string fileName, Guid guildId, uint version)
+    {
+        using var form = new MultipartFormDataContent();
+        using var fileContent = new StreamContent(content);
+        form.Add(fileContent, "file", fileName);
+        form.Add(new StringContent("GuildEmblem"), "entityType");
+        form.Add(new StringContent(guildId.ToString()), "entityId");
+        form.Add(new StringContent(version.ToString()), "version");
+
+        var response = await Http.PostAsync("api/media", form);
+
+        // Same JSON-body guard as UploadAsync, but also surface the 409 distinctly so the page
+        // can conflict-toast + reload instead of showing a generic error.
+        ApiResponse<MediaUploadResponse>? body;
+        try
+        {
+            body = await response.Content.ReadFromJsonAsync<ApiResponse<MediaUploadResponse>>();
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            body = null;
+        }
+
+        return new MediaUploadResult(body, response.StatusCode == HttpStatusCode.Conflict);
     }
 
     public async Task<string?> GetDataUriAsync(string? path)

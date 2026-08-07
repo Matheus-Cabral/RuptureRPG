@@ -12,9 +12,16 @@ public interface IGuildSheetService
     // Used by MediaController for the path-encoded emblem upload/download authorization.
     Task<Result<GuildSheet>> AuthorizeGuildAccessByIdAsync(Guid callerId, Guid guildSheetId, CancellationToken ct = default);
 
-    // Sets Identity.EmblemImagePath inside the blob, preserving all other blob data. No Version
-    // enforcement — targeted server-side mutation like CharacterSheetService.SetPortraitPathAsync.
-    Task<Result> SetEmblemPathAsync(Guid guildSheetId, string path, CancellationToken ct = default);
+    // Sets Identity.EmblemImagePath inside the blob, preserving all other blob data. Version-
+    // checkpointed against expectedVersion: a stale token → Guild.Conflict (never clobbers a
+    // concurrent write nor 500s). On success returns the new xmin so the caller can refresh
+    // its Version without re-GETting the whole guild.
+    Task<Result<uint>> SetEmblemPathAsync(
+        Guid guildSheetId, string path, uint expectedVersion, CancellationToken ct = default);
+
+    // Reads the current Identity.EmblemImagePath via the guarded Deserialize so MediaController
+    // never has to deserialize the blob inline.
+    Task<Result<string?>> GetEmblemPathAsync(Guid guildSheetId, CancellationToken ct = default);
 
     Task<Result<GuildSheetResponse>> UpdateAsync(
         Guid callerId, Guid campaignId, UpdateGuildSheetRequest request, CancellationToken ct = default);

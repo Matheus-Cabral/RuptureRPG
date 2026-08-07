@@ -30,8 +30,11 @@ public class MediaController(
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Upload(
-        [FromForm] IFormFile? file, [FromForm] string entityType, [FromForm] Guid entityId, CancellationToken ct)
+        [FromForm] IFormFile? file, [FromForm] string entityType, [FromForm] Guid entityId,
+        [FromForm] uint version, CancellationToken ct)
     {
+        // `version` is the caller's expected guild xmin — only the GuildEmblem branch reads it;
+        // the portrait/journal branches ignore it (absent form field defaults to 0).
         if (file is null || file.Length == 0)
             return BadRequest(ApiResponse.Fail(localizer[ErrorCodes.Media.FileRequired]));
 
@@ -84,29 +87,30 @@ public class MediaController(
             if (authorized.IsFailure)
                 return NotFound(ApiResponse.Fail(localizer[authorized.Error!]));
 
-            var guild = authorized.Value!;
-            var existing = System.Text.Json.JsonSerializer
-                .Deserialize<Ruptura.Shared.Guilds.GuildSheetData>(
-                    guild.DataJson,
-                    new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web))?
-                .Identity?.EmblemImagePath;
-            if (!string.IsNullOrEmpty(existing))
-                await fileStorage.DeleteAsync(existing, ct);
+            var existingResult = await guildService.GetEmblemPathAsync(entityId, ct);
+            if (existingResult.IsFailure)
+                return NotFound(ApiResponse.Fail(localizer[existingResult.Error!]));
+            if (!string.IsNullOrEmpty(existingResult.Value))
+                await fileStorage.DeleteAsync(existingResult.Value, ct);
 
             var relativePath = $"guild-sheets/{entityId}/emblem-{Guid.NewGuid()}{extension}";
             await using (var stream = file.OpenReadStream())
                 await fileStorage.SaveAsync(stream, relativePath, ct);
 
-            var setResult = await guildService.SetEmblemPathAsync(entityId, relativePath, ct);
+            var setResult = await guildService.SetEmblemPathAsync(entityId, relativePath, version, ct);
             if (setResult.IsFailure)
             {
-                // The file was already saved to disk but the entity mutation failed —
-                // delete it rather than leave an orphaned file the client believes is linked.
+                // The file was already saved to disk but the entity mutation failed — delete it
+                // rather than leave an orphaned file the client believes is linked. Fail closed on
+                // BOTH branches: a stale version → 409 (client refetches), anything else → 400.
                 await fileStorage.DeleteAsync(relativePath, ct);
-                return BadRequest(ApiResponse.Fail(localizer[setResult.Error!]));
+                return setResult.Error == ErrorCodes.Guild.Conflict
+                    ? Conflict(ApiResponse.Fail(localizer[setResult.Error!]))
+                    : BadRequest(ApiResponse.Fail(localizer[setResult.Error!]));
             }
 
-            return Ok(ApiResponse<MediaUploadResponse>.Ok(new MediaUploadResponse { Path = relativePath }));
+            return Ok(ApiResponse<MediaUploadResponse>.Ok(
+                new MediaUploadResponse { Path = relativePath, Version = setResult.Value }));
         }
 
         // MediaEntityType.JournalEntryImage

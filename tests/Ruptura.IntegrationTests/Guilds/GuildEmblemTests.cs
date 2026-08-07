@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using Bogus;
 using FluentAssertions;
 using Ruptura.IntegrationTests.Helpers;
@@ -37,6 +38,28 @@ public class GuildEmblemTests(IntegrationTestFactory factory)
         return content;
     }
 
+    private static MultipartFormDataContent BuildEmblemForm(Guid entityId, uint version, byte[]? bytes = null)
+    {
+        var content = BuildUploadForm("GuildEmblem", entityId, bytes);
+        content.Add(new StringContent(version.ToString()), "version");
+        return content;
+    }
+
+    // Bump the guild's xmin via a valid PUT (no emblem set) so a previously-read version goes stale.
+    private static async Task<uint> BumpVersionAsync(HttpClient client, Guid campaignId)
+    {
+        var current = await GetGuildAsync(client, campaignId);
+        var request = new UpdateGuildSheetRequest
+        {
+            GuildName = current.GuildName + " v2",
+            DataJson = JsonSerializer.Serialize(current.Data, new JsonSerializerOptions(JsonSerializerDefaults.Web)),
+            Version = current.Version
+        };
+        var response = await client.PutAsJsonAsync($"api/campaigns/{campaignId}/guild", request);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        return (await GetGuildAsync(client, campaignId)).Version;
+    }
+
     private async Task<(HttpClient Client, CampaignResponse Campaign, string PlayerToken, string GmToken)>
         SetUpCampaignWithMemberAsync()
     {
@@ -66,17 +89,18 @@ public class GuildEmblemTests(IntegrationTestFactory factory)
     {
         var (client, campaign, playerToken, _) = await SetUpCampaignWithMemberAsync();
         AuthHelper.SetBearerToken(client, playerToken);
-        var guildId = (await GetGuildAsync(client, campaign.Id)).Id;
+        var guild = await GetGuildAsync(client, campaign.Id);
 
-        var response = await client.PostAsync("api/media", BuildUploadForm("GuildEmblem", guildId));
+        var response = await client.PostAsync("api/media", BuildEmblemForm(guild.Id, guild.Version));
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var upload = (await response.Content.ReadFromJsonAsync<ApiResponse<MediaUploadResponse>>())!.Data!;
-        upload.Path.Should().StartWith($"guild-sheets/{guildId}/emblem-");
+        upload.Path.Should().StartWith($"guild-sheets/{guild.Id}/emblem-");
+        upload.Version.Should().NotBeNull();
         File.Exists(Path.Combine(factory.MediaRoot, upload.Path)).Should().BeTrue();
 
-        var guild = await GetGuildAsync(client, campaign.Id);
-        guild.Data.Identity.EmblemImagePath.Should().Be(upload.Path);
+        var reloaded = await GetGuildAsync(client, campaign.Id);
+        reloaded.Data.Identity.EmblemImagePath.Should().Be(upload.Path);
     }
 
     [Fact]
@@ -84,12 +108,12 @@ public class GuildEmblemTests(IntegrationTestFactory factory)
     {
         var (client, campaign, playerToken, _) = await SetUpCampaignWithMemberAsync();
         AuthHelper.SetBearerToken(client, playerToken);
-        var guildId = (await GetGuildAsync(client, campaign.Id)).Id;
+        var guild = await GetGuildAsync(client, campaign.Id);
 
         var outsider = await AuthHelper.RegisterGameMasterAsync(client, Faker.Internet.Email());
         AuthHelper.SetBearerToken(client, outsider.AccessToken);
 
-        var response = await client.PostAsync("api/media", BuildUploadForm("GuildEmblem", guildId));
+        var response = await client.PostAsync("api/media", BuildEmblemForm(guild.Id, guild.Version));
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
@@ -99,8 +123,8 @@ public class GuildEmblemTests(IntegrationTestFactory factory)
     {
         var (client, campaign, playerToken, _) = await SetUpCampaignWithMemberAsync();
         AuthHelper.SetBearerToken(client, playerToken);
-        var guildId = (await GetGuildAsync(client, campaign.Id)).Id;
-        var uploadResponse = await client.PostAsync("api/media", BuildUploadForm("GuildEmblem", guildId));
+        var guild = await GetGuildAsync(client, campaign.Id);
+        var uploadResponse = await client.PostAsync("api/media", BuildEmblemForm(guild.Id, guild.Version));
         var upload = (await uploadResponse.Content.ReadFromJsonAsync<ApiResponse<MediaUploadResponse>>())!.Data!;
 
         var downloadResponse = await client.GetAsync($"api/media/{upload.Path}");
@@ -115,8 +139,8 @@ public class GuildEmblemTests(IntegrationTestFactory factory)
     {
         var (client, campaign, playerToken, _) = await SetUpCampaignWithMemberAsync();
         AuthHelper.SetBearerToken(client, playerToken);
-        var guildId = (await GetGuildAsync(client, campaign.Id)).Id;
-        var uploadResponse = await client.PostAsync("api/media", BuildUploadForm("GuildEmblem", guildId));
+        var guild = await GetGuildAsync(client, campaign.Id);
+        var uploadResponse = await client.PostAsync("api/media", BuildEmblemForm(guild.Id, guild.Version));
         var upload = (await uploadResponse.Content.ReadFromJsonAsync<ApiResponse<MediaUploadResponse>>())!.Data!;
 
         var outsider = await AuthHelper.RegisterGameMasterAsync(client, Faker.Internet.Email());
@@ -125,5 +149,47 @@ public class GuildEmblemTests(IntegrationTestFactory factory)
         var downloadResponse = await client.GetAsync($"api/media/{upload.Path}");
 
         downloadResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    // ── Fix #2/#3: version-checkpointed emblem upload ──
+
+    [Fact]
+    public async Task Upload_EmblemWithStaleVersion_Returns409AndEmblemUnchangedAndNoOrphanFile()
+    {
+        var (client, campaign, _, gmToken) = await SetUpCampaignWithMemberAsync();
+        AuthHelper.SetBearerToken(client, gmToken);
+
+        // Read v1, then bump to v2 via a plain PUT (no emblem set) so v1 is now stale.
+        var v1 = (await GetGuildAsync(client, campaign.Id)).Version;
+        await BumpVersionAsync(client, campaign.Id);
+
+        var guildId = (await GetGuildAsync(client, campaign.Id)).Id;
+        var response = await client.PostAsync("api/media", BuildEmblemForm(guildId, v1));
+
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+
+        // Emblem unchanged (still none) and the rejected upload left no file behind.
+        var final = await GetGuildAsync(client, campaign.Id);
+        final.Data.Identity.EmblemImagePath.Should().BeEmpty();
+
+        var guildDir = Path.Combine(factory.MediaRoot, "guild-sheets", guildId.ToString());
+        var orphaned = Directory.Exists(guildDir) && Directory.GetFiles(guildDir).Length > 0;
+        orphaned.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Upload_EmblemWithCorrectVersion_Returns200WithNewVersion()
+    {
+        var (client, campaign, _, gmToken) = await SetUpCampaignWithMemberAsync();
+        AuthHelper.SetBearerToken(client, gmToken);
+
+        var guild = await GetGuildAsync(client, campaign.Id);
+        var response = await client.PostAsync("api/media", BuildEmblemForm(guild.Id, guild.Version));
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var upload = (await response.Content.ReadFromJsonAsync<ApiResponse<MediaUploadResponse>>())!.Data!;
+        upload.Version.Should().NotBeNull();
+        upload.Version.Should().NotBe(guild.Version);
+        File.Exists(Path.Combine(factory.MediaRoot, upload.Path)).Should().BeTrue();
     }
 }

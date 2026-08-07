@@ -14,5 +14,5 @@ public class GuildSheetRepository(AppDbContext db)
     public void Detach(GuildSheet entity) => Db.Entry(entity).State = EntityState.Detached;
 
     public void SetExpectedVersion(GuildSheet guild, uint expectedVersion) =>
-        db.Entry(guild).Property(g => g.Version).OriginalValue = expectedVersion;
+        Db.Entry(guild).Property(g => g.Version).OriginalValue = expectedVersion;
 }
