@@ -51,7 +51,8 @@ GuildSheet
   CreatedByGameMasterId: Guid
   CreatedAt, UpdatedAt: DateTime
   DataJson: string            // stable-modules blob (GuildSheetData)
-  RowVersion: byte[]          // NEW — optimistic concurrency for the blob under shared write
+  // Optimistic concurrency for the blob under shared write via Postgres xmin
+  // (UseXminAsConcurrencyToken — no CLR property/column; bytea RowVersion is inert on PG).
 ```
 
 - **Remove** the `Memberships` navigation and the `GuildMembership` entity + table (migration drops it).
@@ -232,7 +233,7 @@ New `GuildController` (`/api/guilds` + `/api/campaigns/{campaignId}/guild`):
 
 Requires adding `ICampaignMembershipRepository.GetByPlayerAsync(playerId)` (additive; flagged missing in project memory).
 
-**Concurrency:** child-entity writes are per-row (inherently safe). Blob writes use the new `GuildSheet.RowVersion` — a stale blob update returns a conflict the UI resolves by refetch-and-retry (no silent lost update, unlike the character sheet's known gap).
+**Concurrency:** child-entity writes are per-row (inherently safe). Blob writes use Postgres's `xmin` system column as the concurrency token (`UseXminAsConcurrencyToken()`, no physical column) — a stale blob update returns a conflict the UI resolves by refetch-and-retry (no silent lost update, unlike the character sheet's known gap). *(A `bytea RowVersion` mapped via `.IsRowVersion()` is inert on PostgreSQL — it never auto-updates — so xmin is used instead; decided during sub-plan #1, Task 2.)*
 
 ---
 
@@ -270,7 +271,7 @@ Reuse the design-system toolkit: `ToastService`, `ConfirmService`, `LoadingIndic
 - Shared-write permission matrix: GM, member, non-member; read == write access.
 - CRUD on child collections.
 - Interlude apply recomputes server-side (a client-supplied bogus delta is ignored; only the server number lands).
-- Blob RowVersion conflict path.
+- Blob xmin concurrency-token conflict path.
 - Catalog seed present: 20 installations + 8 doctrines with correct `DataJson` shapes.
 
 ---
@@ -289,7 +290,7 @@ Reuse the design-system toolkit: `ToastService`, `ConfirmService`, `LoadingIndic
 
 | Change | Kind |
 |--------|------|
-| `GuildSheet`: + `CampaignId` (FK+unique), + `RowVersion`; − `Memberships` | Modify + migration |
+| `GuildSheet`: + `CampaignId` (FK+unique), + xmin concurrency token; − `Memberships` | Modify + migration |
 | Drop `GuildMembership` entity + table | Migration |
 | New entities: `GuildBuilding`, `GuildStaff`, `ResearchProject`, `CraftingOrder`, `Expedition` | Migration |
 | `CatalogEntryType`: + `Installation`, + `Doctrine` | Enum |
