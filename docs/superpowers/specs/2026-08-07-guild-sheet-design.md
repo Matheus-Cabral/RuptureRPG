@@ -260,7 +260,7 @@ Reuse the design-system toolkit: `ToastService`, `ConfirmService`, `LoadingIndic
 ## 8. Testing (TDD)
 
 **Unit (`Ruptura.UnitTests`):**
-- `GuildStatsCalculator` reproduces the official §10.8 CG table and §10.9 CS/CI/CF table for a canonical build at each of the 8 stages (exact-value oracles).
+- `GuildStatsCalculator` reproduces the official §10.9 CS/CI/CF table for a canonical active build at each of the 8 stages (exact-value oracles). **Note (sub-plan #2):** the §10.8 **CG** table (Infra/Pesquisa/Logística/Recursos totals per stage) is a *narrative design-target* progression, NOT reproducible from the §10.8 formula — e.g. at Fundação the table's Logística=5 is impossible since `Logística = CS + workers×2 ≥ CS = 6`. Only the §10.9 CS/CI/CF table is used as an exact oracle.
 - Doctrine modifiers (Logística +20% CS / −10% maintenance; Comercial inflation shift).
 - Inflation index, daily maintenance, income, caps, doctrine limit.
 - CS active-building overflow flag.
