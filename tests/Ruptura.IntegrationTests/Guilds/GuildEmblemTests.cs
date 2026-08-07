@@ -178,6 +178,33 @@ public class GuildEmblemTests(IntegrationTestFactory factory)
     }
 
     [Fact]
+    public async Task Upload_EmblemWithStaleVersion_WhenEmblemAlreadyExists_PreservesOldFileAndBlob()
+    {
+        var (client, campaign, _, gmToken) = await SetUpCampaignWithMemberAsync();
+        AuthHelper.SetBearerToken(client, gmToken);
+
+        // First upload with the correct version establishes an emblem (file + blob path).
+        var guild = await GetGuildAsync(client, campaign.Id);
+        var firstResponse = await client.PostAsync("api/media", BuildEmblemForm(guild.Id, guild.Version));
+        firstResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var firstUpload = (await firstResponse.Content.ReadFromJsonAsync<ApiResponse<MediaUploadResponse>>())!.Data!;
+        var originalPath = firstUpload.Path;
+        var originalVersion = firstUpload.Version!.Value;
+        File.Exists(Path.Combine(factory.MediaRoot, originalPath)).Should().BeTrue();
+
+        // Bump the guild's xmin so originalVersion is now stale, then attempt a SECOND upload with it.
+        await BumpVersionAsync(client, campaign.Id);
+        var staleResponse = await client.PostAsync("api/media", BuildEmblemForm(guild.Id, originalVersion));
+
+        staleResponse.StatusCode.Should().Be(HttpStatusCode.Conflict);
+
+        // The original emblem file is still on disk and the blob still references it.
+        File.Exists(Path.Combine(factory.MediaRoot, originalPath)).Should().BeTrue();
+        var final = await GetGuildAsync(client, campaign.Id);
+        final.Data.Identity.EmblemImagePath.Should().Be(originalPath);
+    }
+
+    [Fact]
     public async Task Upload_EmblemWithCorrectVersion_Returns200WithNewVersion()
     {
         var (client, campaign, _, gmToken) = await SetUpCampaignWithMemberAsync();

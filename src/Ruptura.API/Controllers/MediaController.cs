@@ -87,11 +87,13 @@ public class MediaController(
             if (authorized.IsFailure)
                 return NotFound(ApiResponse.Fail(localizer[authorized.Error!]));
 
+            // Capture the current emblem path but DO NOT delete it yet — deleting before the
+            // version check would destroy the live emblem on a stale-version 409, leaving the blob
+            // referencing a file that no longer exists.
             var existingResult = await guildService.GetEmblemPathAsync(entityId, ct);
             if (existingResult.IsFailure)
                 return NotFound(ApiResponse.Fail(localizer[existingResult.Error!]));
-            if (!string.IsNullOrEmpty(existingResult.Value))
-                await fileStorage.DeleteAsync(existingResult.Value, ct);
+            var oldPath = existingResult.Value;
 
             var relativePath = $"guild-sheets/{entityId}/emblem-{Guid.NewGuid()}{extension}";
             await using (var stream = file.OpenReadStream())
@@ -100,14 +102,18 @@ public class MediaController(
             var setResult = await guildService.SetEmblemPathAsync(entityId, relativePath, version, ct);
             if (setResult.IsFailure)
             {
-                // The file was already saved to disk but the entity mutation failed — delete it
-                // rather than leave an orphaned file the client believes is linked. Fail closed on
-                // BOTH branches: a stale version → 409 (client refetches), anything else → 400.
+                // The NEW file is on disk but the mutation failed — delete it and leave the OLD file
+                // and blob untouched. Fail closed on BOTH branches: a stale version → 409 (client
+                // refetches), anything else → 400.
                 await fileStorage.DeleteAsync(relativePath, ct);
                 return setResult.Error == ErrorCodes.Guild.Conflict
                     ? Conflict(ApiResponse.Fail(localizer[setResult.Error!]))
                     : BadRequest(ApiResponse.Fail(localizer[setResult.Error!]));
             }
+
+            // Only now that the blob points at the new path is it safe to remove the old file.
+            if (!string.IsNullOrEmpty(oldPath) && oldPath != relativePath)
+                await fileStorage.DeleteAsync(oldPath, ct);
 
             return Ok(ApiResponse<MediaUploadResponse>.Ok(
                 new MediaUploadResponse { Path = relativePath, Version = setResult.Value }));
