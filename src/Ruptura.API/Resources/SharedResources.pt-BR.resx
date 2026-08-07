@@ -64,6 +64,10 @@
   <data name="CharacterSheet.Granted"><value>Ficha de personagem concedida com sucesso.</value></data>
   <data name="CharacterSheet.Updated"><value>Ficha de personagem atualizada com sucesso.</value></data>
 
+  <!-- Guild -->
+  <data name="Guild.NotFound"><value>Guilda não encontrada.</value></data>
+  <data name="Guild.Forbidden"><value>Você não tem acesso a esta guilda.</value></data>
+
   <!-- Journal -->
   <data name="Journal.NotFound"><value>Entrada de diário não encontrada.</value></data>
   <data name="Journal.OnlyOwnerCanWrite"><value>Só o dono do personagem pode escrever no diário.</value></data>

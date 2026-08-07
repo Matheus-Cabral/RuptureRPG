@@ -43,6 +43,12 @@ public static class ErrorCodes
         public const string OnlyGameMasterCanChangeStatus = "CharacterSheet.OnlyGameMasterCanChangeStatus";
     }
 
+    public static class Guild
+    {
+        public const string NotFound = "Guild.NotFound";
+        public const string Forbidden = "Guild.Forbidden";
+    }
+
     public static class Journal
     {
         public const string NotFound = "Journal.NotFound";

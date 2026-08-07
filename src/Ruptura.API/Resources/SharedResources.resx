@@ -64,6 +64,10 @@
   <data name="CharacterSheet.Granted"><value>Character sheet granted successfully.</value></data>
   <data name="CharacterSheet.Updated"><value>Character sheet updated successfully.</value></data>
 
+  <!-- Guild -->
+  <data name="Guild.NotFound"><value>Guild not found.</value></data>
+  <data name="Guild.Forbidden"><value>You do not have access to this guild.</value></data>
+
   <!-- Journal -->
   <data name="Journal.NotFound"><value>Journal entry not found.</value></data>
   <data name="Journal.OnlyOwnerCanWrite"><value>Only the character's owner can write to the journal.</value></data>

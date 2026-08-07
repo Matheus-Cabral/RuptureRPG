@@ -54,6 +54,7 @@ public static class InfrastructureExtensions
         // Core services
         services.AddSingleton<JwtService>();
         services.AddSingleton<ICharacterStatsCalculator, CharacterStatsCalculator>();
+        services.AddSingleton<IGuildStatsCalculator, GuildStatsCalculator>();  // pure & stateless, like CharacterStatsCalculator
         services.AddSingleton<IFileStorageService, LocalFileStorageService>();
 
         // Application services
@@ -62,6 +63,7 @@ public static class InfrastructureExtensions
         services.AddScoped<ICampaignService, CampaignService>();
         services.AddScoped<ICatalogEntryService, CatalogEntryService>();
         services.AddScoped<ICharacterSheetService, CharacterSheetService>();
+        services.AddScoped<IGuildSheetService, GuildSheetService>();
         services.AddScoped<IJournalEntryService, JournalEntryService>();
         services.AddScoped<INotificationService, NotificationService>();
 
