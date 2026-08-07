@@ -3,14 +3,35 @@
 @using Microsoft.Extensions.Localization
 @using Ruptura.Web.Resources
 @inject IStringLocalizer<AppStrings> L
+@inject ICampaignClientService CampaignService
+@inject ICharacterSheetClientService SheetService
 
 <PageTitle>@L["Sheet.Tab.Identity"] — RUPTURA</PageTitle>
 
 <div class="page-content">
+    <Breadcrumbs Items="_breadcrumbs" />
     <CharacterSheetEditor SheetId="SheetId" CampaignId="CampaignId" CanEditStatus="true" IsOwner="false" />
 </div>
 
 @code {
     [Parameter] public Guid CampaignId { get; set; }
     [Parameter] public Guid SheetId { get; set; }
+
+    private List<BreadcrumbItem> _breadcrumbs = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        var campaignsResult = await CampaignService.GetMineAsync();
+        var campaignName = campaignsResult?.Data?.FirstOrDefault(c => c.Id == CampaignId)?.Name;
+
+        var sheetResult = await SheetService.GetAsync(SheetId);
+        var characterName = sheetResult?.Data?.CharacterName;
+
+        _breadcrumbs =
+        [
+            new BreadcrumbItem(L["Nav.Campaigns"], "/gm/campaigns"),
+            new BreadcrumbItem(campaignName ?? L["Sheet.UnknownCharacter"], $"/gm/campaigns/{CampaignId}"),
+            new BreadcrumbItem(characterName ?? L["Sheet.UnknownCharacter"], null)
+        ];
+    }
 }

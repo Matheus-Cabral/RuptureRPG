@@ -3,14 +3,17 @@
 @using Microsoft.Extensions.Localization
 @using Ruptura.Web.Resources
 @inject IStringLocalizer<AppStrings> L
+@inject ICampaignClientService CampaignService
 @inject ICharacterSheetClientService SheetService
 
 <PageTitle>@L["Sheet.Tab.Identity"] — RUPTURA</PageTitle>
 
 <div class="page-content">
+    <Breadcrumbs Items="_breadcrumbs" />
+
     @if (_loading)
     {
-        <div class="ledger-empty"><span class="spinner-border spinner-border-sm me-2"></span>@L["Common.Loading"]</div>
+        <LoadingIndicator Text="@L["Common.Loading"]" />
     }
     else if (_sheetId is null)
     {
@@ -27,11 +30,26 @@
 
     private bool _loading = true;
     private Guid? _sheetId;
+    private List<BreadcrumbItem> _breadcrumbs = [];
 
     protected override async Task OnInitializedAsync()
     {
+        var campaignsResult = await CampaignService.GetMineAsync();
+        var campaignName = campaignsResult?.Data?.FirstOrDefault(c => c.Id == CampaignId)?.Name;
+
         var result = await SheetService.GetMineAsync(CampaignId);
         _sheetId = result?.Data?.Id;
+
+        _breadcrumbs =
+        [
+            new BreadcrumbItem(L["Nav.Campaigns.Player"], "/campaigns"),
+            new BreadcrumbItem(campaignName ?? L["Sheet.UnknownCharacter"], null)
+        ];
+        if (result?.Data is { } sheet)
+        {
+            _breadcrumbs.Add(new BreadcrumbItem(sheet.CharacterName, null));
+        }
+
         _loading = false;
     }
 }

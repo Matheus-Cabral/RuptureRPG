@@ -203,6 +203,7 @@
   <!-- Character Sheet Editor -->
   <data name="Sheet.Loading"><value>Loading character sheet…</value></data>
   <data name="Sheet.NotFound"><value>Character sheet not found.</value></data>
+  <data name="Sheet.UnknownCharacter"><value>Character</value></data>
   <data name="Sheet.Save"><value>Save</value></data>
   <data name="Sheet.Saved"><value>Saved.</value></data>
   <data name="Sheet.NameLabel"><value>Character Name</value></data>

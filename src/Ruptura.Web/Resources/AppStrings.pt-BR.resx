@@ -203,6 +203,7 @@
   <!-- Editor de Ficha de Personagem -->
   <data name="Sheet.Loading"><value>Carregando ficha…</value></data>
   <data name="Sheet.NotFound"><value>Ficha não encontrada.</value></data>
+  <data name="Sheet.UnknownCharacter"><value>Personagem</value></data>
   <data name="Sheet.Save"><value>Salvar</value></data>
   <data name="Sheet.Saved"><value>Salvo.</value></data>
   <data name="Sheet.NameLabel"><value>Nome do Personagem</value></data>
