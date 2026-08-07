@@ -288,6 +288,11 @@
   <data name="Journal.Save"><value>Salvar</value></data>
   <data name="Journal.Cancel"><value>Cancelar</value></data>
   <data name="Journal.Delete"><value>Apagar</value></data>
+  <data name="Journal.DeleteConfirm.Title"><value>Apagar entrada do diário?</value></data>
+  <data name="Journal.DeleteConfirm.Message"><value>Isso vai apagar esta entrada do diário e quaisquer imagens anexadas, permanentemente. Essa ação não pode ser desfeita.</value></data>
+  <data name="Journal.CreateSuccess"><value>Entrada adicionada.</value></data>
+  <data name="Journal.SaveSuccess"><value>Entrada atualizada.</value></data>
+  <data name="Journal.DeleteSuccess"><value>Entrada apagada.</value></data>
   <data name="Journal.AddImage"><value>Adicionar Imagem</value></data>
   <data name="Journal.Uploading"><value>Enviando…</value></data>
 

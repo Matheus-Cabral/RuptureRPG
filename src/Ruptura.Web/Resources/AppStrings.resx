@@ -288,6 +288,11 @@
   <data name="Journal.Save"><value>Save</value></data>
   <data name="Journal.Cancel"><value>Cancel</value></data>
   <data name="Journal.Delete"><value>Delete</value></data>
+  <data name="Journal.DeleteConfirm.Title"><value>Delete journal entry?</value></data>
+  <data name="Journal.DeleteConfirm.Message"><value>This will permanently delete this journal entry and any attached images. This cannot be undone.</value></data>
+  <data name="Journal.CreateSuccess"><value>Entry added.</value></data>
+  <data name="Journal.SaveSuccess"><value>Entry updated.</value></data>
+  <data name="Journal.DeleteSuccess"><value>Entry deleted.</value></data>
   <data name="Journal.AddImage"><value>Add Image</value></data>
   <data name="Journal.Uploading"><value>Uploading…</value></data>
 

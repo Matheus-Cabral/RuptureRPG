@@ -4,18 +4,15 @@
 @inject IStringLocalizer<AppStrings> L
 @inject IJournalEntryClientService JournalService
 @inject IMediaClientService MediaService
+@inject ToastService Toast
+@inject ConfirmService Confirm
 
 @if (_loading)
 {
-    <div class="ledger-empty"><span class="spinner-border spinner-border-sm me-2"></span>@L["Common.Loading"]</div>
+    <LoadingIndicator Text="@L["Common.Loading"]" />
 }
 else
 {
-    @if (!string.IsNullOrEmpty(_errorMessage))
-    {
-        <div class="alert-danger mb-4">@_errorMessage</div>
-    }
-
     @if (IsOwner)
     {
         <div style="display:flex;flex-direction:column;gap:.5rem;max-width:600px;margin-bottom:1.5rem">
@@ -39,7 +36,7 @@ else
             @foreach (var entry in _entries)
             {
                 <div style="border-top:1px solid var(--border);padding-top:1rem">
-                    <div style="color:var(--text-muted);font-size:.78rem;margin-bottom:.5rem">
+                    <div style="color:var(--text-muted);font-size:var(--text-xs);margin-bottom:.5rem">
                         @entry.CreatedAt.ToLocalTime().ToString("dd/MM/yy HH:mm")
                     </div>
 
@@ -102,7 +99,6 @@ else
     private Guid? _editingId;
     private string _editText = string.Empty;
     private List<string> _editImagePaths = [];
-    private string? _errorMessage;
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
@@ -129,18 +125,18 @@ else
         if (string.IsNullOrWhiteSpace(_newText)) return;
 
         _creating = true;
-        _errorMessage = null;
         var result = await JournalService.CreateAsync(CharacterSheetId, new CreateJournalEntryRequest { Text = _newText });
 
         if (result?.Data is not null)
         {
+            Toast.Success(L["Journal.CreateSuccess"]);
             _newText = string.Empty;
             await LoadAsync();
             StartEdit(result.Data);
         }
         else
         {
-            _errorMessage = result?.Message ?? L["Common.Error"];
+            Toast.Error(result?.Message ?? L["Common.Error"]);
         }
 
         _creating = false;
@@ -162,36 +158,46 @@ else
 
     private async Task SaveEditAsync(Guid entryId)
     {
-        _errorMessage = null;
         var result = await JournalService.UpdateAsync(CharacterSheetId, entryId,
             new UpdateJournalEntryRequest { Text = _editText, ImagePaths = _editImagePaths });
 
         if (result?.Data is not null)
         {
+            Toast.Success(L["Journal.SaveSuccess"]);
             CancelEdit();
             await LoadAsync();
         }
         else
         {
-            _errorMessage = result?.Message ?? L["Common.Error"];
+            Toast.Error(result?.Message ?? L["Common.Error"]);
         }
     }
 
     private async Task DeleteAsync(Guid entryId)
     {
-        _errorMessage = null;
+        var confirmed = await Confirm.AskAsync(
+            L["Journal.DeleteConfirm.Title"],
+            L["Journal.DeleteConfirm.Message"],
+            L["Journal.Delete"],
+            L["Journal.Cancel"]);
+        if (!confirmed) return;
+
         var result = await JournalService.DeleteAsync(CharacterSheetId, entryId);
 
         if (result?.Success == true)
+        {
+            Toast.Success(L["Journal.DeleteSuccess"]);
             await LoadAsync();
+        }
         else
-            _errorMessage = result?.Message ?? L["Common.Error"];
+        {
+            Toast.Error(result?.Message ?? L["Common.Error"]);
+        }
     }
 
     private async Task UploadImageAsync(Guid entryId, InputFileChangeEventArgs e)
     {
         _uploading = true;
-        _errorMessage = null;
 
         try
         {
@@ -212,12 +218,12 @@ else
             }
             else
             {
-                _errorMessage = result?.Message ?? L["Common.Error"];
+                Toast.Error(result?.Message ?? L["Common.Error"]);
             }
         }
         catch (Exception)
         {
-            _errorMessage = L["Common.Error"];
+            Toast.Error(L["Common.Error"]);
         }
         finally
         {
