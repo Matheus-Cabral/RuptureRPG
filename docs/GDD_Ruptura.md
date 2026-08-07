@@ -1132,9 +1132,9 @@ Conselho (Patronos) → Personagens (agentes de campo) → Hierarquia própria �
 9. **Logística** — capacidade de armazenamento, nº máximo de trabalhadores, limite de mercenários, expedições simultâneas, alcance de exploração.
 10. **Expedições** — registro de cada incursão (data, participantes, objetivo, resultado, perdas, recursos obtidos) — funciona como o "diário" da campanha.
 11. **Legado** — maiores feitos históricos (primeiro andar conquistado, primeira Ruptura evitada, etc.), podendo conceder benefícios permanentes.
-12. **Capacidade Institucional (CI)** — mede o quanto a organização consegue *sustentar* (nº de Patronos ativos, trabalhadores, instalações, projetos simultâneos, mercenários, tamanho de armazéns).
-13. **Capacidade de Formação (CF)** — determina o potencial inicial de um personagem recém-recrutado (ver §6.9).
-14. **Capacidade de Suporte (CS)** — limite estrutural para quantidade de construções que a Guilda pode administrar simultaneamente (ampliada por instalações administrativas/logísticas).
+12. **Capacidade Institucional (CI)** — mede o quanto a organização consegue *sustentar* (nº de Patronos ativos, trabalhadores, instalações, projetos simultâneos, mercenários, tamanho de armazéns). Fórmula fechada em §10.9.
+13. **Capacidade de Formação (CF)** — determina o potencial inicial de um personagem recém-recrutado (ver §6.9). Fórmula fechada em §10.9.
+14. **Capacidade de Suporte (CS)** — limite estrutural para quantidade de construções que a Guilda pode administrar simultaneamente (ampliada por instalações administrativas/logísticas). Fórmula fechada em §10.9.
 
 ### 10.3 Quartel-General e Construções
 Filosofia: as construções formam uma **árvore tecnológica real**, não uma lista de compras independente.
@@ -1309,6 +1309,48 @@ onde:
 
 A curva evolui no mesmo ritmo dos marcos de 5 andares, reforçando mecanicamente que Guilda e Dungeon avançam juntas.
 
+### 10.9 Capacidades Derivadas — CI, CF, CS (FECHADO)
+
+Diferente da CG (institucional, isolada do combate), estas três capacidades **travam limites concretos de jogo**, cada uma amarrada a instalações específicas da árvore tecnológica (§10.3.1):
+
+```
+CS (Capacidade de Suporte) = 5 + (Nível do Centro Logístico × 2) + (Nível do Armazém × 1)
+
+CI (Capacidade Institucional) = 3 + (Nível da Câmara do Conselho × 4) + (Nível do Centro Logístico × 1)
+
+CF (Capacidade de Formação) = 10 + (Nível do Memorial × 3) + (Nível da Biblioteca × 1) + (Nível do Campo de Treinamento × 1)
+```
+
+**Progressão por Estágio da Guilda** (mesmos 8 estágios de §10.8):
+
+| Estágio | CS | CI | CF |
+|---|---:|---:|---:|
+| Fundação | 6 | 3 | 11 |
+| Guilda Menor | 7 | 3 | 13 |
+| Guilda Regional | 10 | 4 | 18 |
+| Guilda Reconhecida | 12 | 5 | 23 |
+| Guilda Maior | 14 | 10 | 28 |
+| Guilda Renomada | 16 | 15 | 33 |
+| Guilda Lendária | 16 | 15 | 34 |
+| Guilda Divina | 16 | 15 | 34 |
+
+**CS — o que trava**: número máximo de construções que a Guilda consegue manter **ativas/administradas** ao mesmo tempo. Como a árvore tecnológica tem 19 instalações construíveis e o teto de CS é 16, mesmo uma Guilda Divina precisa escolher quais ficam ativas — as excedentes ficam **Inativas** (sem benefício) até o jogador desativar outra ou aumentar CS. Reforça a Regra de Ouro até no topo do jogo.
+
+**CI — o que trava**:
+- Patronos ativos simultâneos = CI ÷ 3 (arredondado para cima, mínimo 1)
+- Projetos de Interlúdio simultâneos (pesquisa/construção/etc. em paralelo) = CI ÷ 2
+- Trabalhadores contratáveis no total = CI × 3
+
+**CF — o que concede** (bônus de Formação na criação de um personagem novo, §6.9):
+
+| CF | Bônus de Formação |
+|---|---|
+| 10–17 | Nenhum (Recruta padrão) |
+| 18–22 | +5 pontos de perícia extra |
+| 23–27 | +10 pontos de perícia extra; equipamento inicial pode ser Incomum |
+| 28–32 | +15 pontos de perícia extra; equipamento Incomum garantido; +1 Talento menor extra |
+| 33+ | +20 pontos de perícia extra; equipamento Raro possível; 1 perícia inicial já nasce em Grau Básico |
+
 ---
 
 ## 11. Interlúdio (o "segundo coração" do sistema)
@@ -1418,6 +1460,9 @@ DO (Dificuldade de Objetivo) = calculada separadamente por tempo/ambiente/press�
 OA (Orçamento de Ameaça do andar) = PG × Dificuldade do andar × Fator de Duração
 
 CG (Capacidade da Guilda) [FECHADA — institucional, desacoplada do combate] = Infraestrutura + Pesquisa + Logística + Recursos
+CS (Capacidade de Suporte) = 5 + (Nível do Centro Logístico × 2) + (Nível do Armazém × 1)
+CI (Capacidade Institucional) = 3 + (Nível da Câmara do Conselho × 4) + (Nível do Centro Logístico × 1)
+CF (Capacidade de Formação) = 10 + (Nível do Memorial × 3) + (Nível da Biblioteca × 1) + (Nível do Campo de Treinamento × 1)
 ```
 
 ---

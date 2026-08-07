@@ -362,6 +362,40 @@ CG = Infraestrutura + Pesquisa + Logística + Recursos
 | Guilda Lendária | 30 | 245 | 135 | 140 | 140 | **660** |
 | Guilda Divina | 35+ | 320 | 175 | 180 | 180 | **855** |
 
+**8.1.1 Capacidades Derivadas — CI, CF, CS**
+
+Diferente da CG (institucional, isolada do combate), estas três travam limites concretos de jogo, cada uma amarrada a instalações específicas (§8.2.1):
+```
+CS (Capacidade de Suporte) = 5 + (Nível do Centro Logístico × 2) + (Nível do Armazém × 1)
+CI (Capacidade Institucional) = 3 + (Nível da Câmara do Conselho × 4) + (Nível do Centro Logístico × 1)
+CF (Capacidade de Formação) = 10 + (Nível do Memorial × 3) + (Nível da Biblioteca × 1) + (Nível do Campo de Treinamento × 1)
+```
+
+| Estágio | CS | CI | CF |
+|---|---:|---:|---:|
+| Fundação | 6 | 3 | 11 |
+| Guilda Menor | 7 | 3 | 13 |
+| Guilda Regional | 10 | 4 | 18 |
+| Guilda Reconhecida | 12 | 5 | 23 |
+| Guilda Maior | 14 | 10 | 28 |
+| Guilda Renomada | 16 | 15 | 33 |
+| Guilda Lendária | 16 | 15 | 34 |
+| Guilda Divina | 16 | 15 | 34 |
+
+**CS trava**: número máximo de construções ativas/administradas simultaneamente — com 19 instalações construíveis e teto de CS em 16, até uma Guilda Divina precisa escolher o que fica ativo (excedentes ficam Inativas, sem benefício).
+
+**CI trava**: Patronos ativos simultâneos = CI ÷ 3 (arred. p/ cima, mín. 1) · Projetos de Interlúdio simultâneos = CI ÷ 2 · Trabalhadores contratáveis no total = CI × 3.
+
+**CF concede** (bônus de Formação num personagem novo, Manual do Jogador §3):
+
+| CF | Bônus de Formação |
+|---|---|
+| 10–17 | Nenhum (Recruta padrão) |
+| 18–22 | +5 pontos de perícia extra |
+| 23–27 | +10 pontos de perícia extra; equipamento inicial pode ser Incomum |
+| 28–32 | +15 pontos de perícia extra; equipamento Incomum garantido; +1 Talento menor extra |
+| 33+ | +20 pontos de perícia extra; equipamento Raro possível; 1 perícia inicial já nasce em Grau Básico |
+
 ### 8.2 Quartel-General e Construções
 Construções formam uma árvore tecnológica real. Toda construção tem: Pré-requisitos (estruturais, institucionais, de conhecimento, de recursos, humanos), Custos, Benefícios Diretos, Sinergias.
 
@@ -523,6 +557,9 @@ OA (Orçamento de Ameaça do andar) = PG × Dificuldade do andar × Fator de Dur
 Multiplicador Real de Atributos/Perícias do inimigo = 1 + (R − 1) × FCE
 
 CG (Capacidade da Guilda) = Infraestrutura + Pesquisa + Logística + Recursos
+CS (Capacidade de Suporte) = 5 + (Nível do Centro Logístico × 2) + (Nível do Armazém × 1)
+CI (Capacidade Institucional) = 3 + (Nível da Câmara do Conselho × 4) + (Nível do Centro Logístico × 1)
+CF (Capacidade de Formação) = 10 + (Nível do Memorial × 3) + (Nível da Biblioteca × 1) + (Nível do Campo de Treinamento × 1)
 ```
 
 ### Faixas de NP por Ranking
@@ -555,7 +592,7 @@ CG (Capacidade da Guilda) = Infraestrutura + Pesquisa + Logística + Recursos
 - **PA** — Pontos de Ação (3/turno em combate). **PV** — Pontos de Vida.
 - **Provação** — projeto de Interlúdio para subir um Atributo.
 - **Cristal de Memória** — registro póstumo de um personagem morto, acessível no Memorial.
-- **CF** — Capacidade de Formação: potencial inicial de um novo recruta.
+- **CF** — Capacidade de Formação: potencial inicial de um novo recruta (fórmula em §8.1.1).
 
 **Combate e Encontros**
 
@@ -566,7 +603,7 @@ CG (Capacidade da Guilda) = Infraestrutura + Pesquisa + Logística + Recursos
 
 **A Guilda**
 
-- **CG** — Capacidade da Guilda (institucional, desacoplada do combate). **CI** — Capacidade Institucional (o que a Guilda sustenta). **CS** — Capacidade de Suporte (limite de construções administráveis simultaneamente).
+- **CG** — Capacidade da Guilda (institucional, desacoplada do combate). **CI** — Capacidade Institucional (o que a Guilda sustenta; fórmula em §8.1.1). **CS** — Capacidade de Suporte (limite de construções administráveis simultaneamente; fórmula em §8.1.1).
 - **NTG** — Nível Tecnológico da Guilda. **Doutrina** — especialização institucional permanente (até 4 simultâneas).
 - **Memorial** — instalação que dá acesso aos Cristais de Memória.
 - **Moeda de Pacto** — moeda divina premium (1 Moeda de Pacto = 10 Prata).
