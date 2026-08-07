@@ -8,7 +8,7 @@
         <thead>
             <tr>
                 <th></th>
-                <th>@L["Sheet.NameLabel"]</th>
+                <th>@L["Sheet.Attributes.Name"]</th>
                 <th>@L["Sheet.Attributes.Modifier"]</th>
                 <th>@L["Sheet.Attributes.Grade"]</th>
             </tr>
@@ -21,7 +21,7 @@
                         <input class="form-control form-control-sm" type="number" min="1" max="6"
                                value="@attr.Get(Data.Attributes)" @onchange="e => attr.Set(Data.Attributes, ParseInt(e.Value))" />
                     </td>
-                    <td data-label="@L["Sheet.NameLabel"]">@L[attr.LabelKey]</td>
+                    <td data-label="@L["Sheet.Attributes.Name"]">@L[attr.LabelKey]</td>
                     <td data-label="@L["Sheet.Attributes.Modifier"]">@FormatModifier(Derived?.AttributeModifiers.GetValueOrDefault(attr.Key) ?? 0)</td>
                     <td data-label="@L["Sheet.Attributes.Grade"]">@FormatModifier(Derived?.AttributeGradeBonuses.GetValueOrDefault(attr.Key) ?? 0)</td>
                 </tr>
