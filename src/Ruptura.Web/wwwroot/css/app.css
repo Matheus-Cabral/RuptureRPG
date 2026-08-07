@@ -280,12 +280,17 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 400; color: var(--te
     gap: 0;
     border-bottom: 1px solid var(--border);
     margin-bottom: 0;
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent 100%);
+    mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent 100%);
 }
 .nav-tabs .nav-item { flex: 0 0 auto; }
 .nav-tabs .nav-link {
-    display: block;
+    display: flex;
+    align-items: center;
     background: none;
     border: none;
+    margin-bottom: 0;
+    border-radius: 0;
     padding: 0.75rem 1.1rem;
     font-family: var(--font-body);
     font-size: var(--text-xs);
@@ -298,10 +303,17 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 400; color: var(--te
     cursor: pointer;
     transition: color 0.15s, border-color 0.15s;
 }
-.nav-tabs .nav-link:hover { color: var(--text); }
-.nav-tabs .nav-link.active {
+.nav-tabs .nav-link:hover,
+.nav-tabs .nav-link:focus {
+    background: none;
+    border-color: transparent transparent var(--border);
     color: var(--text);
-    border-bottom-color: var(--primary);
+}
+.nav-tabs .nav-link.active,
+.nav-tabs .nav-item.show .nav-link {
+    background: none;
+    color: var(--text);
+    border-color: transparent transparent var(--primary);
 }
 
 /* ── App Shell ─────────────────────────────────────────────────────────────── */
