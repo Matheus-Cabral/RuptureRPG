@@ -12,7 +12,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<InviteCode> InviteCodes => Set<InviteCode>();
     public DbSet<CharacterSheet> CharacterSheets => Set<CharacterSheet>();
     public DbSet<GuildSheet> GuildSheets => Set<GuildSheet>();
-    public DbSet<GuildMembership> GuildMemberships => Set<GuildMembership>();
+    public DbSet<GuildBuilding> GuildBuildings => Set<GuildBuilding>();
+    public DbSet<GuildStaff> GuildStaff => Set<GuildStaff>();
+    public DbSet<ResearchProject> ResearchProjects => Set<ResearchProject>();
+    public DbSet<CraftingOrder> CraftingOrders => Set<CraftingOrder>();
+    public DbSet<Expedition> Expeditions => Set<Expedition>();
     public DbSet<Campaign> Campaigns => Set<Campaign>();
     public DbSet<CampaignMembership> CampaignMemberships => Set<CampaignMembership>();
     public DbSet<CatalogEntry> CatalogEntries => Set<CatalogEntry>();
