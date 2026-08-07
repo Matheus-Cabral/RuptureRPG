@@ -16,9 +16,14 @@
 
     <div class="page-heading">
         <h1>@L["Gm.CampaignDetail.Members"]</h1>
-        <a href="/gm/campaigns/@Id/catalog" class="btn btn-outline-secondary btn-sm" style="margin-top:.75rem">
-            @L["Gm.CampaignDetail.ViewCatalog"]
-        </a>
+        <div style="display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.75rem">
+            <a href="/gm/campaigns/@Id/catalog" class="btn btn-outline-secondary btn-sm">
+                @L["Gm.CampaignDetail.ViewCatalog"]
+            </a>
+            <a href="/campaigns/@Id/guild" class="btn btn-outline-secondary btn-sm">
+                @L["Guild.OpenSheet"]
+            </a>
+        </div>
     </div>
 
     <div class="section-header">

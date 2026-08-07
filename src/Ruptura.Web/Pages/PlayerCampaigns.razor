@@ -29,7 +29,12 @@
                     {
                         <tr>
                             <td data-label="@L["Gm.CampaignDetail.Col.Name"]">@campaign.Name</td>
-                            <td data-label=""><a class="btn btn-outline-secondary btn-sm" href="/campaigns/@campaign.Id/character">@L["Campaigns.OpenCharacter"]</a></td>
+                            <td data-label="">
+                                <div style="display:flex;flex-wrap:wrap;gap:.5rem">
+                                    <a class="btn btn-outline-secondary btn-sm" href="/campaigns/@campaign.Id/character">@L["Campaigns.OpenCharacter"]</a>
+                                    <a class="btn btn-outline-secondary btn-sm" href="/campaigns/@campaign.Id/guild">@L["Guild.OpenSheet"]</a>
+                                </div>
+                            </td>
                         </tr>
                     }
                 </tbody>

@@ -1,0 +1,86 @@
+@using Microsoft.Extensions.Localization
+@using Ruptura.Web.Resources
+@using Ruptura.Shared.Guilds
+@inject IStringLocalizer<AppStrings> L
+
+<div class="ledger-stats" style="border-bottom:none;padding-bottom:1rem;margin-bottom:1rem">
+    <div class="stat">
+        <div class="stat-num">@L[$"Guild.Stage.{Stats.Stage}"]</div>
+        <div class="stat-label">@L["Guild.Stage"]</div>
+    </div>
+    <div class="stat">
+        <div class="stat-num">@Stats.Cg</div>
+        <div class="stat-label">@L["Guild.Cg"]</div>
+    </div>
+    <div class="stat">
+        <div class="stat-num">@Stats.Cs</div>
+        <div class="stat-label">@L["Guild.Cs"]</div>
+    </div>
+    <div class="stat">
+        <div class="stat-num">@Stats.Ci</div>
+        <div class="stat-label">@L["Guild.Ci"]</div>
+    </div>
+    <div class="stat">
+        <div class="stat-num">@Stats.Cf</div>
+        <div class="stat-label">@L["Guild.Cf"]</div>
+    </div>
+</div>
+
+@if (Stats.ActiveBuildingOverflow)
+{
+    <div class="alert-danger" style="margin-bottom:1.5rem">
+        @L["Guild.ActiveBuildingOverflow", Stats.ActiveBuildingCount, Stats.Cs]
+    </div>
+}
+
+<div class="section-header"><span class="section-title">@L["Guild.CgBreakdown"]</span></div>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:1rem;margin-bottom:1.5rem">
+    <div class="stat">
+        <div class="stat-num">@Stats.CgInfra</div>
+        <div class="stat-label">@L["Guild.Infra"]</div>
+    </div>
+    <div class="stat">
+        <div class="stat-num">@Stats.CgPesquisa</div>
+        <div class="stat-label">@L["Guild.Pesquisa"]</div>
+    </div>
+    <div class="stat">
+        <div class="stat-num">@Stats.CgLogistica</div>
+        <div class="stat-label">@L["Guild.Logistica"]</div>
+    </div>
+    <div class="stat">
+        <div class="stat-num">@Stats.CgRecursos</div>
+        <div class="stat-label">@L["Guild.Recursos"]</div>
+    </div>
+</div>
+
+<div class="section-header"><span class="section-title">@L["Guild.Institutional"]</span></div>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:1rem;margin-bottom:1rem">
+    <div class="stat">
+        <div class="stat-num">@Stats.InflationIndex.ToString("0.##")</div>
+        <div class="stat-label">@L["Guild.Inflation"]</div>
+    </div>
+    <div class="stat">
+        <div class="stat-num">@Stats.DailyMaintenance</div>
+        <div class="stat-label">@L["Guild.Maintenance"]</div>
+    </div>
+    <div class="stat">
+        <div class="stat-num">@Stats.WorkerIncomePerDay</div>
+        <div class="stat-label">@L["Guild.WorkerIncome"]</div>
+    </div>
+    <div class="stat">
+        <div class="stat-num">@Stats.StorageCapacity</div>
+        <div class="stat-label">@L["Guild.Storage"]</div>
+    </div>
+    <div class="stat">
+        <div class="stat-num">@Stats.ResidencyCapacity</div>
+        <div class="stat-label">@L["Guild.Residency"]</div>
+    </div>
+    <div class="stat">
+        <div class="stat-num">@Stats.ActiveDoctrineCount / @Stats.DoctrineLimit</div>
+        <div class="stat-label">@L["Guild.DoctrineLimit"]</div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public GuildDerivedStats Stats { get; set; } = new();
+}

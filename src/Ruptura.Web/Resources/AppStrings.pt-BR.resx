@@ -311,4 +311,36 @@
   <data name="Gm.Notifications.DismissConfirm.Title"><value>Descartar notificação?</value></data>
   <data name="Gm.Notifications.DismissConfirm.Message"><value>Isso vai descartar a notificação de promoção de ranking pendente para "{0}". Essa ação não pode ser desfeita.</value></data>
   <data name="Gm.Notifications.Cancel"><value>Cancelar</value></data>
+
+  <!-- Ficha da Guilda -->
+  <data name="Guild.Title"><value>Guilda</value></data>
+  <data name="Guild.OpenSheet"><value>Ficha da Guilda</value></data>
+  <data name="Guild.Loading"><value>Carregando guilda…</value></data>
+  <data name="Guild.LoadError"><value>Não foi possível carregar a ficha da guilda.</value></data>
+  <data name="Guild.Stage"><value>Estágio</value></data>
+  <data name="Guild.CgBreakdown"><value>Composição da Capacidade da Guilda</value></data>
+  <data name="Guild.Institutional"><value>Institucional</value></data>
+  <data name="Guild.Cg"><value>Capacidade da Guilda</value></data>
+  <data name="Guild.Ci"><value>Capacidade Institucional</value></data>
+  <data name="Guild.Cf"><value>Capacidade de Formação</value></data>
+  <data name="Guild.Cs"><value>Capacidade de Suporte</value></data>
+  <data name="Guild.Infra"><value>Infraestrutura</value></data>
+  <data name="Guild.Pesquisa"><value>Pesquisa</value></data>
+  <data name="Guild.Logistica"><value>Logística</value></data>
+  <data name="Guild.Recursos"><value>Recursos</value></data>
+  <data name="Guild.Inflation"><value>Índice de Inflação</value></data>
+  <data name="Guild.Maintenance"><value>Manutenção Diária</value></data>
+  <data name="Guild.WorkerIncome"><value>Renda de Operários/dia</value></data>
+  <data name="Guild.Storage"><value>Capacidade de Armazenamento</value></data>
+  <data name="Guild.Residency"><value>Capacidade de Residência</value></data>
+  <data name="Guild.DoctrineLimit"><value>Doutrinas</value></data>
+  <data name="Guild.ActiveBuildingOverflow"><value>Construções ativas ({0}) excedem a Capacidade de Suporte ({1}). Desative construções ou aumente a Capacidade de Suporte.</value></data>
+  <data name="Guild.Stage.Fundacao"><value>Fundação</value></data>
+  <data name="Guild.Stage.Menor"><value>Menor</value></data>
+  <data name="Guild.Stage.Regional"><value>Regional</value></data>
+  <data name="Guild.Stage.Reconhecida"><value>Reconhecida</value></data>
+  <data name="Guild.Stage.Maior"><value>Maior</value></data>
+  <data name="Guild.Stage.Renomada"><value>Renomada</value></data>
+  <data name="Guild.Stage.Lendaria"><value>Lendária</value></data>
+  <data name="Guild.Stage.Divina"><value>Divina</value></data>
 </root>

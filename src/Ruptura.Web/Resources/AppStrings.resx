@@ -311,4 +311,36 @@
   <data name="Gm.Notifications.DismissConfirm.Title"><value>Dismiss notification?</value></data>
   <data name="Gm.Notifications.DismissConfirm.Message"><value>This will dismiss the pending rank-promotion notification for "{0}". This cannot be undone.</value></data>
   <data name="Gm.Notifications.Cancel"><value>Cancel</value></data>
+
+  <!-- Guild Sheet -->
+  <data name="Guild.Title"><value>Guild</value></data>
+  <data name="Guild.OpenSheet"><value>Guild Sheet</value></data>
+  <data name="Guild.Loading"><value>Loading guild…</value></data>
+  <data name="Guild.LoadError"><value>Could not load the guild sheet.</value></data>
+  <data name="Guild.Stage"><value>Stage</value></data>
+  <data name="Guild.CgBreakdown"><value>Guild Capacity Breakdown</value></data>
+  <data name="Guild.Institutional"><value>Institutional</value></data>
+  <data name="Guild.Cg"><value>Guild Capacity</value></data>
+  <data name="Guild.Ci"><value>Institutional Capacity</value></data>
+  <data name="Guild.Cf"><value>Formation Capacity</value></data>
+  <data name="Guild.Cs"><value>Support Capacity</value></data>
+  <data name="Guild.Infra"><value>Infrastructure</value></data>
+  <data name="Guild.Pesquisa"><value>Research</value></data>
+  <data name="Guild.Logistica"><value>Logistics</value></data>
+  <data name="Guild.Recursos"><value>Resources</value></data>
+  <data name="Guild.Inflation"><value>Inflation Index</value></data>
+  <data name="Guild.Maintenance"><value>Daily Maintenance</value></data>
+  <data name="Guild.WorkerIncome"><value>Worker Income/day</value></data>
+  <data name="Guild.Storage"><value>Storage Capacity</value></data>
+  <data name="Guild.Residency"><value>Residency Capacity</value></data>
+  <data name="Guild.DoctrineLimit"><value>Doctrines</value></data>
+  <data name="Guild.ActiveBuildingOverflow"><value>Active buildings ({0}) exceed Support Capacity ({1}). Deactivate buildings or raise Support Capacity.</value></data>
+  <data name="Guild.Stage.Fundacao"><value>Foundation</value></data>
+  <data name="Guild.Stage.Menor"><value>Minor</value></data>
+  <data name="Guild.Stage.Regional"><value>Regional</value></data>
+  <data name="Guild.Stage.Reconhecida"><value>Recognized</value></data>
+  <data name="Guild.Stage.Maior"><value>Major</value></data>
+  <data name="Guild.Stage.Renomada"><value>Renowned</value></data>
+  <data name="Guild.Stage.Lendaria"><value>Legendary</value></data>
+  <data name="Guild.Stage.Divina"><value>Divine</value></data>
 </root>

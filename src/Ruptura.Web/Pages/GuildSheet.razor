@@ -1,0 +1,57 @@
+@page "/campaigns/{CampaignId:guid}/guild"
+@attribute [Authorize]
+@using Microsoft.Extensions.Localization
+@using Ruptura.Web.Resources
+@using Ruptura.Shared.Guilds
+@inject IStringLocalizer<AppStrings> L
+@inject ICampaignClientService CampaignService
+@inject IGuildClientService GuildService
+@inject ToastService Toast
+
+<PageTitle>@(_guild?.GuildName ?? L["Guild.Title"]) — RUPTURA</PageTitle>
+
+<div class="page-content">
+    <Breadcrumbs Items="_breadcrumbs" />
+
+    @if (_loading)
+    {
+        <LoadingIndicator Text="@L["Guild.Loading"]" />
+    }
+    else if (_guild is null)
+    {
+        <div class="ledger-empty"><p>@L["Guild.LoadError"]</p></div>
+    }
+    else
+    {
+        <div class="page-heading"><h1>@_guild.GuildName</h1></div>
+        <GuildCapacitiesPanel Stats="_guild.DerivedStats" />
+    }
+</div>
+
+@code {
+    [Parameter] public Guid CampaignId { get; set; }
+
+    private GuildSheetResponse? _guild;
+    private List<BreadcrumbItem> _breadcrumbs = [];
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var campaignsResult = await CampaignService.GetMineAsync();
+        var campaignName = campaignsResult?.Data?.FirstOrDefault(c => c.Id == CampaignId)?.Name;
+        _breadcrumbs =
+        [
+            new BreadcrumbItem(L["Nav.Campaigns"], null),
+            new BreadcrumbItem(campaignName ?? L["Guild.Title"], null)
+        ];
+
+        var result = await GuildService.GetGuildAsync(CampaignId);
+        _guild = result?.Data;
+        if (_guild is null)
+        {
+            Toast.Error(result?.Message ?? L["Guild.LoadError"]);
+        }
+
+        _loading = false;
+    }
+}
