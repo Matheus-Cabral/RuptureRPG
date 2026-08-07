@@ -33,7 +33,7 @@
 
 <div class="section-header"><span class="section-title">@L["Sheet.Combat.Weapons"]</span></div>
 <div class="ledger-table-wrap">
-    <table class="ledger-table">
+    <table class="ledger-table stack-mobile">
         <thead>
             <tr><th>@L["Sheet.Combat.Weapon.Name"]</th><th>@L["Sheet.Combat.Weapon.Attack"]</th><th>@L["Sheet.Combat.Weapon.Damage"]</th></tr>
         </thead>
@@ -41,9 +41,9 @@
             @foreach (var weapon in Derived?.Weapons ?? [])
             {
                 <tr>
-                    <td>@weapon.Name</td>
-                    <td>@(weapon.AttackBonus >= 0 ? $"+{weapon.AttackBonus}" : weapon.AttackBonus.ToString())</td>
-                    <td>@weapon.DamageFormula</td>
+                    <td data-label="@L["Sheet.Combat.Weapon.Name"]">@weapon.Name</td>
+                    <td data-label="@L["Sheet.Combat.Weapon.Attack"]">@(weapon.AttackBonus >= 0 ? $"+{weapon.AttackBonus}" : weapon.AttackBonus.ToString())</td>
+                    <td data-label="@L["Sheet.Combat.Weapon.Damage"]">@weapon.DamageFormula</td>
                 </tr>
             }
         </tbody>

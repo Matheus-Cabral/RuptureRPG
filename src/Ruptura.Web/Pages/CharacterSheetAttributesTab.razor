@@ -4,7 +4,7 @@
 @inject IStringLocalizer<AppStrings> L
 
 <div class="ledger-table-wrap">
-    <table class="ledger-table">
+    <table class="ledger-table stack-mobile">
         <thead>
             <tr>
                 <th></th>
@@ -17,13 +17,13 @@
             @foreach (var attr in Attrs)
             {
                 <tr>
-                    <td style="width:80px">
+                    <td data-label="" style="width:80px">
                         <input class="form-control form-control-sm" type="number" min="1" max="6"
                                value="@attr.Get(Data.Attributes)" @onchange="e => attr.Set(Data.Attributes, ParseInt(e.Value))" />
                     </td>
-                    <td>@L[attr.LabelKey]</td>
-                    <td>@FormatModifier(Derived?.AttributeModifiers.GetValueOrDefault(attr.Key) ?? 0)</td>
-                    <td>@FormatModifier(Derived?.AttributeGradeBonuses.GetValueOrDefault(attr.Key) ?? 0)</td>
+                    <td data-label="@L["Sheet.NameLabel"]">@L[attr.LabelKey]</td>
+                    <td data-label="@L["Sheet.Attributes.Modifier"]">@FormatModifier(Derived?.AttributeModifiers.GetValueOrDefault(attr.Key) ?? 0)</td>
+                    <td data-label="@L["Sheet.Attributes.Grade"]">@FormatModifier(Derived?.AttributeGradeBonuses.GetValueOrDefault(attr.Key) ?? 0)</td>
                 </tr>
             }
         </tbody>

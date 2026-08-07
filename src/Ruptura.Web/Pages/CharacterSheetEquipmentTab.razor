@@ -16,7 +16,7 @@
 </div>
 
 <div class="ledger-table-wrap">
-    <table class="ledger-table">
+    <table class="ledger-table stack-mobile">
         <thead>
             <tr>
                 <th>@L["Gm.CampaignDetail.Col.Name"]</th>
@@ -31,17 +31,17 @@
             @foreach (var item in Data.Equipment)
             {
                 <tr>
-                    <td>@NameOf(item.CatalogEntryId)</td>
-                    <td style="width:80px">
+                    <td data-label="@L["Gm.CampaignDetail.Col.Name"]">@NameOf(item.CatalogEntryId)</td>
+                    <td data-label="@L["Sheet.Equipment.Quantity"]" style="width:80px">
                         <input class="form-control form-control-sm" type="number" min="1"
                                value="@item.Quantity" @onchange="e => item.Quantity = ParseInt(e.Value, 1)" />
                     </td>
-                    <td style="width:100px">
+                    <td data-label="@L["Sheet.Equipment.Durability"]" style="width:100px">
                         <input class="form-control form-control-sm" type="number" min="0"
                                value="@item.DurabilityRemaining" @onchange="e => item.DurabilityRemaining = ParseInt(e.Value, 0)" />
                     </td>
-                    <td><input type="checkbox" checked="@item.IsEquipped" @onchange="e => item.IsEquipped = (bool)(e.Value ?? false)" /></td>
-                    <td>
+                    <td data-label="@L["Sheet.Equipment.Equipped"]"><input type="checkbox" checked="@item.IsEquipped" @onchange="e => item.IsEquipped = (bool)(e.Value ?? false)" /></td>
+                    <td data-label="@L["Sheet.Equipment.LinkedSkill"]">
                         <select class="form-select form-select-sm" value="@item.LinkedSkillEntryId"
                                 @onchange="e => item.LinkedSkillEntryId = ParseGuid(e.Value)">
                             <option value="">@L["Sheet.Equipment.NoneSkill"]</option>
@@ -51,7 +51,7 @@
                             }
                         </select>
                     </td>
-                    <td><button class="btn btn-outline-secondary btn-sm" @onclick="() => Data.Equipment.Remove(item)">@L["Sheet.RefList.Remove"]</button></td>
+                    <td data-label=""><button class="btn btn-outline-secondary btn-sm" @onclick="() => Data.Equipment.Remove(item)">@L["Sheet.RefList.Remove"]</button></td>
                 </tr>
             }
         </tbody>

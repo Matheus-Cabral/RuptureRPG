@@ -6,7 +6,7 @@
 @inject ICatalogClientService CatalogService
 
 <div class="ledger-table-wrap">
-    <table class="ledger-table">
+    <table class="ledger-table stack-mobile">
         <thead>
             <tr>
                 <th>@L["Gm.CampaignDetail.Col.Name"]</th>
@@ -19,13 +19,13 @@
             @foreach (var skill in Data.Skills)
             {
                 <tr>
-                    <td>@NameOf(skill.CatalogEntryId)</td>
-                    <td style="width:100px">
+                    <td data-label="@L["Gm.CampaignDetail.Col.Name"]">@NameOf(skill.CatalogEntryId)</td>
+                    <td data-label="@L["Sheet.Skills.Points"]" style="width:100px">
                         <input class="form-control form-control-sm" type="number" min="0"
                                value="@skill.Points" @onchange="e => skill.Points = ParseInt(e.Value)" />
                     </td>
-                    <td>@Derived?.SkillGradeBonuses.GetValueOrDefault(skill.CatalogEntryId)</td>
-                    <td><button class="btn btn-outline-secondary btn-sm" @onclick="() => RemoveSkill(skill)">@L["Sheet.Skills.Remove"]</button></td>
+                    <td data-label="@L["Sheet.Skills.Grade"]">@Derived?.SkillGradeBonuses.GetValueOrDefault(skill.CatalogEntryId)</td>
+                    <td data-label=""><button class="btn btn-outline-secondary btn-sm" @onclick="() => RemoveSkill(skill)">@L["Sheet.Skills.Remove"]</button></td>
                 </tr>
             }
         </tbody>

@@ -6,7 +6,7 @@
 @inject ICatalogClientService CatalogService
 
 <div class="ledger-table-wrap">
-    <table class="ledger-table">
+    <table class="ledger-table stack-mobile">
         <thead>
             <tr><th>@L["Gm.CampaignDetail.Col.Name"]</th><th></th></tr>
         </thead>
@@ -14,8 +14,8 @@
             @foreach (var entry in Entries)
             {
                 <tr>
-                    <td>@NameOf(entry.CatalogEntryId)</td>
-                    <td><button class="btn btn-outline-secondary btn-sm" @onclick="() => Entries.Remove(entry)">@L["Sheet.RefList.Remove"]</button></td>
+                    <td data-label="@L["Gm.CampaignDetail.Col.Name"]">@NameOf(entry.CatalogEntryId)</td>
+                    <td data-label=""><button class="btn btn-outline-secondary btn-sm" @onclick="() => Entries.Remove(entry)">@L["Sheet.RefList.Remove"]</button></td>
                 </tr>
             }
         </tbody>
