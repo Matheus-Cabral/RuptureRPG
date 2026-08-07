@@ -233,6 +233,72 @@ public class GuildStatsCalculatorTests
     }
 
     [Fact]
+    public void InactiveBuilding_GrantsNoFunctionalBenefit_ButStillCostsUpkeep()
+    {
+        // GDD §10.9: "inativa = sem benefício". An INACTIVE Armazém (level 3) must contribute 0 to every
+        // LevelOf-derived stat (CS, StorageCapacity), yet still count toward CgInfra and DailyMaintenance.
+        var catalog = new Dictionary<Guid, CatalogEntry>
+        {
+            [GuildCatalogIds.Armazem] = Install(GuildCatalogIds.Armazem, weight: 1),
+        };
+        var buildings = new List<GuildBuilding>
+        {
+            Building(GuildCatalogIds.Armazem, 3, active: false),
+        };
+        var r = _calc.Calculate(new GuildSheetData(), buildings, [], 0, catalog);
+        r.Cs.Should().Be(5);              // 5 + 0*2 + 0 (inactive Armazém excluded from LevelOf)
+        r.StorageCapacity.Should().Be(0); // armazem LevelOf = 0
+        r.CgInfra.Should().Be(3);         // level 3 × weight 1, inactive still counts
+        r.DailyMaintenance.Should().Be(3);// level 3 × weight 1, inactive still costs upkeep
+    }
+
+    // §10.9 CS/CI/CF oracle across all 8 stages, each via a canonical ACTIVE building set.
+    //
+    // NOTE: We deliberately do NOT assert the §10.8 CG table (Infra/Pesquisa/Logística/Recursos totals).
+    // That table is a NARRATIVE design-target progression, not reproducible from the §10.8 formula — e.g. at
+    // Fundação the table's Logística = 5 is impossible, since Logística = CS + workers×2 ≥ CS = 6 with the
+    // canonical build. Only the §10.9 CS/CI/CF table holds as an exact oracle, so that is all we pin here.
+    public static IEnumerable<object[]> Section109Oracle()
+    {
+        // floors, expected stage, (installation, level)[] active build, CS, CI, CF
+        yield return [0, GuildStage.Fundacao, new (Guid, int)[]
+            { (GuildCatalogIds.Armazem, 1), (GuildCatalogIds.CampoDeTreinamento, 1) }, 6, 3, 11];
+        yield return [5, GuildStage.Menor, new (Guid, int)[]
+            { (GuildCatalogIds.Armazem, 2), (GuildCatalogIds.Biblioteca, 2), (GuildCatalogIds.CampoDeTreinamento, 1) }, 7, 3, 13];
+        yield return [10, GuildStage.Regional, new (Guid, int)[]
+            { (GuildCatalogIds.CentroLogistico, 1), (GuildCatalogIds.Armazem, 3), (GuildCatalogIds.Memorial, 2), (GuildCatalogIds.Biblioteca, 1), (GuildCatalogIds.CampoDeTreinamento, 1) }, 10, 4, 18];
+        yield return [15, GuildStage.Reconhecida, new (Guid, int)[]
+            { (GuildCatalogIds.CentroLogistico, 2), (GuildCatalogIds.Armazem, 3), (GuildCatalogIds.Memorial, 3), (GuildCatalogIds.Biblioteca, 3), (GuildCatalogIds.CampoDeTreinamento, 1) }, 12, 5, 23];
+        yield return [20, GuildStage.Maior, new (Guid, int)[]
+            { (GuildCatalogIds.CamaraDoConselho, 1), (GuildCatalogIds.CentroLogistico, 3), (GuildCatalogIds.Armazem, 3), (GuildCatalogIds.Memorial, 4), (GuildCatalogIds.Biblioteca, 5), (GuildCatalogIds.CampoDeTreinamento, 1) }, 14, 10, 28];
+        yield return [25, GuildStage.Renomada, new (Guid, int)[]
+            { (GuildCatalogIds.CamaraDoConselho, 2), (GuildCatalogIds.CentroLogistico, 4), (GuildCatalogIds.Armazem, 3), (GuildCatalogIds.Memorial, 4), (GuildCatalogIds.Biblioteca, 7), (GuildCatalogIds.CampoDeTreinamento, 4) }, 16, 15, 33];
+        yield return [30, GuildStage.Lendaria, new (Guid, int)[]
+            { (GuildCatalogIds.CamaraDoConselho, 2), (GuildCatalogIds.CentroLogistico, 4), (GuildCatalogIds.Armazem, 3), (GuildCatalogIds.Memorial, 4), (GuildCatalogIds.Biblioteca, 7), (GuildCatalogIds.CampoDeTreinamento, 5) }, 16, 15, 34];
+        yield return [35, GuildStage.Divina, new (Guid, int)[]
+            { (GuildCatalogIds.CamaraDoConselho, 2), (GuildCatalogIds.CentroLogistico, 4), (GuildCatalogIds.Armazem, 3), (GuildCatalogIds.Memorial, 4), (GuildCatalogIds.Biblioteca, 7), (GuildCatalogIds.CampoDeTreinamento, 5) }, 16, 15, 34];
+    }
+
+    [Theory]
+    [MemberData(nameof(Section109Oracle))]
+    public void CsCiCf_ReproduceSection109TableForEveryStage(
+        int floors, GuildStage expectedStage, (Guid Id, int Level)[] build, int cs, int ci, int cf)
+    {
+        var catalog = new Dictionary<Guid, CatalogEntry>();
+        var buildings = new List<GuildBuilding>();
+        foreach (var (id, level) in build)
+        {
+            catalog[id] = Install(id, weight: 1);
+            buildings.Add(Building(id, level, active: true));
+        }
+        var r = _calc.Calculate(new GuildSheetData { FloorsConquered = floors }, buildings, [], 0, catalog);
+        r.Stage.Should().Be(expectedStage);
+        r.Cs.Should().Be(cs);
+        r.Ci.Should().Be(ci);
+        r.Cf.Should().Be(cf);
+    }
+
+    [Fact]
     public void ActiveBuildingOverflow_When_Active_Exceeds_Cs()
     {
         // CS is 5 with no CentroLogistico/Armazem; 6 active constructible buildings -> overflow.

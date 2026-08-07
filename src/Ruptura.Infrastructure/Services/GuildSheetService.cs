@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using Ruptura.Application.Common;
 using Ruptura.Application.Interfaces;
 using Ruptura.Domain.Entities;
@@ -30,14 +31,17 @@ public class GuildSheetService(
         if (!isMember)
             return Result.Failure<GuildSheetResponse>(ErrorCodes.Guild.NotFound); // hide existence, like CharacterSheet
 
-        var guild = await GetOrCreateAsync(campaign, ct);
-        return Result.Success(await MapToResponseAsync(guild, ct));
+        var guildResult = await GetOrCreateAsync(campaign, ct);
+        if (guildResult.IsFailure)
+            return Result.Failure<GuildSheetResponse>(guildResult.Error!);
+
+        return Result.Success(await MapToResponseAsync(guildResult.Value!, ct));
     }
 
-    private async Task<GuildSheet> GetOrCreateAsync(Campaign campaign, CancellationToken ct)
+    private async Task<Result<GuildSheet>> GetOrCreateAsync(Campaign campaign, CancellationToken ct)
     {
         var existing = await guildRepo.GetByCampaignAsync(campaign.Id, ct);
-        if (existing is not null) return existing;
+        if (existing is not null) return Result.Success(existing);
 
         var guild = new GuildSheet
         {
@@ -51,12 +55,18 @@ public class GuildSheetService(
         {
             await guildRepo.AddAsync(guild, ct);
             await guildRepo.SaveChangesAsync(ct);
-            return guild;
+            return Result.Success(guild);
         }
-        catch (DbUpdateException)
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
         {
             // Concurrent first-access lost the race on ux_guild_sheets_campaign — the winner's row exists.
-            return (await guildRepo.GetByCampaignAsync(campaign.Id, ct))!;
+            // Detach the doomed Added entity so a later SaveChanges in this scope won't re-attempt the INSERT.
+            guildRepo.Detach(guild);
+            var winner = await guildRepo.GetByCampaignAsync(campaign.Id, ct);
+            // The winner's campaign may have been concurrently deleted — signal NotFound rather than deref null.
+            return winner is not null
+                ? Result.Success(winner)
+                : Result.Failure<GuildSheet>(ErrorCodes.Guild.NotFound);
         }
     }
 

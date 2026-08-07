@@ -23,9 +23,12 @@ public class GuildStatsCalculator : IGuildStatsCalculator
         var hasLogistica = activeDoctrines.Contains(GuildCatalogIds.DoctrineLogistica);
         var hasComercial = activeDoctrines.Contains(GuildCatalogIds.DoctrineComercial);
 
-        // Per-installation level (0 if not built). Unique index guarantees at most one row per installation.
+        // Per-installation level (0 if not built OR inactive). Inactive buildings grant no functional
+        // benefit (GDD §10.9 "inativa = sem benefício"), so they are excluded from every LevelOf-derived
+        // stat (CS/CI/CF, StorageCapacity, ResidencyCapacity, DoctrineLimit). Unique index guarantees at
+        // most one row per installation.
         int LevelOf(Guid installationId) =>
-            buildings.FirstOrDefault(b => b.CatalogEntryId == installationId)?.Level ?? 0;
+            buildings.FirstOrDefault(b => b.CatalogEntryId == installationId && b.IsActive)?.Level ?? 0;
 
         var armazem = LevelOf(GuildCatalogIds.Armazem);
         var centroLog = LevelOf(GuildCatalogIds.CentroLogistico);
@@ -42,10 +45,12 @@ public class GuildStatsCalculator : IGuildStatsCalculator
         var cf = 10 + memorial * 3 + biblioteca * 1 + campo * 1;
 
         // Constructible buildings only (exclude Portão / NonConstructible) for Infra, maintenance, CS cap.
+        // Unknown/malformed catalog entries (Data is null) are skipped — no weight means nothing to count.
+        // NOTE: Infra (CG) and daily maintenance intentionally sum over ALL constructible buildings,
+        // active or not — deactivation removes functional benefits (LevelOf) but not upkeep cost.
         var constructible = buildings
             .Select(b => (Building: b, Data: DataFor(b.CatalogEntryId, installationCatalog)))
-            .Where(x => x.Data is null || !x.Data.NonConstructible) // unknown catalog -> treat as constructible
-            .Where(x => x.Data is not null)                          // but need weight to count Infra/maintenance
+            .Where(x => x.Data is not null && !x.Data.NonConstructible)
             .ToList();
 
         var infra = constructible.Sum(x => x.Building.Level * x.Data!.Weight);
@@ -60,14 +65,14 @@ public class GuildStatsCalculator : IGuildStatsCalculator
         var cg = infra + researchPoints + logistica + recursos;
 
         // Daily maintenance: constructible buildings (level×weight) + active staff salaries; Logística −10%.
-        var buildingMaintenance = constructible.Sum(x => x.Building.Level * x.Data!.Weight * 1);
+        var buildingMaintenance = constructible.Sum(x => x.Building.Level * x.Data!.Weight); // 1 Prata per level×weight
         var salaries = staff.Where(s => s.IsActive).Sum(s => s.DailySalary);
         var baseMaintenance = buildingMaintenance + salaries;
         var maintenance = hasLogistica
             ? (int)Math.Round(baseMaintenance * 0.90m, MidpointRounding.AwayFromZero)
             : baseMaintenance;
 
-        var workerIncome = staff.Count(s => s.Kind == GuildStaffKind.Worker && s.IsActive && s.TypeOrRanking == "Operário") * 2;
+        var workerIncome = staff.Count(s => s.Kind == GuildStaffKind.Worker && s.IsActive && s.TypeOrRanking == GuildStaffTypes.Operario) * 2;
 
         var stageIndex = StageIndex(data.FloorsConquered);
         var inflationStageIndex = hasComercial ? Math.Max(0, stageIndex - 1) : stageIndex;

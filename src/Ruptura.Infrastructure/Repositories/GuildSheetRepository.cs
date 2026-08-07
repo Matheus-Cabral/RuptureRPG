@@ -10,4 +10,6 @@ public class GuildSheetRepository(AppDbContext db)
 {
     public async Task<GuildSheet?> GetByCampaignAsync(Guid campaignId, CancellationToken ct = default) =>
         await Set.FirstOrDefaultAsync(g => g.CampaignId == campaignId, ct);
+
+    public void Detach(GuildSheet entity) => Db.Entry(entity).State = EntityState.Detached;
 }
