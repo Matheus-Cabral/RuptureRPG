@@ -37,5 +37,7 @@ public class CatalogEntryConfiguration : IEntityTypeConfiguration<CatalogEntry>
         builder.HasData(CatalogSeedData.Skills);
         builder.HasData(CatalogSeedData.Spells);
         builder.HasData(CatalogSeedData.Techniques);
+        builder.HasData(CatalogSeedData.Installations);
+        builder.HasData(CatalogSeedData.Doctrines);
     }
 }
