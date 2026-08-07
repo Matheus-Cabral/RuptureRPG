@@ -6,4 +6,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="../Ruptura.Domain/Ruptura.Domain.csproj" />
+  </ItemGroup>
+
 </Project>

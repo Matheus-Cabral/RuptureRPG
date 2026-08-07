@@ -47,6 +47,7 @@ public static class ErrorCodes
     {
         public const string NotFound = "Guild.NotFound";
         public const string Forbidden = "Guild.Forbidden";
+        public const string Conflict = "Guild.Conflict";
     }
 
     public static class Journal

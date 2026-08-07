@@ -11,6 +11,8 @@ using Ruptura.Application.Validators.Campaigns;
 using Ruptura.Application.Validators.CharacterSheets;
 using Ruptura.Application.Validators.Journal;
 using Ruptura.Infrastructure.Data;
+using Ruptura.Infrastructure.Validators;
+using Ruptura.Shared.Guilds;
 using Ruptura.Infrastructure.Identity;
 using Ruptura.Infrastructure.Repositories;
 using Ruptura.Infrastructure.Services;
@@ -91,6 +93,7 @@ public static class InfrastructureExtensions
         services.AddScoped<IValidator<UpdateCharacterSheetRequest>, UpdateCharacterSheetRequestValidator>();
         services.AddScoped<IValidator<CreateJournalEntryRequest>, CreateJournalEntryRequestValidator>();
         services.AddScoped<IValidator<UpdateJournalEntryRequest>, UpdateJournalEntryRequestValidator>();
+        services.AddScoped<IValidator<UpdateGuildSheetRequest>, UpdateGuildSheetRequestValidator>();
 
         return services;
     }
