@@ -76,8 +76,10 @@ public class GuildDoctrineTests(IntegrationTestFactory factory)
     }
 
     [Fact]
-    public async Task Update_ThreeDoctrinesNoCamara_Returns400DoctrineLimitExceeded()
+    public async Task Update_ThreeDoctrinesNoCamara_Returns200AndFlagsOverflow()
     {
+        // The doctrine limit is ADVISORY (mirrors CS active-building overflow): being over the limit
+        // never blocks the save — DerivedStats.ActiveDoctrineOverflow surfaces it instead.
         var (client, campaign, playerToken, _) = await SetUpCampaignWithMemberAsync();
         AuthHelper.SetBearerToken(client, playerToken);
 
@@ -87,7 +89,13 @@ public class GuildDoctrineTests(IntegrationTestFactory factory)
 
         var response = await client.PutAsJsonAsync($"api/campaigns/{campaign.Id}/guild", UpdateWith(current));
 
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var reloaded = await GetGuildAsync(client, campaign.Id);
+        reloaded.Data.ActiveDoctrineIds.Should().HaveCount(3);
+        reloaded.DerivedStats.DoctrineLimit.Should().Be(2); // no Câmara → min(4, 2+0)
+        reloaded.DerivedStats.ActiveDoctrineCount.Should().Be(3);
+        reloaded.DerivedStats.ActiveDoctrineOverflow.Should().BeTrue();
     }
 
     [Fact]
@@ -117,6 +125,8 @@ public class GuildDoctrineTests(IntegrationTestFactory factory)
 
         var reloaded = await GetGuildAsync(client, campaign.Id);
         reloaded.Data.ActiveDoctrineIds.Should().HaveCount(4);
+        reloaded.DerivedStats.DoctrineLimit.Should().Be(4);
+        reloaded.DerivedStats.ActiveDoctrineOverflow.Should().BeFalse();
     }
 
     [Fact]

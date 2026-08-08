@@ -76,6 +76,7 @@
   <data name="Guild.BuildingNotFound"><value>Building not found.</value></data>
   <data name="Guild.StaffKindInvalid"><value>Staff kind must be either Worker or Mercenary.</value></data>
   <data name="Guild.StaffNotFound"><value>Staff member not found.</value></data>
+  <data name="Guild.DoctrineInvalid"><value>One or more selected doctrines are not valid for this campaign.</value></data>
 
   <!-- Journal -->
   <data name="Journal.NotFound"><value>Journal entry not found.</value></data>

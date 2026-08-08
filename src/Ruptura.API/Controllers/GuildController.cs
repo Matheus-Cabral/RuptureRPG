@@ -53,7 +53,6 @@ public class GuildController(
             {
                 ErrorCodes.Guild.Conflict => Conflict(ApiResponse.Fail(localizer[result.Error!])),
                 ErrorCodes.Guild.DoctrineInvalid
-                    or ErrorCodes.Guild.DoctrineLimitExceeded
                     => BadRequest(ApiResponse.Fail(localizer[result.Error!])),
                 _ => NotFound(ApiResponse.Fail(localizer[result.Error!]))
             };

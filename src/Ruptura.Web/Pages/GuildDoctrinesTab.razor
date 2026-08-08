@@ -8,7 +8,6 @@
 <div style="display:flex;flex-direction:column;gap:1.5rem">
     @{
         var activeCount = Data.ActiveDoctrineIds.Count;
-        var atLimit = activeCount >= Stats.DoctrineLimit;
     }
 
     <div class="stat" style="align-self:flex-start">
@@ -16,6 +15,8 @@
         <div class="stat-label">@L["Guild.DoctrineLimit"]</div>
     </div>
 
+    @* Advisory only (mirrors the CS active-building overflow): the save is never rejected — excess
+       doctrines simply give no benefit until the Câmara do Conselho raises the limit. *@
     @if (activeCount > Stats.DoctrineLimit)
     {
         <div class="alert-danger">@L["Guild.Doctrine.OverLimit", activeCount, Stats.DoctrineLimit]</div>
@@ -34,7 +35,7 @@
 
     <div>
         <span class="section-title" style="display:block;margin-bottom:.5rem">@L["Guild.Doctrine.Active"]</span>
-        @if (_doctrines.Count == 0)
+        @if (!_doctrineOptions.Any())
         {
             <div class="ledger-empty"><p>@L["Guild.Doctrine.Empty"]</p></div>
         }
@@ -48,7 +49,6 @@
                         <div class="form-check">
                             <input type="checkbox" class="form-check-input" id="doctrine-@entry.Id"
                                    checked="@isChecked"
-                                   disabled="@(!isChecked && atLimit)"
                                    @onchange="e => ToggleDoctrine(entry.Id, (bool)(e.Value ?? false))" />
                             <label class="form-check-label" for="doctrine-@entry.Id"><strong>@entry.Name</strong></label>
                         </div>

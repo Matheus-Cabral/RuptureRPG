@@ -463,7 +463,7 @@
   <data name="Guild.Staff.Worker.Administrador"><value>Administrador</value></data>
   <data name="Guild.Doctrine.Active"><value>Doutrinas ativas</value></data>
   <data name="Guild.Doctrine.Empty"><value>Nenhuma doutrina disponível.</value></data>
-  <data name="Guild.Doctrine.OverLimit"><value>{0} doutrinas selecionadas excedem o limite de {1}. O salvamento será rejeitado.</value></data>
+  <data name="Guild.Doctrine.OverLimit"><value>Doutrinas ativas ({0}) excedem o limite de {1}. As doutrinas excedentes não trazem benefício até você aumentar o limite com a Câmara do Conselho.</value></data>
   <data name="Guild.Expedition.DeleteConfirm.Title"><value>Remover expedição</value></data>
   <data name="Guild.Expedition.DeleteConfirm.Message"><value>Isto removerá permanentemente este registro de expedição. Continuar?</value></data>
   <data name="Guild.Expedition.Kind.Principal"><value>Principal</value></data>

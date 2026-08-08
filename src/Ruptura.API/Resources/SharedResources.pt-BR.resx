@@ -76,6 +76,7 @@
   <data name="Guild.BuildingNotFound"><value>Construção não encontrada.</value></data>
   <data name="Guild.StaffKindInvalid"><value>O tipo de pessoal deve ser Trabalhador (Worker) ou Mercenário (Mercenary).</value></data>
   <data name="Guild.StaffNotFound"><value>Membro do pessoal não encontrado.</value></data>
+  <data name="Guild.DoctrineInvalid"><value>Uma ou mais doutrinas selecionadas não são válidas para esta campanha.</value></data>
 
   <!-- Journal -->
   <data name="Journal.NotFound"><value>Entrada de diário não encontrada.</value></data>

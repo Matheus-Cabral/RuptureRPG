@@ -45,7 +45,7 @@ public class GuildSheetService(
         var incoming = Deserialize(request.DataJson);
         incoming.Identity.EmblemImagePath = stored.Identity.EmblemImagePath;
 
-        var doctrineError = await ValidateDoctrinesAsync(incoming, guild.Id, campaignId, ct);
+        var doctrineError = await ValidateDoctrinesAsync(incoming, campaignId, ct);
         if (doctrineError is not null)
             return Result.Failure<GuildSheetResponse>(doctrineError);
 
@@ -70,38 +70,31 @@ public class GuildSheetService(
     }
 
     // Every referenced doctrine id (ActiveDoctrineIds + Identity.MainDoctrineId) must resolve to a
-    // Doctrine catalog entry visible to this campaign; ActiveDoctrineIds count must be within the
-    // derived limit min(4, 2 + Câmara do Conselho level). Returns an error code or null when valid.
+    // Doctrine catalog entry visible to this campaign. The count-vs-limit rule is ADVISORY (mirrors
+    // the CS active-building overflow): excess doctrines give no benefit but never block the save —
+    // GuildStatsCalculator surfaces DerivedStats.ActiveDoctrineOverflow instead. Returns an error
+    // code or null when valid.
+    //
+    // NOTE: unlike add-installation, an ARCHIVED doctrine stays saveable by design — an id already
+    // selected on the sheet must remain persistable even after its catalog entry is archived (the UI
+    // keeps it visible). Do not "fix" this to reject IsArchived to match ValidateInstallationAsync.
     private async Task<string?> ValidateDoctrinesAsync(
-        GuildSheetData data, Guid guildSheetId, Guid campaignId, CancellationToken ct)
+        GuildSheetData data, Guid campaignId, CancellationToken ct)
     {
         var ids = new List<Guid>(data.ActiveDoctrineIds ?? []);
         if (data.Identity.MainDoctrineId is { } main) ids.Add(main);
-        if (ids.Count == 0 && (data.ActiveDoctrineIds?.Count ?? 0) == 0) return null;
 
         // Every referenced id must be a Doctrine visible to this campaign.
         var distinct = ids.Distinct().ToList();
-        if (distinct.Count > 0)
-        {
-            var entries = (await catalogRepo.GetByIdsAsync(distinct, ct)).ToDictionary(e => e.Id);
-            foreach (var id in distinct)
-            {
-                if (!entries.TryGetValue(id, out var e) || e.Type != CatalogEntryType.Doctrine
-                    || (e.CampaignId is not null && e.CampaignId != campaignId))
-                    return ErrorCodes.Guild.DoctrineInvalid;
-            }
-        }
+        if (distinct.Count == 0) return null;
 
-        // ActiveDoctrineIds count must be within the derived limit (min(4, 2 + Câmara level)).
-        // camaraLevel uses IsActive to match the calculator's LevelOf (benefits exclude inactive
-        // buildings — sub-plan #2 rule).
-        var buildings = (await buildingRepo.GetByGuildAsync(guildSheetId, ct)).ToList();
-        var camaraLevel = buildings
-            .Where(b => b.CatalogEntryId == GuildCatalogIds.CamaraDoConselho && b.IsActive)
-            .Select(b => b.Level).FirstOrDefault();
-        var limit = Math.Min(4, 2 + camaraLevel);
-        if ((data.ActiveDoctrineIds?.Count ?? 0) > limit)
-            return ErrorCodes.Guild.DoctrineLimitExceeded;
+        var entries = (await catalogRepo.GetByIdsAsync(distinct, ct)).ToDictionary(e => e.Id);
+        foreach (var id in distinct)
+        {
+            if (!entries.TryGetValue(id, out var e) || e.Type != CatalogEntryType.Doctrine
+                || (e.CampaignId is not null && e.CampaignId != campaignId))
+                return ErrorCodes.Guild.DoctrineInvalid;
+        }
 
         return null;
     }
@@ -179,15 +172,18 @@ public class GuildSheetService(
         return Result.Success();
     }
 
-    // Returns the InstallationCatalogData if the entry is a valid, visible, non-archived,
-    // constructible Installation for this campaign; otherwise a failure with the right code.
+    // Returns the InstallationCatalogData if the entry is a valid, visible, constructible Installation
+    // for this campaign; otherwise a failure with the right code.
     // Catalog blobs use DEFAULT (PascalCase) JSON — not the Web convention used for the guild blob.
+    // allowArchived: false on ADD (can't build a new archived installation); true on UPDATE (an
+    // existing building whose installation was later archived must stay editable/deactivatable —
+    // archiving the catalog entry must never permanently freeze a built installation).
     private async Task<Result<InstallationCatalogData>> ValidateInstallationAsync(
-        Guid catalogEntryId, Guid campaignId, int level, CancellationToken ct)
+        Guid catalogEntryId, Guid campaignId, int level, bool allowArchived, CancellationToken ct)
     {
         var entry = await catalogRepo.GetByIdAsync(catalogEntryId, ct);
         if (entry is null || entry.Type != CatalogEntryType.Installation
-            || entry.IsArchived
+            || (!allowArchived && entry.IsArchived)
             || (entry.CampaignId is not null && entry.CampaignId != campaignId))
             return Result.Failure<InstallationCatalogData>(ErrorCodes.Guild.InstallationInvalid);
 
@@ -211,7 +207,7 @@ public class GuildSheetService(
             return Result.Failure<GuildBuildingResponse>(auth.Error!);
         var guild = auth.Value!;
 
-        var validation = await ValidateInstallationAsync(request.CatalogEntryId, campaignId, request.Level, ct);
+        var validation = await ValidateInstallationAsync(request.CatalogEntryId, campaignId, request.Level, allowArchived: false, ct);
         if (validation.IsFailure)
             return Result.Failure<GuildBuildingResponse>(validation.Error!);
 
@@ -228,7 +224,7 @@ public class GuildSheetService(
             await buildingRepo.AddAsync(building, ct);
             await buildingRepo.SaveChangesAsync(ct);
         }
-        catch (DbUpdateException)
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
         {
             // ux_guild_buildings_sheet_installation — one building per installation type.
             return Result.Failure<GuildBuildingResponse>(ErrorCodes.Guild.BuildingExists);
@@ -250,7 +246,7 @@ public class GuildSheetService(
         if (building is null || building.GuildSheetId != guild.Id)
             return Result.Failure<GuildBuildingResponse>(ErrorCodes.Guild.BuildingNotFound);
 
-        var validation = await ValidateInstallationAsync(building.CatalogEntryId, campaignId, request.Level, ct);
+        var validation = await ValidateInstallationAsync(building.CatalogEntryId, campaignId, request.Level, allowArchived: true, ct);
         if (validation.IsFailure)
             return Result.Failure<GuildBuildingResponse>(validation.Error!);
 
@@ -305,7 +301,8 @@ public class GuildSheetService(
         var guild = auth.Value!;
 
         // Shared must not reference the Domain enum, so Kind is a string on the wire; reject unknown.
-        if (!Enum.TryParse<GuildStaffKind>(request.Kind, out var kind))
+        // Enum.IsDefined rejects numeric/undefined values ("5") that TryParse would otherwise accept.
+        if (!Enum.TryParse<GuildStaffKind>(request.Kind, out var kind) || !Enum.IsDefined(kind))
             return Result.Failure<GuildStaffResponse>(ErrorCodes.Guild.StaffKindInvalid);
 
         var staff = new GuildStaff
@@ -316,7 +313,8 @@ public class GuildSheetService(
             // Record-keeping posture: TypeOrRanking is persisted verbatim (UI picker supplies canonical values).
             TypeOrRanking = request.TypeOrRanking,
             Name = request.Name,
-            DailySalary = request.DailySalary,
+            // Clamp negatives: a negative salary would perversely reduce daily maintenance.
+            DailySalary = Math.Max(0, request.DailySalary),
             IsActive = request.IsActive,
             Efficiency = request.Efficiency,
             Morale = request.Morale
@@ -336,7 +334,7 @@ public class GuildSheetService(
             return Result.Failure<GuildStaffResponse>(auth.Error!);
         var guild = auth.Value!;
 
-        if (!Enum.TryParse<GuildStaffKind>(request.Kind, out var kind))
+        if (!Enum.TryParse<GuildStaffKind>(request.Kind, out var kind) || !Enum.IsDefined(kind))
             return Result.Failure<GuildStaffResponse>(ErrorCodes.Guild.StaffKindInvalid);
 
         var staff = await staffRepo.GetByIdAsync(staffId, ct);
@@ -347,7 +345,8 @@ public class GuildSheetService(
         staff.Kind = kind;
         staff.TypeOrRanking = request.TypeOrRanking;
         staff.Name = request.Name;
-        staff.DailySalary = request.DailySalary;
+        // Clamp negatives: a negative salary would perversely reduce daily maintenance.
+        staff.DailySalary = Math.Max(0, request.DailySalary);
         staff.IsActive = request.IsActive;
         staff.Efficiency = request.Efficiency;
         staff.Morale = request.Morale;
@@ -474,8 +473,10 @@ public class GuildSheetService(
     };
 
     // Shared must not reference the Domain enum, so Kind is a string on the wire; parse leniently.
+    // Enum.IsDefined guards against numeric/undefined strings ("5") that TryParse would accept —
+    // a truly-unparseable Kind falls back to Principal.
     private static ExpeditionKind ParseKind(string kind) =>
-        Enum.TryParse<ExpeditionKind>(kind, out var k) ? k : ExpeditionKind.Principal;
+        Enum.TryParse<ExpeditionKind>(kind, out var k) && Enum.IsDefined(k) ? k : ExpeditionKind.Principal;
 
     private static ExpeditionResponse MapExpedition(Expedition e) => new()
     {

@@ -98,6 +98,7 @@ public class GuildStatsCalculator : IGuildStatsCalculator
             ResidencyCapacity = dormitorio * 2,
             DoctrineLimit = Math.Min(4, 2 + camara),
             ActiveDoctrineCount = activeDoctrines.Count,
+            ActiveDoctrineOverflow = activeDoctrines.Count > Math.Min(4, 2 + camara),
             ActiveBuildingCount = activeBuildingCount,
             ActiveBuildingOverflow = activeBuildingCount > cs
         };

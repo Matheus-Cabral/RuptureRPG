@@ -26,6 +26,7 @@ public class GuildDerivedStats
 
     public int DoctrineLimit { get; set; }             // 2 + Câmara do Conselho level, capped 4
     public int ActiveDoctrineCount { get; set; }
+    public bool ActiveDoctrineOverflow { get; set; }   // ActiveDoctrineCount > DoctrineLimit (advisory)
 
     public int ActiveBuildingCount { get; set; }       // constructible, IsActive
     public bool ActiveBuildingOverflow { get; set; }   // ActiveBuildingCount > Cs

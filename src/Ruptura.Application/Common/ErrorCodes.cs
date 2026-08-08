@@ -56,7 +56,6 @@ public static class ErrorCodes
         public const string StaffNotFound = "Guild.StaffNotFound";
         public const string StaffKindInvalid = "Guild.StaffKindInvalid";
         public const string DoctrineInvalid = "Guild.DoctrineInvalid";
-        public const string DoctrineLimitExceeded = "Guild.DoctrineLimitExceeded";
     }
 
     public static class Journal

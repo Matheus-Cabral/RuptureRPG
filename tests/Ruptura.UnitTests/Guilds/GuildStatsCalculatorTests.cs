@@ -299,6 +299,39 @@ public class GuildStatsCalculatorTests
     }
 
     [Fact]
+    public void ActiveDoctrineOverflow_When_Active_Exceeds_Limit()
+    {
+        // No Câmara do Conselho → DoctrineLimit = min(4, 2+0) = 2. Three active doctrines → overflow.
+        var data = new GuildSheetData
+        {
+            ActiveDoctrineIds =
+            [
+                GuildCatalogIds.DoctrineLogistica,
+                GuildCatalogIds.DoctrineComercial,
+                Guid.NewGuid()
+            ]
+        };
+        var r = _calc.Calculate(data, [], [], 0, new Dictionary<Guid, CatalogEntry>());
+        r.DoctrineLimit.Should().Be(2);
+        r.ActiveDoctrineCount.Should().Be(3);
+        r.ActiveDoctrineOverflow.Should().BeTrue();
+    }
+
+    [Fact]
+    public void ActiveDoctrineOverflow_False_When_Within_Limit()
+    {
+        // No Câmara → limit 2; exactly two active doctrines → no overflow.
+        var data = new GuildSheetData
+        {
+            ActiveDoctrineIds = [GuildCatalogIds.DoctrineLogistica, GuildCatalogIds.DoctrineComercial]
+        };
+        var r = _calc.Calculate(data, [], [], 0, new Dictionary<Guid, CatalogEntry>());
+        r.DoctrineLimit.Should().Be(2);
+        r.ActiveDoctrineCount.Should().Be(2);
+        r.ActiveDoctrineOverflow.Should().BeFalse();
+    }
+
+    [Fact]
     public void ActiveBuildingOverflow_When_Active_Exceeds_Cs()
     {
         // CS is 5 with no CentroLogistico/Armazem; 6 active constructible buildings -> overflow.

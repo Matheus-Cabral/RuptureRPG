@@ -463,7 +463,7 @@
   <data name="Guild.Staff.Worker.Administrador"><value>Administrator</value></data>
   <data name="Guild.Doctrine.Active"><value>Active doctrines</value></data>
   <data name="Guild.Doctrine.Empty"><value>No doctrines available.</value></data>
-  <data name="Guild.Doctrine.OverLimit"><value>{0} selected doctrines exceed the limit of {1}. Saving will be rejected.</value></data>
+  <data name="Guild.Doctrine.OverLimit"><value>Active doctrines ({0}) exceed the limit of {1}. The excess doctrines give no benefit until you raise the limit with the Câmara do Conselho.</value></data>
   <data name="Guild.Expedition.DeleteConfirm.Title"><value>Remove expedition</value></data>
   <data name="Guild.Expedition.DeleteConfirm.Message"><value>This will permanently remove this expedition record. Continue?</value></data>
   <data name="Guild.Expedition.Kind.Principal"><value>Main</value></data>

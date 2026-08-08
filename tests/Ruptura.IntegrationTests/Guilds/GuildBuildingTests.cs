@@ -1,7 +1,12 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using Bogus;
 using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
+using Ruptura.Domain.Entities;
+using Ruptura.Domain.Enums;
+using Ruptura.Infrastructure.Data;
 using Ruptura.IntegrationTests.Helpers;
 using Ruptura.Shared.Campaigns;
 using Ruptura.Shared.Common;
@@ -247,6 +252,61 @@ public class GuildBuildingTests(IntegrationTestFactory factory)
         // Building A still there under campaign A.
         var guildA = await GetGuildAsync(clientA, campaignA.Id);
         guildA.Buildings.Should().ContainSingle(b => b.Id == buildingA.Id);
+    }
+
+    [Fact]
+    public async Task UpdateBuilding_WhenInstallationLaterArchived_Returns200()
+    {
+        // Regression: archiving a homebrew installation must NOT permanently freeze a building already
+        // built from it — UpdateBuildingAsync passes allowArchived:true so it stays editable/deactivatable.
+        var (client, campaign, playerToken, _) = await SetUpCampaignWithMemberAsync();
+        AuthHelper.SetBearerToken(client, playerToken);
+        await GetGuildAsync(client, campaign.Id);
+
+        // Seed a homebrew Installation scoped to this campaign, directly via DbContext.
+        var installationId = Guid.NewGuid();
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            db.CatalogEntries.Add(new CatalogEntry
+            {
+                Id = installationId,
+                Type = CatalogEntryType.Installation,
+                CampaignId = campaign.Id,
+                Name = "Homebrew Forge",
+                // Catalog blobs use DEFAULT (PascalCase) JSON — match ValidateInstallationAsync.
+                DataJson = JsonSerializer.Serialize(new InstallationCatalogData
+                {
+                    Category = "Produção", Weight = 1, LevelCap = 5, NonConstructible = false
+                })
+            });
+            await db.SaveChangesAsync();
+        }
+
+        // Build it while the installation is still active.
+        var created = await client.PostAsJsonAsync($"api/campaigns/{campaign.Id}/guild/buildings",
+            new CreateBuildingRequest { CatalogEntryId = installationId, Level = 1, IsActive = true });
+        created.StatusCode.Should().Be(HttpStatusCode.Created);
+        var building = (await created.Content.ReadFromJsonAsync<ApiResponse<GuildBuildingResponse>>())!.Data!;
+
+        // Archive the catalog entry after the building already exists.
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var entry = db.CatalogEntries.Single(e => e.Id == installationId);
+            entry.IsArchived = true;
+            await db.SaveChangesAsync();
+        }
+
+        // Editing/deactivating the existing building must still succeed.
+        var response = await client.PutAsJsonAsync(
+            $"api/campaigns/{campaign.Id}/guild/buildings/{building.Id}",
+            new UpdateBuildingRequest { Level = 2, IsActive = false });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = (await response.Content.ReadFromJsonAsync<ApiResponse<GuildBuildingResponse>>())!.Data!;
+        body.Level.Should().Be(2);
+        body.IsActive.Should().BeFalse();
     }
 
     [Fact]
