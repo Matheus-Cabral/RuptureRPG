@@ -83,6 +83,8 @@
   <data name="Guild.CraftingNotFound"><value>Ordem de criação não encontrada.</value></data>
   <data name="Guild.CraftingCategoryInvalid"><value>A categoria de criação não é válida.</value></data>
   <data name="Guild.CraftingStatusInvalid"><value>O status de criação não é válido.</value></data>
+  <data name="Guild.InterludeDaysInvalid"><value>O número de dias de interlúdio é inválido.</value></data>
+  <data name="Guild.InterludeKindInvalid"><value>A ação de interlúdio é inválida.</value></data>
 
   <!-- Journal -->
   <data name="Journal.NotFound"><value>Entrada de diário não encontrada.</value></data>
