@@ -48,6 +48,15 @@ public static class ErrorCodes
         public const string NotFound = "Guild.NotFound";
         public const string Forbidden = "Guild.Forbidden";
         public const string Conflict = "Guild.Conflict";
+        public const string InstallationInvalid = "Guild.InstallationInvalid";
+        public const string BuildingNotConstructible = "Guild.BuildingNotConstructible";
+        public const string BuildingLevelInvalid = "Guild.BuildingLevelInvalid";
+        public const string BuildingExists = "Guild.BuildingExists";
+        public const string BuildingNotFound = "Guild.BuildingNotFound";
+        public const string StaffNotFound = "Guild.StaffNotFound";
+        public const string StaffKindInvalid = "Guild.StaffKindInvalid";
+        public const string DoctrineInvalid = "Guild.DoctrineInvalid";
+        public const string DoctrineLimitExceeded = "Guild.DoctrineLimitExceeded";
     }
 
     public static class Journal
