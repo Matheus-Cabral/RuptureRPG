@@ -62,6 +62,8 @@ public static class ErrorCodes
         public const string CraftingNotFound = "Guild.CraftingNotFound";
         public const string CraftingCategoryInvalid = "Guild.CraftingCategoryInvalid";
         public const string CraftingStatusInvalid = "Guild.CraftingStatusInvalid";
+        public const string InterludeDaysInvalid = "Guild.InterludeDaysInvalid";
+        public const string InterludeKindInvalid = "Guild.InterludeKindInvalid";
     }
 
     public static class Journal
