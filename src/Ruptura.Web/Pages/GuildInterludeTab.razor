@@ -11,7 +11,7 @@
     <div style="display:flex;flex-wrap:wrap;gap:1rem;align-items:flex-end">
         <div>
             <label class="form-label">@L["Guild.Interlude.Days"]</label>
-            <input type="number" class="form-control" style="max-width:120px" min="1" max="3650" @bind="_days" />
+            <input type="number" class="form-control" style="max-width:120px" min="1" max="3650" @bind="_days" @bind:after="OnDaysChanged" />
         </div>
         <button class="btn btn-primary btn-sm" @onclick="PreviewAsync" disabled="@_previewing">
             @if (_previewing) { <span class="spinner-border spinner-border-sm me-1"></span> }
@@ -114,48 +114,66 @@
 
     private static string Signed(int value) => value > 0 ? $"+{value}" : value.ToString();
 
+    // Editing the day count invalidates any shown projection — drop it so a stale table (computed for a
+    // different day count) can't be acted on; the user must Preview again before Apply is offered.
+    private void OnDaysChanged() => _projection = null;
+
     private async Task PreviewAsync()
     {
         _previewing = true;
-        var result = await GuildService.PreviewInterludeAsync(CampaignId, _days);
-        if (result?.Data is not null)
+        try
         {
-            _projection = result.Data;
+            var result = await GuildService.PreviewInterludeAsync(CampaignId, _days);
+            if (result?.Data is not null)
+            {
+                _projection = result.Data;
+            }
+            else
+            {
+                Toast.Error(result?.Message ?? L["Common.Error"]);
+            }
         }
-        else
+        finally
         {
-            Toast.Error(result?.Message ?? L["Common.Error"]);
+            _previewing = false;
         }
-        _previewing = false;
     }
 
-    // Selector-only apply: send { Kind, TargetId, Days } — never a numeric delta. On success adopt the
-    // returned guild and re-preview so the remaining indicators reflect the new state; on 409 re-preview too.
+    // Selector-only apply: send { Kind, TargetId, Days } — never a numeric delta. Days is taken from the
+    // PREVIEWED projection (not the live _days), so applying always matches the row the user is looking at
+    // even if they edited the input without re-previewing. On success adopt the returned guild and
+    // re-preview so the remaining indicators reflect the new state; on 409 re-preview too.
     private async Task ApplyAsync(InterludeIndicator indicator)
     {
         _applying = true;
-        var result = await GuildService.ApplyInterludeAsync(CampaignId, new ApplyInterludeRequest
+        try
         {
-            Kind = indicator.Kind,
-            TargetId = indicator.TargetId,
-            Days = _days
-        });
+            var result = await GuildService.ApplyInterludeAsync(CampaignId, new ApplyInterludeRequest
+            {
+                Kind = indicator.Kind,
+                TargetId = indicator.TargetId,
+                Days = _projection?.Days ?? _days
+            });
 
-        if (result.Response?.Data is not null)
-        {
-            Toast.Success(L["Guild.Interlude.Applied"]);
-            await OnGuildReplaced.InvokeAsync(result.Response.Data);
-            await PreviewAsync();
+            if (result.Response?.Data is not null)
+            {
+                Toast.Success(L["Guild.Interlude.Applied"]);
+                await OnGuildReplaced.InvokeAsync(result.Response.Data);
+                await PreviewAsync();
+            }
+            else if (result.IsConflict)
+            {
+                Toast.Error(L["Guild.Conflict"]);
+                await PreviewAsync();
+            }
+            else
+            {
+                Toast.Error(result.Response?.Message ?? L["Common.Error"]);
+            }
         }
-        else if (result.IsConflict)
+        finally
         {
-            Toast.Error(L["Guild.Conflict"]);
-            await PreviewAsync();
+            _applying = false;
         }
-        else
-        {
-            Toast.Error(result.Response?.Message ?? L["Common.Error"]);
-        }
-        _applying = false;
     }
 }

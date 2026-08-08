@@ -165,6 +165,44 @@ public class GuildInterludeTests(IntegrationTestFactory factory)
         guild.Data.Resources.Silver.Should().Be(50);
     }
 
+    // Regression for the "interlude deduction silently reverted by the next Save" bug: after a
+    // Maintenance apply mutates blob Silver server-side and bumps the Version, the page's fixed client
+    // adopts refreshed.Data.Resources into _data and later PUTs that blob under the new Version. This
+    // simulates exactly that follow-up Save (reduced Silver + bumped Version) and asserts the server
+    // keeps the deduction — i.e. the deduction is not resurrected on the next blob write.
+    [Fact]
+    public async Task ApplyMaintenance_ThenNextBlobSave_KeepsDeduction()
+    {
+        var (client, campaign, playerToken, _) = await SetUpCampaignWithMemberAsync();
+        AuthHelper.SetBearerToken(client, playerToken);
+        await GetGuildAsync(client, campaign.Id);
+        await AddOperarioAsync(client, campaign.Id, dailySalary: 5); // maintenance 5/d
+        await SetSilverAsync(client, campaign.Id, 100);
+
+        var applyResponse = await client.PostAsJsonAsync($"api/campaigns/{campaign.Id}/guild/interlude/apply",
+            new ApplyInterludeRequest { Kind = "Maintenance", Days = 10 });
+        applyResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var refreshed = await ReadGuildAsync(applyResponse);
+        refreshed.Data.Resources.Silver.Should().Be(50); // 100 - 5×10
+
+        // A plain GET already shows the reduced balance.
+        (await GetGuildAsync(client, campaign.Id)).Data.Resources.Silver.Should().Be(50);
+
+        // The fixed client saves the ADOPTED blob (reduced Silver) under the BUMPED Version.
+        var save = await client.PutAsJsonAsync($"api/campaigns/{campaign.Id}/guild",
+            new UpdateGuildSheetRequest
+            {
+                GuildName = refreshed.GuildName,
+                DataJson = JsonSerializer.Serialize(refreshed.Data, JsonOpts),
+                Version = refreshed.Version
+            });
+        save.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await ReadGuildAsync(save)).Data.Resources.Silver.Should().Be(50);
+
+        // And a subsequent GET confirms the deduction persisted — never resurrected to 100.
+        (await GetGuildAsync(client, campaign.Id)).Data.Resources.Silver.Should().Be(50);
+    }
+
     [Fact]
     public async Task ApplyMaintenance_FloorsSilverAtZero_WhenItWouldGoNegative()
     {

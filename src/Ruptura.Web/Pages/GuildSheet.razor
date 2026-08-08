@@ -242,9 +242,16 @@
     }
 
     // Interlude Apply mutates server state and returns the whole refreshed guild — adopt it wholesale
-    // (new DerivedStats/Version/child lists). _data/_guildName are left untouched so unsaved
-    // identity/name edits survive, matching the targeted-refresh rule the other tabs follow.
-    private void ReplaceGuild(GuildSheetResponse refreshed) => _guild = refreshed;
+    // (new DerivedStats/Version/child lists). We ALSO adopt the Resources blob module, because a
+    // Maintenance/Income apply mutates Resources.Silver server-side: without this, _data would still
+    // point at the pre-apply blob, and the next Save would PUT that stale blob under the bumped Version
+    // (which passes the xmin check) and silently revert the deduction. The rest of _data and
+    // _guildName are left untouched so unsaved edits in other blob tabs survive.
+    private void ReplaceGuild(GuildSheetResponse refreshed)
+    {
+        _guild = refreshed;
+        _data.Resources = refreshed.Data.Resources;
+    }
 
     private async Task SaveAsync()
     {

@@ -836,7 +836,9 @@ public class GuildSheetService(
         {
             case "Maintenance":
             case "Income":
-                data.Resources.Silver = Math.Max(0, data.Resources.Silver + (indicator.SilverDelta ?? 0));
+                // Widen to long before adding so a near-int.MaxValue balance + positive income can't
+                // wrap negative (which Math.Max(0,…) would then zero out); clamp back into int range.
+                data.Resources.Silver = (int)Math.Clamp((long)data.Resources.Silver + (indicator.SilverDelta ?? 0), 0, int.MaxValue);
                 guild.DataJson = JsonSerializer.Serialize(data, JsonOpts);
                 guild.UpdatedAt = DateTime.UtcNow;
                 guildRepo.SetExpectedVersion(guild, guild.Version);
