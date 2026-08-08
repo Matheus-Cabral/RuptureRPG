@@ -138,6 +138,8 @@
     private GuildSheetData _data = new();
     private List<BreadcrumbItem> _breadcrumbs = [];
     private string _guildName = string.Empty;
+    private string _baselineBlobJson = "{}";
+    private string _baselineName = string.Empty;
     private string? _emblemDataUri;
     private bool _uploadingEmblem;
     private bool _loading = true;
@@ -171,7 +173,20 @@
         _data = _guild.Data;
         _guildName = _guild.GuildName;
         _emblemDataUri = await MediaService.GetDataUriAsync(_data.Identity.EmblemImagePath);
+        SyncBaseline();
     }
+
+    // Capture the last server-confirmed blob + name so a later child-refresh can tell whether the
+    // user has unsaved blob/name edits. Serialize with the SAME options SaveAsync uses to send
+    // DataJson (plain JsonSerializer.Serialize(_data), no options) so baseline == wire form.
+    private void SyncBaseline()
+    {
+        _baselineBlobJson = System.Text.Json.JsonSerializer.Serialize(_data);
+        _baselineName = _guildName;
+    }
+
+    private bool BlobDirty() =>
+        GuildBlobDirtyState.IsDirty(System.Text.Json.JsonSerializer.Serialize(_data), _baselineBlobJson, _guildName, _baselineName);
 
     // After a child (expedition) mutation, refresh ONLY the expedition list and the concurrency
     // token — re-GETting into _data/_guildName would wipe the user's unsaved blob/name edits.
@@ -182,7 +197,7 @@
         if (refreshed?.Data is not null)
         {
             _guild.Expeditions = refreshed.Data.Expeditions;
-            _guild.Version = refreshed.Data.Version;
+            if (!BlobDirty()) _guild.Version = refreshed.Data.Version; // don't mask a concurrent blob save
         }
     }
 
@@ -197,7 +212,7 @@
         {
             _guild.Buildings = refreshed.Data.Buildings;
             _guild.DerivedStats = refreshed.Data.DerivedStats;
-            _guild.Version = refreshed.Data.Version;
+            if (!BlobDirty()) _guild.Version = refreshed.Data.Version; // don't mask a concurrent blob save
         }
     }
 
@@ -210,7 +225,7 @@
         {
             _guild.Staff = refreshed.Data.Staff;
             _guild.DerivedStats = refreshed.Data.DerivedStats;
-            _guild.Version = refreshed.Data.Version;
+            if (!BlobDirty()) _guild.Version = refreshed.Data.Version; // don't mask a concurrent blob save
         }
     }
 
@@ -224,7 +239,7 @@
         {
             _guild.Research = refreshed.Data.Research;
             _guild.DerivedStats = refreshed.Data.DerivedStats;
-            _guild.Version = refreshed.Data.Version;
+            if (!BlobDirty()) _guild.Version = refreshed.Data.Version; // don't mask a concurrent blob save
         }
     }
 
@@ -237,7 +252,7 @@
         {
             _guild.Crafting = refreshed.Data.Crafting;
             _guild.DerivedStats = refreshed.Data.DerivedStats;
-            _guild.Version = refreshed.Data.Version;
+            if (!BlobDirty()) _guild.Version = refreshed.Data.Version; // don't mask a concurrent blob save
         }
     }
 
@@ -251,6 +266,12 @@
     {
         _guild = refreshed;
         _data.Resources = refreshed.Data.Resources;
+        // The apply read fresh server state, so refreshed.Version is current and _guild adopts it
+        // wholesale above. Reset the baseline to the SERVER's blob so BlobDirty() reports only
+        // genuine unsaved edits (not the server-applied Resources deduction we just adopted); any
+        // later local edit re-dirties, and a concurrent save is still caught on the next Save.
+        _baselineBlobJson = System.Text.Json.JsonSerializer.Serialize(refreshed.Data);
+        _baselineName = refreshed.GuildName;
     }
 
     private async Task SaveAsync()
@@ -271,6 +292,7 @@
             _guild = result.Response.Data;
             _data = _guild.Data;
             _guildName = _guild.GuildName;
+            SyncBaseline();
             Toast.Success(L["Guild.Saved"]);
         }
         else if (result.IsConflict)
