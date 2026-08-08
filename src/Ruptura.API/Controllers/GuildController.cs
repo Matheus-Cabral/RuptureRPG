@@ -198,4 +198,54 @@ public class GuildController(
         ErrorCodes.Guild.StaffKindInvalid => BadRequest(ApiResponse.Fail(localizer[error])),
         _ => NotFound(ApiResponse.Fail(localizer[error]))
     };
+
+    [HttpPost("campaigns/{campaignId:guid}/guild/research")]
+    [ProducesResponseType(typeof(ApiResponse<ResearchProjectResponse>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> AddResearch(
+        Guid campaignId, [FromBody] CreateResearchProjectRequest request, CancellationToken ct)
+    {
+        var callerId = Guid.Parse(User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
+        var result = await guildService.AddResearchAsync(callerId, campaignId, request, ct);
+        if (result.IsFailure)
+            return ResearchFailure(result.Error!);
+        return StatusCode(StatusCodes.Status201Created, ApiResponse<ResearchProjectResponse>.Ok(result.Value!));
+    }
+
+    [HttpPut("campaigns/{campaignId:guid}/guild/research/{researchId:guid}")]
+    [ProducesResponseType(typeof(ApiResponse<ResearchProjectResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateResearch(
+        Guid campaignId, Guid researchId, [FromBody] UpdateResearchProjectRequest request, CancellationToken ct)
+    {
+        var callerId = Guid.Parse(User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
+        var result = await guildService.UpdateResearchAsync(callerId, campaignId, researchId, request, ct);
+        if (result.IsFailure)
+            return ResearchFailure(result.Error!);
+        return Ok(ApiResponse<ResearchProjectResponse>.Ok(result.Value!));
+    }
+
+    [HttpDelete("campaigns/{campaignId:guid}/guild/research/{researchId:guid}")]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteResearch(
+        Guid campaignId, Guid researchId, CancellationToken ct)
+    {
+        var callerId = Guid.Parse(User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
+        var result = await guildService.DeleteResearchAsync(callerId, campaignId, researchId, ct);
+        if (result.IsFailure)
+            return ResearchFailure(result.Error!);
+        return Ok(ApiResponse.Ok());
+    }
+
+    // Invalid Complexity/Stage → 400; missing/cross-guild/non-member → 404.
+    private IActionResult ResearchFailure(string error) => error switch
+    {
+        ErrorCodes.Guild.ResearchComplexityInvalid
+            or ErrorCodes.Guild.ResearchStageInvalid
+            => BadRequest(ApiResponse.Fail(localizer[error])),
+        _ => NotFound(ApiResponse.Fail(localizer[error]))
+    };
 }

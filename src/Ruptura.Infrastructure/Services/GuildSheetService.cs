@@ -17,6 +17,7 @@ public class GuildSheetService(
     ICampaignMembershipRepository membershipRepo,
     ICatalogEntryRepository catalogRepo,
     IExpeditionRepository expeditionRepo,
+    IResearchProjectRepository researchRepo,
     IGuildStatsCalculator calculator) : IGuildSheetService
 {
     private static readonly JsonSerializerOptions JsonOpts = new(JsonSerializerDefaults.Web);
@@ -388,6 +389,112 @@ public class GuildSheetService(
         Morale = s.Morale
     };
 
+    public async Task<Result<ResearchProjectResponse>> AddResearchAsync(
+        Guid callerId, Guid campaignId, CreateResearchProjectRequest request, CancellationToken ct = default)
+    {
+        var auth = await AuthorizeAsync(callerId, campaignId, ct);
+        if (auth.IsFailure)
+            return Result.Failure<ResearchProjectResponse>(auth.Error!);
+        var guild = auth.Value!;
+
+        // Complexity/Stage arrive as strings (Shared must not reference the Domain enum). Reject unknown
+        // values; Enum.IsDefined guards numeric/undefined strings ("5") that TryParse would accept.
+        if (!Enum.TryParse<ResearchComplexity>(request.Complexity, out var complexity) || !Enum.IsDefined(complexity))
+            return Result.Failure<ResearchProjectResponse>(ErrorCodes.Guild.ResearchComplexityInvalid);
+        if (!Enum.TryParse<ResearchStage>(request.Stage, out var stage) || !Enum.IsDefined(stage))
+            return Result.Failure<ResearchProjectResponse>(ErrorCodes.Guild.ResearchStageInvalid);
+
+        var research = new ResearchProject
+        {
+            Id = Guid.NewGuid(),
+            GuildSheetId = guild.Id,
+            Name = request.Name,
+            // ResearchType is free-form record-keeping (UI picker supplies canonical values) — not validated.
+            ResearchType = request.ResearchType,
+            Complexity = complexity,
+            Stage = stage,
+            // RequiredDays is server-authoritative: derived from the complexity tier, never trusted from the wire.
+            RequiredDays = ResearchReference.RequiredDays[complexity.ToString()],
+            ProgressDays = Math.Max(0, request.ProgressDays),
+            Researchers = Math.Max(1, request.Researchers),
+            Points = Math.Max(0, request.Points),
+            IsComplete = request.IsComplete
+        };
+
+        await researchRepo.AddAsync(research, ct);
+        await researchRepo.SaveChangesAsync(ct);
+
+        return Result.Success(MapResearch(research));
+    }
+
+    public async Task<Result<ResearchProjectResponse>> UpdateResearchAsync(
+        Guid callerId, Guid campaignId, Guid researchId, UpdateResearchProjectRequest request, CancellationToken ct = default)
+    {
+        var auth = await AuthorizeAsync(callerId, campaignId, ct);
+        if (auth.IsFailure)
+            return Result.Failure<ResearchProjectResponse>(auth.Error!);
+        var guild = auth.Value!;
+
+        if (!Enum.TryParse<ResearchComplexity>(request.Complexity, out var complexity) || !Enum.IsDefined(complexity))
+            return Result.Failure<ResearchProjectResponse>(ErrorCodes.Guild.ResearchComplexityInvalid);
+        if (!Enum.TryParse<ResearchStage>(request.Stage, out var stage) || !Enum.IsDefined(stage))
+            return Result.Failure<ResearchProjectResponse>(ErrorCodes.Guild.ResearchStageInvalid);
+
+        var research = await researchRepo.GetByIdAsync(researchId, ct);
+        // Cross-guild safety: the target must belong to this campaign's guild, else hide its existence.
+        if (research is null || research.GuildSheetId != guild.Id)
+            return Result.Failure<ResearchProjectResponse>(ErrorCodes.Guild.ResearchNotFound);
+
+        research.Name = request.Name;
+        research.ResearchType = request.ResearchType;
+        research.Complexity = complexity;
+        research.Stage = stage;
+        // Re-derive RequiredDays whenever complexity changes — it is never taken from the request.
+        research.RequiredDays = ResearchReference.RequiredDays[complexity.ToString()];
+        research.ProgressDays = Math.Max(0, request.ProgressDays);
+        research.Researchers = Math.Max(1, request.Researchers);
+        research.Points = Math.Max(0, request.Points);
+        research.IsComplete = request.IsComplete;
+
+        researchRepo.Update(research);
+        await researchRepo.SaveChangesAsync(ct);
+
+        return Result.Success(MapResearch(research));
+    }
+
+    public async Task<Result> DeleteResearchAsync(
+        Guid callerId, Guid campaignId, Guid researchId, CancellationToken ct = default)
+    {
+        var auth = await AuthorizeAsync(callerId, campaignId, ct);
+        if (auth.IsFailure)
+            return Result.Failure(auth.Error!);
+        var guild = auth.Value!;
+
+        var research = await researchRepo.GetByIdAsync(researchId, ct);
+        // Cross-guild safety: the target must belong to this campaign's guild, else hide its existence.
+        if (research is null || research.GuildSheetId != guild.Id)
+            return Result.Failure(ErrorCodes.Guild.ResearchNotFound);
+
+        researchRepo.Remove(research);
+        await researchRepo.SaveChangesAsync(ct);
+
+        return Result.Success();
+    }
+
+    private static ResearchProjectResponse MapResearch(ResearchProject r) => new()
+    {
+        Id = r.Id,
+        Name = r.Name,
+        ResearchType = r.ResearchType,
+        Complexity = r.Complexity.ToString(),
+        Stage = r.Stage.ToString(),
+        ProgressDays = r.ProgressDays,
+        RequiredDays = r.RequiredDays,
+        Researchers = r.Researchers,
+        Points = r.Points,
+        IsComplete = r.IsComplete
+    };
+
     public async Task<Result<GuildSheet>> AuthorizeGuildAccessByIdAsync(
         Guid callerId, Guid guildSheetId, CancellationToken ct = default)
     {
@@ -533,8 +640,10 @@ public class GuildSheetService(
             ? new Dictionary<Guid, CatalogEntry>()
             : (await catalogRepo.GetByIdsAsync(installationIds, ct)).ToDictionary(e => e.Id);
 
-        // No research projects until sub-plan #5 -> researchPoints = 0.
-        var derived = calculator.Calculate(data, buildings, staff, researchPoints: 0, installationCatalog);
+        // Only COMPLETED research projects contribute their Points to the CG Pesquisa term.
+        var research = (await researchRepo.GetByGuildAsync(guild.Id, ct)).ToList();
+        var researchPoints = research.Where(r => r.IsComplete).Sum(r => r.Points);
+        var derived = calculator.Calculate(data, buildings, staff, researchPoints, installationCatalog);
 
         return new GuildSheetResponse
         {
@@ -549,6 +658,7 @@ public class GuildSheetService(
                 .Select(b => MapBuilding(b, installationCatalog.TryGetValue(b.CatalogEntryId, out var e) ? e.Name : string.Empty))
                 .ToList(),
             Staff = staff.Select(MapStaff).ToList(),
+            Research = research.Select(MapResearch).ToList(),
             Version = guild.Version,
             CreatedAt = guild.CreatedAt,
             UpdatedAt = guild.UpdatedAt

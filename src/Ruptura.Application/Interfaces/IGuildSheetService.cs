@@ -52,4 +52,13 @@ public interface IGuildSheetService
 
     Task<Result> DeleteStaffAsync(
         Guid callerId, Guid campaignId, Guid staffId, CancellationToken ct = default);
+
+    Task<Result<ResearchProjectResponse>> AddResearchAsync(
+        Guid callerId, Guid campaignId, CreateResearchProjectRequest request, CancellationToken ct = default);
+
+    Task<Result<ResearchProjectResponse>> UpdateResearchAsync(
+        Guid callerId, Guid campaignId, Guid researchId, UpdateResearchProjectRequest request, CancellationToken ct = default);
+
+    Task<Result> DeleteResearchAsync(
+        Guid callerId, Guid campaignId, Guid researchId, CancellationToken ct = default);
 }

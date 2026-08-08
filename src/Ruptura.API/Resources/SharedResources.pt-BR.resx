@@ -77,6 +77,12 @@
   <data name="Guild.StaffKindInvalid"><value>O tipo de pessoal deve ser Trabalhador (Worker) ou Mercenário (Mercenary).</value></data>
   <data name="Guild.StaffNotFound"><value>Membro do pessoal não encontrado.</value></data>
   <data name="Guild.DoctrineInvalid"><value>Uma ou mais doutrinas selecionadas não são válidas para esta campanha.</value></data>
+  <data name="Guild.ResearchNotFound"><value>Projeto de pesquisa não encontrado.</value></data>
+  <data name="Guild.ResearchComplexityInvalid"><value>A complexidade da pesquisa deve ser Menor, Moderada, Maior ou Suprema.</value></data>
+  <data name="Guild.ResearchStageInvalid"><value>A etapa da pesquisa deve ser Descobrir, Pesquisar, Dominar ou Aplicar.</value></data>
+  <data name="Guild.CraftingNotFound"><value>Ordem de criação não encontrada.</value></data>
+  <data name="Guild.CraftingCategoryInvalid"><value>A categoria de criação não é válida.</value></data>
+  <data name="Guild.CraftingStatusInvalid"><value>O status de criação não é válido.</value></data>
 
   <!-- Journal -->
   <data name="Journal.NotFound"><value>Entrada de diário não encontrada.</value></data>

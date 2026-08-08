@@ -77,6 +77,12 @@
   <data name="Guild.StaffKindInvalid"><value>Staff kind must be either Worker or Mercenary.</value></data>
   <data name="Guild.StaffNotFound"><value>Staff member not found.</value></data>
   <data name="Guild.DoctrineInvalid"><value>One or more selected doctrines are not valid for this campaign.</value></data>
+  <data name="Guild.ResearchNotFound"><value>Research project not found.</value></data>
+  <data name="Guild.ResearchComplexityInvalid"><value>Research complexity must be Menor, Moderada, Maior, or Suprema.</value></data>
+  <data name="Guild.ResearchStageInvalid"><value>Research stage must be Descobrir, Pesquisar, Dominar, or Aplicar.</value></data>
+  <data name="Guild.CraftingNotFound"><value>Crafting order not found.</value></data>
+  <data name="Guild.CraftingCategoryInvalid"><value>Crafting category is not valid.</value></data>
+  <data name="Guild.CraftingStatusInvalid"><value>Crafting status is not valid.</value></data>
 
   <!-- Journal -->
   <data name="Journal.NotFound"><value>Journal entry not found.</value></data>
