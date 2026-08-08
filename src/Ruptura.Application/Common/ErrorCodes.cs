@@ -24,6 +24,7 @@ public static class ErrorCodes
         public const string NotFound = "Campaign.NotFound";
         public const string PlayerNotInRoster = "Campaign.PlayerNotInRoster";
         public const string AlreadyMember = "Campaign.AlreadyMember";
+        public const string FloorStateInvalid = "Campaign.FloorStateInvalid";
     }
 
     public static class Catalog
