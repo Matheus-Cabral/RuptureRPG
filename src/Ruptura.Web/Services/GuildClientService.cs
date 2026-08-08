@@ -112,4 +112,20 @@ public class GuildClientService(IHttpClientFactory factory) : IGuildClientServic
         var response = await Http.DeleteAsync($"api/campaigns/{campaignId}/guild/crafting/{craftingId}");
         return await response.Content.ReadFromJsonAsync<ApiResponse>();
     }
+
+    public async Task<ApiResponse<InterludeProjection>?> PreviewInterludeAsync(Guid campaignId, int days)
+    {
+        // Read the body on any status so a 400 (invalid days) surfaces its localized message.
+        var response = await Http.GetAsync($"api/campaigns/{campaignId}/guild/interlude/preview?days={days}");
+        return await response.Content.ReadFromJsonAsync<ApiResponse<InterludeProjection>>();
+    }
+
+    public async Task<GuildSaveResult> ApplyInterludeAsync(Guid campaignId, ApplyInterludeRequest request)
+    {
+        // A 409 (concurrent write) must be distinguishable so the page can re-preview instead of
+        // just surfacing a generic error — mirrors UpdateGuildAsync.
+        var response = await Http.PostAsJsonAsync($"api/campaigns/{campaignId}/guild/interlude/apply", request);
+        var body = await response.Content.ReadFromJsonAsync<ApiResponse<GuildSheetResponse>>();
+        return new GuildSaveResult(body, response.StatusCode == HttpStatusCode.Conflict);
+    }
 }

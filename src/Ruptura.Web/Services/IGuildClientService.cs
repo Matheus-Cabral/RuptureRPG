@@ -26,4 +26,6 @@ public interface IGuildClientService
     Task<ApiResponse<CraftingOrderResponse>?> AddCraftingAsync(Guid campaignId, CreateCraftingOrderRequest request);
     Task<ApiResponse<CraftingOrderResponse>?> UpdateCraftingAsync(Guid campaignId, Guid craftingId, UpdateCraftingOrderRequest request);
     Task<ApiResponse?> DeleteCraftingAsync(Guid campaignId, Guid craftingId);
+    Task<ApiResponse<InterludeProjection>?> PreviewInterludeAsync(Guid campaignId, int days);
+    Task<GuildSaveResult> ApplyInterludeAsync(Guid campaignId, ApplyInterludeRequest request);
 }

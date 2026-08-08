@@ -106,6 +106,10 @@
             {
                 <GuildExpeditionsTab CampaignId="CampaignId" Expeditions="_guild.Expeditions" OnChanged="RefreshExpeditionsAsync" />
             }
+            else if (_activeTab == "interlude")
+            {
+                <GuildInterludeTab CampaignId="CampaignId" OnGuildReplaced="ReplaceGuild" />
+            }
         </div>
     }
 </div>
@@ -126,7 +130,8 @@
         ["research"] = "Guild.Tab.Research",
         ["crafting"] = "Guild.Tab.Crafting",
         ["legacy"] = "Guild.Tab.Legacy",
-        ["expeditions"] = "Guild.Tab.Expeditions"
+        ["expeditions"] = "Guild.Tab.Expeditions",
+        ["interlude"] = "Guild.Tab.Interlude"
     };
 
     private GuildSheetResponse? _guild;
@@ -235,6 +240,11 @@
             _guild.Version = refreshed.Data.Version;
         }
     }
+
+    // Interlude Apply mutates server state and returns the whole refreshed guild — adopt it wholesale
+    // (new DerivedStats/Version/child lists). _data/_guildName are left untouched so unsaved
+    // identity/name edits survive, matching the targeted-refresh rule the other tabs follow.
+    private void ReplaceGuild(GuildSheetResponse refreshed) => _guild = refreshed;
 
     private async Task SaveAsync()
     {

@@ -1,0 +1,161 @@
+@using Microsoft.Extensions.Localization
+@using Ruptura.Web.Resources
+@using Ruptura.Shared.Guilds
+@inject IStringLocalizer<AppStrings> L
+@inject IGuildClientService GuildService
+@inject ToastService Toast
+
+<div style="display:flex;flex-direction:column;gap:1.5rem">
+    <div style="color:var(--text-muted);font-size:var(--text-sm)">@L["Guild.Interlude.SecondaryNote"]</div>
+
+    <div style="display:flex;flex-wrap:wrap;gap:1rem;align-items:flex-end">
+        <div>
+            <label class="form-label">@L["Guild.Interlude.Days"]</label>
+            <input type="number" class="form-control" style="max-width:120px" min="1" max="3650" @bind="_days" />
+        </div>
+        <button class="btn btn-primary btn-sm" @onclick="PreviewAsync" disabled="@_previewing">
+            @if (_previewing) { <span class="spinner-border spinner-border-sm me-1"></span> }
+            @L["Guild.Interlude.Preview"]
+        </button>
+    </div>
+
+    @if (_projection is not null)
+    {
+        @if (_projection.Indicators.Count == 0)
+        {
+            <div class="ledger-empty"><p>@L["Guild.Interlude.Empty"]</p></div>
+        }
+        else
+        {
+            @foreach (var group in _projection.Indicators.GroupBy(i => i.Kind))
+            {
+                <div style="display:flex;flex-direction:column;gap:.5rem">
+                    <h3 style="font-size:var(--text-lg);margin:0">@L[KindLabel(group.Key)]</h3>
+                    <div class="ledger-table-wrap">
+                        <table class="ledger-table stack-mobile">
+                            <thead>
+                                <tr>
+                                    <th>@L["Guild.Interlude.Indicator"]</th>
+                                    <th>@L["Guild.Interlude.Effect"]</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var indicator in group)
+                                {
+                                    <tr>
+                                        <td data-label="@L["Guild.Interlude.Indicator"]">@RowLabel(indicator)</td>
+                                        <td data-label="@L["Guild.Interlude.Effect"]">@Describe(indicator)</td>
+                                        <td data-label="">
+                                            <button class="btn btn-outline-secondary btn-sm" @onclick="() => ApplyAsync(indicator)" disabled="@_applying">
+                                                @L["Guild.Interlude.Apply"]
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public Guid CampaignId { get; set; }
+    // Apply returns the whole refreshed guild; hand it up so the parent adopts DerivedStats/Version/child lists.
+    [Parameter] public EventCallback<GuildSheetResponse> OnGuildReplaced { get; set; }
+
+    private static readonly Dictionary<string, string> KindLabels = new()
+    {
+        ["Maintenance"] = "Guild.Interlude.Kind.Maintenance",
+        ["Income"] = "Guild.Interlude.Kind.Income",
+        ["ResearchProgress"] = "Guild.Interlude.Kind.Research",
+        ["CraftingProgress"] = "Guild.Interlude.Kind.Crafting"
+    };
+
+    private int _days = 30;
+    private bool _previewing;
+    private bool _applying;
+    private InterludeProjection? _projection;
+
+    private static string KindLabel(string kind) => KindLabels.TryGetValue(kind, out var k) ? k : kind;
+
+    // Maintenance/Income rows have no entity name — reuse the localized kind label; research/crafting
+    // rows carry the project/item name, shown verbatim.
+    private string RowLabel(InterludeIndicator indicator) => indicator.Kind switch
+    {
+        "Maintenance" => L["Guild.Interlude.Kind.Maintenance"],
+        "Income" => L["Guild.Interlude.Kind.Income"],
+        _ => indicator.Label
+    };
+
+    // Build the effect text from the typed delta fields (never from the server's raw Description),
+    // so every visible fragment is localized.
+    private string Describe(InterludeIndicator indicator)
+    {
+        var parts = new List<string>();
+        switch (indicator.Kind)
+        {
+            case "Maintenance":
+            case "Income":
+                parts.Add(L["Guild.Interlude.Silver", Signed(indicator.SilverDelta ?? 0)]);
+                break;
+            default: // ResearchProgress / CraftingProgress
+                if (indicator.DaysAdded is { } added) parts.Add(L["Guild.Interlude.DaysAdded", added]);
+                if (indicator.WillComplete == true) parts.Add(L["Guild.Interlude.WillComplete"]);
+                if (indicator.PointsAwarded is { } points && points > 0)
+                    parts.Add(L["Guild.Interlude.PointsAwarded", points]);
+                break;
+        }
+        return string.Join(" · ", parts);
+    }
+
+    private static string Signed(int value) => value > 0 ? $"+{value}" : value.ToString();
+
+    private async Task PreviewAsync()
+    {
+        _previewing = true;
+        var result = await GuildService.PreviewInterludeAsync(CampaignId, _days);
+        if (result?.Data is not null)
+        {
+            _projection = result.Data;
+        }
+        else
+        {
+            Toast.Error(result?.Message ?? L["Common.Error"]);
+        }
+        _previewing = false;
+    }
+
+    // Selector-only apply: send { Kind, TargetId, Days } — never a numeric delta. On success adopt the
+    // returned guild and re-preview so the remaining indicators reflect the new state; on 409 re-preview too.
+    private async Task ApplyAsync(InterludeIndicator indicator)
+    {
+        _applying = true;
+        var result = await GuildService.ApplyInterludeAsync(CampaignId, new ApplyInterludeRequest
+        {
+            Kind = indicator.Kind,
+            TargetId = indicator.TargetId,
+            Days = _days
+        });
+
+        if (result.Response?.Data is not null)
+        {
+            Toast.Success(L["Guild.Interlude.Applied"]);
+            await OnGuildReplaced.InvokeAsync(result.Response.Data);
+            await PreviewAsync();
+        }
+        else if (result.IsConflict)
+        {
+            Toast.Error(L["Guild.Conflict"]);
+            await PreviewAsync();
+        }
+        else
+        {
+            Toast.Error(result.Response?.Message ?? L["Common.Error"]);
+        }
+        _applying = false;
+    }
+}

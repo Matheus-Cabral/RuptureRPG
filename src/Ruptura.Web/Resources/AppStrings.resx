@@ -530,4 +530,21 @@
   <data name="Guild.Crafting.Quality.Epico"><value>Epic</value></data>
   <data name="Guild.Crafting.Quality.Lendario"><value>Legendary</value></data>
   <data name="Guild.Crafting.Quality.Divino"><value>Divine</value></data>
+  <data name="Guild.Tab.Interlude"><value>Interlude</value></data>
+  <data name="Guild.Interlude.SecondaryNote"><value>Secondary expeditions (mercenary contracts and the like) are logged manually on the Expeditions tab.</value></data>
+  <data name="Guild.Interlude.Days"><value>Days</value></data>
+  <data name="Guild.Interlude.Preview"><value>Preview</value></data>
+  <data name="Guild.Interlude.Apply"><value>Apply</value></data>
+  <data name="Guild.Interlude.Empty"><value>No interlude effects to apply.</value></data>
+  <data name="Guild.Interlude.Indicator"><value>Item</value></data>
+  <data name="Guild.Interlude.Effect"><value>Effect</value></data>
+  <data name="Guild.Interlude.Kind.Maintenance"><value>Maintenance</value></data>
+  <data name="Guild.Interlude.Kind.Income"><value>Income</value></data>
+  <data name="Guild.Interlude.Kind.Research"><value>Research progress</value></data>
+  <data name="Guild.Interlude.Kind.Crafting"><value>Crafting progress</value></data>
+  <data name="Guild.Interlude.Silver"><value>{0} Silver</value></data>
+  <data name="Guild.Interlude.DaysAdded"><value>+{0} days</value></data>
+  <data name="Guild.Interlude.WillComplete"><value>will complete</value></data>
+  <data name="Guild.Interlude.PointsAwarded"><value>+{0} points</value></data>
+  <data name="Guild.Interlude.Applied"><value>Interlude applied.</value></data>
 </root>
