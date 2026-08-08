@@ -1,3 +1,5 @@
+using Ruptura.Shared.Notifications;
+
 namespace Ruptura.Shared.Campaigns;
 
 public class CampaignDashboardResponse
@@ -7,7 +9,7 @@ public class CampaignDashboardResponse
     public DungeonStateDto Dungeon { get; set; } = new();
     public List<PartyMemberDto> Party { get; set; } = [];
     public GuildSnapshotDto? Guild { get; set; }              // null when no guild exists yet
-    public List<PendingNotificationDto> PendingNotifications { get; set; } = [];
+    public List<NotificationResponse> PendingNotifications { get; set; } = [];
 }
 
 public class DungeonStateDto
@@ -37,11 +39,4 @@ public class GuildSnapshotDto
     public int FloorsConquered { get; set; }
     public int Silver { get; set; }
     public int PactCoins { get; set; }
-}
-
-public class PendingNotificationDto
-{
-    public Guid Id { get; set; }
-    public string CharacterName { get; set; } = string.Empty;
-    public string Message { get; set; } = string.Empty;
 }

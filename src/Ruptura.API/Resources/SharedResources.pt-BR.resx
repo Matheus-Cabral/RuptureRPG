@@ -45,6 +45,7 @@
   <data name="Campaign.AlreadyMember"><value>Este jogador já é membro desta campanha.</value></data>
   <data name="Campaign.Created"><value>Campanha criada com sucesso.</value></data>
   <data name="Campaign.MemberAssigned"><value>Jogador atribuído à campanha com sucesso.</value></data>
+  <data name="Campaign.FloorStateInvalid"><value>Estado de andar da masmorra inválido.</value></data>
 
   <!-- Catalog -->
   <data name="Catalog.NotFound"><value>Item de catálogo não encontrado.</value></data>

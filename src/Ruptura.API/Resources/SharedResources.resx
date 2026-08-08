@@ -45,6 +45,7 @@
   <data name="Campaign.AlreadyMember"><value>This player is already a member of this campaign.</value></data>
   <data name="Campaign.Created"><value>Campaign created successfully.</value></data>
   <data name="Campaign.MemberAssigned"><value>Player assigned to campaign successfully.</value></data>
+  <data name="Campaign.FloorStateInvalid"><value>Invalid dungeon floor state.</value></data>
 
   <!-- Catalog -->
   <data name="Catalog.NotFound"><value>Catalog entry not found.</value></data>

@@ -69,6 +69,7 @@ public static class InfrastructureExtensions
         services.AddScoped<IGuildSheetService, GuildSheetService>();
         services.AddScoped<IJournalEntryService, JournalEntryService>();
         services.AddScoped<INotificationService, NotificationService>();
+        services.AddScoped<ICampaignDashboardService, CampaignDashboardService>();
 
         // Repositories
         services.AddScoped<IInviteCodeRepository, InviteCodeRepository>();
