@@ -18,6 +18,7 @@ public class GuildSheetService(
     ICatalogEntryRepository catalogRepo,
     IExpeditionRepository expeditionRepo,
     IResearchProjectRepository researchRepo,
+    ICraftingOrderRepository craftingRepo,
     IGuildStatsCalculator calculator) : IGuildSheetService
 {
     private static readonly JsonSerializerOptions JsonOpts = new(JsonSerializerDefaults.Web);
@@ -495,6 +496,102 @@ public class GuildSheetService(
         IsComplete = r.IsComplete
     };
 
+    public async Task<Result<CraftingOrderResponse>> AddCraftingAsync(
+        Guid callerId, Guid campaignId, CreateCraftingOrderRequest request, CancellationToken ct = default)
+    {
+        var auth = await AuthorizeAsync(callerId, campaignId, ct);
+        if (auth.IsFailure)
+            return Result.Failure<CraftingOrderResponse>(auth.Error!);
+        var guild = auth.Value!;
+
+        // Category/Status arrive as strings (Shared must not reference the Domain enum). Reject unknown
+        // values; Enum.IsDefined guards numeric/undefined strings ("5") that TryParse would accept.
+        if (!Enum.TryParse<CraftingCategory>(request.Category, out var category) || !Enum.IsDefined(category))
+            return Result.Failure<CraftingOrderResponse>(ErrorCodes.Guild.CraftingCategoryInvalid);
+        if (!Enum.TryParse<CraftingStatus>(request.Status, out var status) || !Enum.IsDefined(status))
+            return Result.Failure<CraftingOrderResponse>(ErrorCodes.Guild.CraftingStatusInvalid);
+
+        var crafting = new CraftingOrder
+        {
+            Id = Guid.NewGuid(),
+            GuildSheetId = guild.Id,
+            Category = category,
+            ItemName = request.ItemName,
+            // Quality is free-form record-keeping (UI picker supplies canonical values) — not validated.
+            Quality = request.Quality,
+            ProgressDays = Math.Max(0, request.ProgressDays),
+            // RequiredDays is client-supplied (no GDD formula) — clamp negatives.
+            RequiredDays = Math.Max(0, request.RequiredDays),
+            Status = status
+        };
+
+        await craftingRepo.AddAsync(crafting, ct);
+        await craftingRepo.SaveChangesAsync(ct);
+
+        return Result.Success(MapCrafting(crafting));
+    }
+
+    public async Task<Result<CraftingOrderResponse>> UpdateCraftingAsync(
+        Guid callerId, Guid campaignId, Guid craftingId, UpdateCraftingOrderRequest request, CancellationToken ct = default)
+    {
+        var auth = await AuthorizeAsync(callerId, campaignId, ct);
+        if (auth.IsFailure)
+            return Result.Failure<CraftingOrderResponse>(auth.Error!);
+        var guild = auth.Value!;
+
+        if (!Enum.TryParse<CraftingCategory>(request.Category, out var category) || !Enum.IsDefined(category))
+            return Result.Failure<CraftingOrderResponse>(ErrorCodes.Guild.CraftingCategoryInvalid);
+        if (!Enum.TryParse<CraftingStatus>(request.Status, out var status) || !Enum.IsDefined(status))
+            return Result.Failure<CraftingOrderResponse>(ErrorCodes.Guild.CraftingStatusInvalid);
+
+        var crafting = await craftingRepo.GetByIdAsync(craftingId, ct);
+        // Cross-guild safety: the target must belong to this campaign's guild, else hide its existence.
+        if (crafting is null || crafting.GuildSheetId != guild.Id)
+            return Result.Failure<CraftingOrderResponse>(ErrorCodes.Guild.CraftingNotFound);
+
+        crafting.Category = category;
+        crafting.ItemName = request.ItemName;
+        crafting.Quality = request.Quality;
+        crafting.ProgressDays = Math.Max(0, request.ProgressDays);
+        crafting.RequiredDays = Math.Max(0, request.RequiredDays);
+        crafting.Status = status;
+
+        craftingRepo.Update(crafting);
+        await craftingRepo.SaveChangesAsync(ct);
+
+        return Result.Success(MapCrafting(crafting));
+    }
+
+    public async Task<Result> DeleteCraftingAsync(
+        Guid callerId, Guid campaignId, Guid craftingId, CancellationToken ct = default)
+    {
+        var auth = await AuthorizeAsync(callerId, campaignId, ct);
+        if (auth.IsFailure)
+            return Result.Failure(auth.Error!);
+        var guild = auth.Value!;
+
+        var crafting = await craftingRepo.GetByIdAsync(craftingId, ct);
+        // Cross-guild safety: the target must belong to this campaign's guild, else hide its existence.
+        if (crafting is null || crafting.GuildSheetId != guild.Id)
+            return Result.Failure(ErrorCodes.Guild.CraftingNotFound);
+
+        craftingRepo.Remove(crafting);
+        await craftingRepo.SaveChangesAsync(ct);
+
+        return Result.Success();
+    }
+
+    private static CraftingOrderResponse MapCrafting(CraftingOrder c) => new()
+    {
+        Id = c.Id,
+        Category = c.Category.ToString(),
+        ItemName = c.ItemName,
+        Quality = c.Quality,
+        ProgressDays = c.ProgressDays,
+        RequiredDays = c.RequiredDays,
+        Status = c.Status.ToString()
+    };
+
     public async Task<Result<GuildSheet>> AuthorizeGuildAccessByIdAsync(
         Guid callerId, Guid guildSheetId, CancellationToken ct = default)
     {
@@ -659,6 +756,7 @@ public class GuildSheetService(
                 .ToList(),
             Staff = staff.Select(MapStaff).ToList(),
             Research = research.Select(MapResearch).ToList(),
+            Crafting = (await craftingRepo.GetByGuildAsync(guild.Id, ct)).Select(MapCrafting).ToList(),
             Version = guild.Version,
             CreatedAt = guild.CreatedAt,
             UpdatedAt = guild.UpdatedAt

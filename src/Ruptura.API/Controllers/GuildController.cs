@@ -248,4 +248,54 @@ public class GuildController(
             => BadRequest(ApiResponse.Fail(localizer[error])),
         _ => NotFound(ApiResponse.Fail(localizer[error]))
     };
+
+    [HttpPost("campaigns/{campaignId:guid}/guild/crafting")]
+    [ProducesResponseType(typeof(ApiResponse<CraftingOrderResponse>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> AddCrafting(
+        Guid campaignId, [FromBody] CreateCraftingOrderRequest request, CancellationToken ct)
+    {
+        var callerId = Guid.Parse(User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
+        var result = await guildService.AddCraftingAsync(callerId, campaignId, request, ct);
+        if (result.IsFailure)
+            return CraftingFailure(result.Error!);
+        return StatusCode(StatusCodes.Status201Created, ApiResponse<CraftingOrderResponse>.Ok(result.Value!));
+    }
+
+    [HttpPut("campaigns/{campaignId:guid}/guild/crafting/{craftingId:guid}")]
+    [ProducesResponseType(typeof(ApiResponse<CraftingOrderResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateCrafting(
+        Guid campaignId, Guid craftingId, [FromBody] UpdateCraftingOrderRequest request, CancellationToken ct)
+    {
+        var callerId = Guid.Parse(User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
+        var result = await guildService.UpdateCraftingAsync(callerId, campaignId, craftingId, request, ct);
+        if (result.IsFailure)
+            return CraftingFailure(result.Error!);
+        return Ok(ApiResponse<CraftingOrderResponse>.Ok(result.Value!));
+    }
+
+    [HttpDelete("campaigns/{campaignId:guid}/guild/crafting/{craftingId:guid}")]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteCrafting(
+        Guid campaignId, Guid craftingId, CancellationToken ct)
+    {
+        var callerId = Guid.Parse(User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
+        var result = await guildService.DeleteCraftingAsync(callerId, campaignId, craftingId, ct);
+        if (result.IsFailure)
+            return CraftingFailure(result.Error!);
+        return Ok(ApiResponse.Ok());
+    }
+
+    // Invalid Category/Status → 400; missing/cross-guild/non-member → 404.
+    private IActionResult CraftingFailure(string error) => error switch
+    {
+        ErrorCodes.Guild.CraftingCategoryInvalid
+            or ErrorCodes.Guild.CraftingStatusInvalid
+            => BadRequest(ApiResponse.Fail(localizer[error])),
+        _ => NotFound(ApiResponse.Fail(localizer[error]))
+    };
 }

@@ -80,6 +80,7 @@ public static class InfrastructureExtensions
         services.AddScoped<IGuildBuildingRepository, GuildBuildingRepository>();
         services.AddScoped<IGuildStaffRepository, GuildStaffRepository>();
         services.AddScoped<IResearchProjectRepository, ResearchProjectRepository>();
+        services.AddScoped<ICraftingOrderRepository, CraftingOrderRepository>();
         services.AddScoped<IExpeditionRepository, ExpeditionRepository>();
         services.AddScoped<INotificationRepository, NotificationRepository>();
 

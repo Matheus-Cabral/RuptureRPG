@@ -61,4 +61,13 @@ public interface IGuildSheetService
 
     Task<Result> DeleteResearchAsync(
         Guid callerId, Guid campaignId, Guid researchId, CancellationToken ct = default);
+
+    Task<Result<CraftingOrderResponse>> AddCraftingAsync(
+        Guid callerId, Guid campaignId, CreateCraftingOrderRequest request, CancellationToken ct = default);
+
+    Task<Result<CraftingOrderResponse>> UpdateCraftingAsync(
+        Guid callerId, Guid campaignId, Guid craftingId, UpdateCraftingOrderRequest request, CancellationToken ct = default);
+
+    Task<Result> DeleteCraftingAsync(
+        Guid callerId, Guid campaignId, Guid craftingId, CancellationToken ct = default);
 }
