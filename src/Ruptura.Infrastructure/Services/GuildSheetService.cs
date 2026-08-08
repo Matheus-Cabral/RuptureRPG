@@ -255,6 +255,99 @@ public class GuildSheetService(
         IsActive = b.IsActive
     };
 
+    public async Task<Result<GuildStaffResponse>> AddStaffAsync(
+        Guid callerId, Guid campaignId, CreateStaffRequest request, CancellationToken ct = default)
+    {
+        var auth = await AuthorizeAsync(callerId, campaignId, ct);
+        if (auth.IsFailure)
+            return Result.Failure<GuildStaffResponse>(auth.Error!);
+        var guild = auth.Value!;
+
+        // Shared must not reference the Domain enum, so Kind is a string on the wire; reject unknown.
+        if (!Enum.TryParse<GuildStaffKind>(request.Kind, out var kind))
+            return Result.Failure<GuildStaffResponse>(ErrorCodes.Guild.StaffKindInvalid);
+
+        var staff = new GuildStaff
+        {
+            Id = Guid.NewGuid(),
+            GuildSheetId = guild.Id,
+            Kind = kind,
+            // Record-keeping posture: TypeOrRanking is persisted verbatim (UI picker supplies canonical values).
+            TypeOrRanking = request.TypeOrRanking,
+            Name = request.Name,
+            DailySalary = request.DailySalary,
+            IsActive = request.IsActive,
+            Efficiency = request.Efficiency,
+            Morale = request.Morale
+        };
+
+        await staffRepo.AddAsync(staff, ct);
+        await staffRepo.SaveChangesAsync(ct);
+
+        return Result.Success(MapStaff(staff));
+    }
+
+    public async Task<Result<GuildStaffResponse>> UpdateStaffAsync(
+        Guid callerId, Guid campaignId, Guid staffId, UpdateStaffRequest request, CancellationToken ct = default)
+    {
+        var auth = await AuthorizeAsync(callerId, campaignId, ct);
+        if (auth.IsFailure)
+            return Result.Failure<GuildStaffResponse>(auth.Error!);
+        var guild = auth.Value!;
+
+        if (!Enum.TryParse<GuildStaffKind>(request.Kind, out var kind))
+            return Result.Failure<GuildStaffResponse>(ErrorCodes.Guild.StaffKindInvalid);
+
+        var staff = await staffRepo.GetByIdAsync(staffId, ct);
+        // Cross-guild safety: the target must belong to this campaign's guild, else hide its existence.
+        if (staff is null || staff.GuildSheetId != guild.Id)
+            return Result.Failure<GuildStaffResponse>(ErrorCodes.Guild.StaffNotFound);
+
+        staff.Kind = kind;
+        staff.TypeOrRanking = request.TypeOrRanking;
+        staff.Name = request.Name;
+        staff.DailySalary = request.DailySalary;
+        staff.IsActive = request.IsActive;
+        staff.Efficiency = request.Efficiency;
+        staff.Morale = request.Morale;
+
+        staffRepo.Update(staff);
+        await staffRepo.SaveChangesAsync(ct);
+
+        return Result.Success(MapStaff(staff));
+    }
+
+    public async Task<Result> DeleteStaffAsync(
+        Guid callerId, Guid campaignId, Guid staffId, CancellationToken ct = default)
+    {
+        var auth = await AuthorizeAsync(callerId, campaignId, ct);
+        if (auth.IsFailure)
+            return Result.Failure(auth.Error!);
+        var guild = auth.Value!;
+
+        var staff = await staffRepo.GetByIdAsync(staffId, ct);
+        // Cross-guild safety: the target must belong to this campaign's guild, else hide its existence.
+        if (staff is null || staff.GuildSheetId != guild.Id)
+            return Result.Failure(ErrorCodes.Guild.StaffNotFound);
+
+        staffRepo.Remove(staff);
+        await staffRepo.SaveChangesAsync(ct);
+
+        return Result.Success();
+    }
+
+    private static GuildStaffResponse MapStaff(GuildStaff s) => new()
+    {
+        Id = s.Id,
+        Kind = s.Kind.ToString(),
+        TypeOrRanking = s.TypeOrRanking,
+        Name = s.Name,
+        DailySalary = s.DailySalary,
+        IsActive = s.IsActive,
+        Efficiency = s.Efficiency,
+        Morale = s.Morale
+    };
+
     public async Task<Result<GuildSheet>> AuthorizeGuildAccessByIdAsync(
         Guid callerId, Guid guildSheetId, CancellationToken ct = default)
     {
@@ -413,6 +506,7 @@ public class GuildSheetService(
             Buildings = buildings
                 .Select(b => MapBuilding(b, installationCatalog.TryGetValue(b.CatalogEntryId, out var e) ? e.Name : string.Empty))
                 .ToList(),
+            Staff = staff.Select(MapStaff).ToList(),
             Version = guild.Version,
             CreatedAt = guild.CreatedAt,
             UpdatedAt = guild.UpdatedAt

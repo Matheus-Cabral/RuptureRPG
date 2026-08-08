@@ -74,6 +74,8 @@
   <data name="Guild.BuildingLevelInvalid"><value>The building level is outside the allowed range for this installation.</value></data>
   <data name="Guild.BuildingExists"><value>This installation has already been built.</value></data>
   <data name="Guild.BuildingNotFound"><value>Building not found.</value></data>
+  <data name="Guild.StaffKindInvalid"><value>Staff kind must be either Worker or Mercenary.</value></data>
+  <data name="Guild.StaffNotFound"><value>Staff member not found.</value></data>
 
   <!-- Journal -->
   <data name="Journal.NotFound"><value>Journal entry not found.</value></data>

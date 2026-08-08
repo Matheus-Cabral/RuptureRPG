@@ -43,4 +43,13 @@ public interface IGuildSheetService
 
     Task<Result> DeleteBuildingAsync(
         Guid callerId, Guid campaignId, Guid buildingId, CancellationToken ct = default);
+
+    Task<Result<GuildStaffResponse>> AddStaffAsync(
+        Guid callerId, Guid campaignId, CreateStaffRequest request, CancellationToken ct = default);
+
+    Task<Result<GuildStaffResponse>> UpdateStaffAsync(
+        Guid callerId, Guid campaignId, Guid staffId, UpdateStaffRequest request, CancellationToken ct = default);
+
+    Task<Result> DeleteStaffAsync(
+        Guid callerId, Guid campaignId, Guid staffId, CancellationToken ct = default);
 }

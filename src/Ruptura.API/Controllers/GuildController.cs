@@ -146,4 +146,52 @@ public class GuildController(
             => BadRequest(ApiResponse.Fail(localizer[error])),
         _ => NotFound(ApiResponse.Fail(localizer[error]))
     };
+
+    [HttpPost("campaigns/{campaignId:guid}/guild/staff")]
+    [ProducesResponseType(typeof(ApiResponse<GuildStaffResponse>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> AddStaff(
+        Guid campaignId, [FromBody] CreateStaffRequest request, CancellationToken ct)
+    {
+        var callerId = Guid.Parse(User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
+        var result = await guildService.AddStaffAsync(callerId, campaignId, request, ct);
+        if (result.IsFailure)
+            return StaffFailure(result.Error!);
+        return StatusCode(StatusCodes.Status201Created, ApiResponse<GuildStaffResponse>.Ok(result.Value!));
+    }
+
+    [HttpPut("campaigns/{campaignId:guid}/guild/staff/{staffId:guid}")]
+    [ProducesResponseType(typeof(ApiResponse<GuildStaffResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateStaff(
+        Guid campaignId, Guid staffId, [FromBody] UpdateStaffRequest request, CancellationToken ct)
+    {
+        var callerId = Guid.Parse(User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
+        var result = await guildService.UpdateStaffAsync(callerId, campaignId, staffId, request, ct);
+        if (result.IsFailure)
+            return StaffFailure(result.Error!);
+        return Ok(ApiResponse<GuildStaffResponse>.Ok(result.Value!));
+    }
+
+    [HttpDelete("campaigns/{campaignId:guid}/guild/staff/{staffId:guid}")]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteStaff(
+        Guid campaignId, Guid staffId, CancellationToken ct)
+    {
+        var callerId = Guid.Parse(User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
+        var result = await guildService.DeleteStaffAsync(callerId, campaignId, staffId, ct);
+        if (result.IsFailure)
+            return StaffFailure(result.Error!);
+        return Ok(ApiResponse.Ok());
+    }
+
+    // Unknown Kind → 400; missing/cross-guild/non-member → 404.
+    private IActionResult StaffFailure(string error) => error switch
+    {
+        ErrorCodes.Guild.StaffKindInvalid => BadRequest(ApiResponse.Fail(localizer[error])),
+        _ => NotFound(ApiResponse.Fail(localizer[error]))
+    };
 }
