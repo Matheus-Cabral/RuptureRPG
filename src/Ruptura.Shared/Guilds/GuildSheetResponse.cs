@@ -10,6 +10,8 @@ public class GuildSheetResponse
     public List<ExpeditionResponse> Expeditions { get; set; } = [];
     public List<GuildBuildingResponse> Buildings { get; set; } = [];
     public List<GuildStaffResponse> Staff { get; set; } = [];
+    public List<ResearchProjectResponse> Research { get; set; } = [];
+    public List<CraftingOrderResponse> Crafting { get; set; } = [];
     public uint Version { get; set; }                  // xmin concurrency token (sub-plan #3 requires it on write)
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }

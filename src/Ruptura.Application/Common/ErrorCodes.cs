@@ -56,6 +56,12 @@ public static class ErrorCodes
         public const string StaffNotFound = "Guild.StaffNotFound";
         public const string StaffKindInvalid = "Guild.StaffKindInvalid";
         public const string DoctrineInvalid = "Guild.DoctrineInvalid";
+        public const string ResearchNotFound = "Guild.ResearchNotFound";
+        public const string ResearchComplexityInvalid = "Guild.ResearchComplexityInvalid";
+        public const string ResearchStageInvalid = "Guild.ResearchStageInvalid";
+        public const string CraftingNotFound = "Guild.CraftingNotFound";
+        public const string CraftingCategoryInvalid = "Guild.CraftingCategoryInvalid";
+        public const string CraftingStatusInvalid = "Guild.CraftingStatusInvalid";
     }
 
     public static class Journal
