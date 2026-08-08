@@ -194,6 +194,27 @@ public class GuildResearchTests(IntegrationTestFactory factory)
     }
 
     [Fact]
+    public async Task CompletedResearch_WithMaxIntPoints_IsClampedAndGuildReadStays200()
+    {
+        // Regression: unbounded Points (int.MaxValue) once overflowed the CHECKED Sum in the guild read,
+        // permanently 500ing GET /guild for the campaign. Points must be top-clamped to 1000 on write.
+        var (client, campaign, playerToken, _) = await SetUpCampaignWithMemberAsync();
+        AuthHelper.SetBearerToken(client, playerToken);
+        await GetGuildAsync(client, campaign.Id);
+
+        var created = await client.PostAsJsonAsync($"api/campaigns/{campaign.Id}/guild/research",
+            new CreateResearchProjectRequest { Name = "Overflow", Complexity = "Suprema", Points = int.MaxValue, IsComplete = true });
+        var research = await ReadResearchAsync(created);
+        research.Points.Should().Be(1000); // clamped at write
+
+        // The whole guild read must still return 200, not a 500 from an OverflowException.
+        var guild = await GetGuildAsync(client, campaign.Id);
+        guild.Research.Should().ContainSingle();
+        guild.Research[0].Points.Should().Be(1000);
+        guild.DerivedStats.CgPesquisa.Should().Be(1000);
+    }
+
+    [Fact]
     public async Task DeleteResearch_RemovesItAndDropsCgPesquisa()
     {
         var (client, campaign, playerToken, _) = await SetUpCampaignWithMemberAsync();

@@ -58,11 +58,15 @@ public class GuildStatsCalculator : IGuildStatsCalculator
         var activeWorkers = staff.Count(s => s.Kind == GuildStaffKind.Worker && s.IsActive); // all workers qualify
         var logistica = cs + activeWorkers * 2;
 
-        var recursos = resources.PactCoins
+        // Sum in long, then clamp into int: a pre-#5 row may carry huge Materials quantities that would
+        // otherwise overflow the CHECKED int Sum and 500 the whole guild read.
+        var recursos = ClampToInt(
+            (long)resources.PactCoins
             + resources.DimensionalFragments
-            + (resources.Materials ?? []).Sum(m => m.Quantity);
+            + (resources.Materials ?? []).Sum(m => (long)m.Quantity));
 
-        var cg = infra + researchPoints + logistica + recursos;
+        // The four CG terms are each bounded ints, but their sum can still exceed int range — add in long.
+        var cg = ClampToInt((long)infra + researchPoints + logistica + recursos);
 
         // Daily maintenance: constructible buildings (level×weight) + active staff salaries; Logística −10%.
         var buildingMaintenance = constructible.Sum(x => x.Building.Level * x.Data!.Weight); // 1 Prata per level×weight
@@ -103,6 +107,9 @@ public class GuildStatsCalculator : IGuildStatsCalculator
             ActiveBuildingOverflow = activeBuildingCount > cs
         };
     }
+
+    // Saturating narrowing: keeps aggregate sums from throwing OverflowException on extreme stored data.
+    private static int ClampToInt(long v) => (int)Math.Clamp(v, int.MinValue, int.MaxValue);
 
     private static int StageIndex(int floors) => floors switch
     {

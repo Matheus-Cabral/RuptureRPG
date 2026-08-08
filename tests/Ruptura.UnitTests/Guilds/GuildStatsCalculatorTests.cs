@@ -299,6 +299,33 @@ public class GuildStatsCalculatorTests
     }
 
     [Fact]
+    public void HugeMaterialsQuantity_DoesNotOverflow_And_ClampsCgToIntMax()
+    {
+        // A pre-#5 row could carry an int.MaxValue Materials quantity; the CgRecursos/Cg sums must be
+        // long-safe and saturate rather than throw OverflowException (which would 500 the guild read).
+        var data = new GuildSheetData
+        {
+            Resources = new GuildResources
+            {
+                PactCoins = int.MaxValue,
+                DimensionalFragments = int.MaxValue,
+                Materials =
+                [
+                    new MaterialStock { Name = "A", Quantity = int.MaxValue },
+                    new MaterialStock { Name = "B", Quantity = int.MaxValue },
+                ]
+            }
+        };
+
+        var act = () => _calc.Calculate(data, [], [], int.MaxValue, new Dictionary<Guid, CatalogEntry>());
+
+        act.Should().NotThrow();
+        var r = act();
+        r.CgRecursos.Should().Be(int.MaxValue); // saturated, not overflowed
+        r.Cg.Should().Be(int.MaxValue);
+    }
+
+    [Fact]
     public void ActiveDoctrineOverflow_When_Active_Exceeds_Limit()
     {
         // No Câmara do Conselho → DoctrineLimit = min(4, 2+0) = 2. Three active doctrines → overflow.

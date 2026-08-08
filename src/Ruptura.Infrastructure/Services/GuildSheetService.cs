@@ -418,7 +418,9 @@ public class GuildSheetService(
             RequiredDays = ResearchReference.RequiredDays[complexity.ToString()],
             ProgressDays = Math.Max(0, request.ProgressDays),
             Researchers = Math.Max(1, request.Researchers),
-            Points = Math.Max(0, request.Points),
+            // Top-clamp Points at 1000: keeps CG Pesquisa meaningful and prevents int.MaxValue rows
+            // from overflowing the CHECKED Sum in MapToResponseAsync (which would 500 the guild read).
+            Points = Math.Clamp(request.Points, 0, 1000),
             IsComplete = request.IsComplete
         };
 
@@ -454,7 +456,8 @@ public class GuildSheetService(
         research.RequiredDays = ResearchReference.RequiredDays[complexity.ToString()];
         research.ProgressDays = Math.Max(0, request.ProgressDays);
         research.Researchers = Math.Max(1, request.Researchers);
-        research.Points = Math.Max(0, request.Points);
+        // Top-clamp Points at 1000 (mirrors AddResearchAsync) — bounds CG Pesquisa and averts overflow.
+        research.Points = Math.Clamp(request.Points, 0, 1000);
         research.IsComplete = request.IsComplete;
 
         researchRepo.Update(research);
