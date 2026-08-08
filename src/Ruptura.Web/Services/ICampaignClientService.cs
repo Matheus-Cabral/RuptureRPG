@@ -11,4 +11,6 @@ public interface ICampaignClientService
     Task<ApiResponse<IEnumerable<CampaignResponse>>?> GetMineAsync();
     Task<ApiResponse<IEnumerable<CampaignMemberResponse>>?> GetMembersAsync(Guid campaignId);
     Task<ApiResponse<CampaignMemberResponse>?> AssignMemberAsync(Guid campaignId, AssignMemberRequest request);
+    Task<ApiResponse<CampaignDashboardResponse>?> GetDashboardAsync(Guid campaignId);
+    Task<ApiResponse<CampaignDashboardResponse>?> UpdateDungeonAsync(Guid campaignId, UpdateDungeonStateRequest request);
 }

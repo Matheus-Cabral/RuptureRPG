@@ -49,4 +49,18 @@ public class CampaignClientService(IHttpClientFactory factory) : ICampaignClient
         var response = await Http.PostAsJsonAsync($"api/campaigns/{campaignId}/members", request);
         return await response.Content.ReadFromJsonAsync<ApiResponse<CampaignMemberResponse>>();
     }
+
+    public async Task<ApiResponse<CampaignDashboardResponse>?> GetDashboardAsync(Guid campaignId)
+    {
+        var response = await Http.GetAsync($"api/campaigns/{campaignId}/dashboard");
+        if (!response.IsSuccessStatusCode) return null;
+        return await response.Content.ReadFromJsonAsync<ApiResponse<CampaignDashboardResponse>>();
+    }
+
+    public async Task<ApiResponse<CampaignDashboardResponse>?> UpdateDungeonAsync(
+        Guid campaignId, UpdateDungeonStateRequest request)
+    {
+        var response = await Http.PutAsJsonAsync($"api/campaigns/{campaignId}/dashboard/dungeon", request);
+        return await response.Content.ReadFromJsonAsync<ApiResponse<CampaignDashboardResponse>>();
+    }
 }

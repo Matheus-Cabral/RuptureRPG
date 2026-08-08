@@ -1,0 +1,289 @@
+@page "/gm/campaigns/{Id:guid}/dashboard"
+@attribute [Authorize(Roles = "GameMaster")]
+@using Microsoft.Extensions.Localization
+@using Ruptura.Web.Resources
+@using Ruptura.Shared.Campaigns
+@inject IStringLocalizer<AppStrings> L
+@inject ICampaignClientService CampaignService
+@inject ToastService Toast
+
+<PageTitle>@L["Dashboard.Title"] — RUPTURA</PageTitle>
+
+<div class="page-content">
+    <Breadcrumbs Items="_breadcrumbs" />
+
+    <div class="page-heading">
+        <h1>@L["Dashboard.Title"]</h1>
+    </div>
+
+    @if (_loading)
+    {
+        <LoadingIndicator Text="@L["Common.Loading"]" />
+    }
+    else if (_dashboard is null)
+    {
+        <div class="ledger-empty">
+            <p>@L["Common.Error"]</p>
+        </div>
+    }
+    else
+    {
+        var d = _dashboard.Dungeon;
+
+        @* ── Panel 1: Andar & Pressão ── *@
+        <div class="section-header">
+            <span class="section-title">@L["Dashboard.Dungeon.Title"]</span>
+        </div>
+
+        @if (d.PressureStateKey == "Colapso")
+        {
+            <div class="dash-alert" role="alert">@L["Dashboard.Colapso.Warning"]</div>
+        }
+
+        <div class="dash-grid" style="max-width:640px">
+            <div class="dash-field">
+                <label class="dash-label">@L["Dashboard.CurrentFloor"]</label>
+                <input type="number" class="form-control" min="0" @bind="_currentFloor"
+                       @bind:after="PersistMetaAsync" disabled="@_updating" />
+            </div>
+            <div class="dash-field">
+                <label class="dash-label">@L["Dashboard.FloorName"]</label>
+                <input class="form-control" @bind="_floorName"
+                       @bind:after="PersistMetaAsync" disabled="@_updating" />
+            </div>
+            <div class="dash-field">
+                <label class="dash-label">@L["Dashboard.FloorState.Label"]</label>
+                <select class="form-select" @bind="_floorState" @bind:after="PersistMetaAsync" disabled="@_updating">
+                    @foreach (var state in DungeonFloorStates.All)
+                    {
+                        <option value="@state">@L[$"Dashboard.FloorState.{state}"]</option>
+                    }
+                </select>
+            </div>
+        </div>
+
+        <div style="margin-top:1.25rem;max-width:640px">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:.35rem">
+                <span class="dash-label">@L["Dashboard.Pressure.Title"]: <strong>@d.Pressure</strong> / 100
+                    — @L[$"Dashboard.Pressure.{d.PressureStateKey}"]</span>
+                <span class="dash-label">@L["Dashboard.Pressure.Multiplier", FormatMultiplier(d.PeMultiplier)]</span>
+            </div>
+            <div class="pressure-track">
+                <div class="pressure-fill" style="width:@(d.Pressure)%;background:@PressureColor(d.PressureStateKey)"></div>
+            </div>
+
+            <div style="display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.75rem">
+                <button class="btn btn-outline-secondary btn-sm" @onclick="() => AddPressureAsync(5)" disabled="@_updating">@L["Dashboard.Pressure.Turno"]</button>
+                <button class="btn btn-outline-secondary btn-sm" @onclick="() => AddPressureAsync(10)" disabled="@_updating">@L["Dashboard.Pressure.Combate"]</button>
+                <button class="btn btn-outline-secondary btn-sm" @onclick="() => AddPressureAsync(15)" disabled="@_updating">@L["Dashboard.Pressure.FalhaCritica"]</button>
+                <button class="btn btn-primary btn-sm" @onclick="AdvanceFloorAsync" disabled="@_updating">@L["Dashboard.AdvanceFloor"]</button>
+            </div>
+
+            <div style="display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.5rem;align-items:center">
+                <input type="number" class="form-control" style="width:110px" @bind="_customEvent" disabled="@_updating" />
+                <button class="btn btn-outline-secondary btn-sm" @onclick="() => AddPressureAsync(_customEvent)" disabled="@_updating">@L["Dashboard.Pressure.Evento"]</button>
+            </div>
+        </div>
+
+        @* ── Panel 2: Party ativa ── *@
+        <div class="section-header" style="margin-top:2rem">
+            <span class="section-title">@L["Dashboard.Party.Title"]</span>
+        </div>
+
+        @if (_dashboard.Party.Count == 0)
+        {
+            <div class="ledger-empty">
+                <p>@L["Dashboard.Party.Empty"]</p>
+            </div>
+        }
+        else
+        {
+            <div class="ledger-table-wrap">
+                <table class="ledger-table stack-mobile">
+                    <thead>
+                        <tr>
+                            <th>@L["Dashboard.Party.Character"]</th>
+                            <th>@L["Dashboard.Party.Ranking"]</th>
+                            <th>@L["Dashboard.Party.Np"]</th>
+                            <th>@L["Dashboard.Party.Hp"]</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var member in _dashboard.Party)
+                        {
+                            <tr>
+                                <td data-label="@L["Dashboard.Party.Character"]">@member.CharacterName</td>
+                                <td data-label="@L["Dashboard.Party.Ranking"]">@member.Ranking</td>
+                                <td data-label="@L["Dashboard.Party.Np"]">@member.Np</td>
+                                <td data-label="@L["Dashboard.Party.Hp"]">@member.CurrentHp / @member.MaxHp</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+        @* ── Panel 3: Guilda ── *@
+        <div class="section-header" style="margin-top:2rem">
+            <span class="section-title">@L["Dashboard.Guild.Title"]</span>
+        </div>
+
+        @if (_dashboard.Guild is null)
+        {
+            <div class="ledger-empty">
+                <p>@L["Dashboard.Guild.Empty"]</p>
+            </div>
+        }
+        else
+        {
+            <div class="dash-grid" style="max-width:640px">
+                <div class="dash-stat"><span class="dash-label">@L["Dashboard.Guild.Stage"]</span><strong>@_dashboard.Guild.Stage</strong></div>
+                <div class="dash-stat"><span class="dash-label">@L["Dashboard.Guild.Cg"]</span><strong>@_dashboard.Guild.Cg</strong></div>
+                <div class="dash-stat"><span class="dash-label">@L["Dashboard.Guild.FloorsConquered"]</span><strong>@_dashboard.Guild.FloorsConquered</strong></div>
+                <div class="dash-stat"><span class="dash-label">@L["Dashboard.Guild.Silver"]</span><strong>@_dashboard.Guild.Silver</strong></div>
+                <div class="dash-stat"><span class="dash-label">@L["Dashboard.Guild.PactCoins"]</span><strong>@_dashboard.Guild.PactCoins</strong></div>
+            </div>
+            <div style="margin-top:.75rem">
+                <a href="/campaigns/@Id/guild" class="btn btn-outline-secondary btn-sm">@L["Guild.OpenSheet"]</a>
+            </div>
+        }
+
+        @* ── Panel 4: Notificações ── *@
+        <div class="section-header" style="margin-top:2rem">
+            <span class="section-title">@L["Dashboard.Notifications.Title"]</span>
+        </div>
+
+        @if (_dashboard.PendingNotifications.Count == 0)
+        {
+            <div class="ledger-empty">
+                <p>@L["Dashboard.Notifications.Empty"]</p>
+            </div>
+        }
+        else
+        {
+            <ul class="dash-notif-list">
+                @foreach (var n in _dashboard.PendingNotifications)
+                {
+                    <li>@NotificationText(n)</li>
+                }
+            </ul>
+            <div style="margin-top:.75rem">
+                <a href="/gm/notifications" class="btn btn-outline-secondary btn-sm">@L["Dashboard.Notifications.Open"]</a>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private CampaignDashboardResponse? _dashboard;
+    private List<BreadcrumbItem> _breadcrumbs = [];
+    private bool _loading = true;
+    private bool _updating;
+
+    private int _currentFloor;
+    private string _floorName = string.Empty;
+    private string _floorState = DungeonFloorStates.All[0];
+    private int _customEvent = 20;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await CampaignService.GetDashboardAsync(Id);
+        _dashboard = result?.Data;
+
+        if (_dashboard is not null)
+        {
+            SyncFromResponse();
+        }
+        else
+        {
+            Toast.Error(L["Common.Error"]);
+        }
+
+        _breadcrumbs =
+        [
+            new BreadcrumbItem(L["Nav.Campaigns"], "/gm/campaigns"),
+            new BreadcrumbItem(_dashboard?.CampaignName ?? L["Dashboard.Title"], $"/gm/campaigns/{Id}"),
+            new BreadcrumbItem(L["Dashboard.Title"], null)
+        ];
+
+        _loading = false;
+    }
+
+    private void SyncFromResponse()
+    {
+        var d = _dashboard!.Dungeon;
+        _currentFloor = d.CurrentFloor;
+        _floorName = d.FloorName;
+        _floorState = string.IsNullOrEmpty(d.FloorState) ? DungeonFloorStates.All[0] : d.FloorState;
+    }
+
+    private UpdateDungeonStateRequest CurrentRequest() => new()
+    {
+        CurrentFloor = _currentFloor,
+        FloorName = _floorName ?? string.Empty,
+        FloorState = _floorState,
+        Pressure = _dashboard!.Dungeon.Pressure
+    };
+
+    private async Task PersistAsync(UpdateDungeonStateRequest request)
+    {
+        _updating = true;
+
+        var result = await CampaignService.UpdateDungeonAsync(Id, request);
+
+        if (result?.Success == true && result.Data is not null)
+        {
+            _dashboard = result.Data;
+            SyncFromResponse();
+            Toast.Success(L["Dashboard.UpdateSuccess"]);
+        }
+        else
+        {
+            // Never echo the raw API error code (.Message); show a generic localized toast.
+            Toast.Error(L["Dashboard.UpdateFailed"]);
+        }
+
+        _updating = false;
+    }
+
+    private Task PersistMetaAsync() => PersistAsync(CurrentRequest());
+
+    private Task AddPressureAsync(int delta)
+    {
+        var request = CurrentRequest();
+        request.Pressure = Math.Clamp(request.Pressure + delta, 0, 100);
+        return PersistAsync(request);
+    }
+
+    private Task AdvanceFloorAsync()
+    {
+        var request = CurrentRequest();
+        request.CurrentFloor += 1;
+        request.Pressure = 0;
+        request.FloorState = "Inexplorado";
+        return PersistAsync(request);
+    }
+
+    private static string FormatMultiplier(decimal multiplier) =>
+        multiplier.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture);
+
+    private static string PressureColor(string stateKey) => stateKey switch
+    {
+        "Colapso" => "var(--danger)",
+        "Critico" => "var(--danger)",
+        "Agravado" => "var(--accent)",
+        _ => "var(--success)"
+    };
+
+    private string NotificationText(Ruptura.Shared.Notifications.NotificationResponse n)
+    {
+        var name = n.CharacterName ?? string.Empty;
+        return n.Type switch
+        {
+            "RankPromotionAvailable" => L["Dashboard.Notifications.RankPromotion", name],
+            _ => name
+        };
+    }
+}
