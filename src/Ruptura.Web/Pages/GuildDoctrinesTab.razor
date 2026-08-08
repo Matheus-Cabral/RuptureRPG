@@ -1,0 +1,113 @@
+@using Microsoft.Extensions.Localization
+@using Ruptura.Web.Resources
+@using Ruptura.Shared.Guilds
+@using Ruptura.Shared.Catalog
+@inject IStringLocalizer<AppStrings> L
+@inject ICatalogClientService CatalogService
+
+<div style="display:flex;flex-direction:column;gap:1.5rem">
+    @{
+        var activeCount = Data.ActiveDoctrineIds.Count;
+        var atLimit = activeCount >= Stats.DoctrineLimit;
+    }
+
+    <div class="stat" style="align-self:flex-start">
+        <div class="stat-num">@activeCount / @Stats.DoctrineLimit</div>
+        <div class="stat-label">@L["Guild.DoctrineLimit"]</div>
+    </div>
+
+    @if (activeCount > Stats.DoctrineLimit)
+    {
+        <div class="alert-danger">@L["Guild.Doctrine.OverLimit", activeCount, Stats.DoctrineLimit]</div>
+    }
+
+    <div style="max-width:480px">
+        <label class="form-label">@L["Guild.Identity.MainDoctrine"]</label>
+        <select class="form-select" value="@Data.Identity.MainDoctrineId" @onchange="e => Data.Identity.MainDoctrineId = ParseGuid(e.Value)">
+            <option value="">@L["Sheet.Identity.None"]</option>
+            @foreach (var entry in _doctrineOptions)
+            {
+                <option value="@entry.Id">@entry.Name</option>
+            }
+        </select>
+    </div>
+
+    <div>
+        <span class="section-title" style="display:block;margin-bottom:.5rem">@L["Guild.Doctrine.Active"]</span>
+        @if (_doctrines.Count == 0)
+        {
+            <div class="ledger-empty"><p>@L["Guild.Doctrine.Empty"]</p></div>
+        }
+        else
+        {
+            <div style="display:flex;flex-direction:column;gap:.75rem">
+                @foreach (var entry in _doctrineOptions)
+                {
+                    var isChecked = Data.ActiveDoctrineIds.Contains(entry.Id);
+                    <div style="border:1px solid var(--border);border-radius:6px;padding:.75rem">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="doctrine-@entry.Id"
+                                   checked="@isChecked"
+                                   disabled="@(!isChecked && atLimit)"
+                                   @onchange="e => ToggleDoctrine(entry.Id, (bool)(e.Value ?? false))" />
+                            <label class="form-check-label" for="doctrine-@entry.Id"><strong>@entry.Name</strong></label>
+                        </div>
+                        @if (BonusFor(entry.Id) is { Length: > 0 } bonus)
+                        {
+                            <div style="color:var(--text-muted);font-size:var(--text-sm);margin-top:.35rem">@bonus</div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public GuildSheetData Data { get; set; } = new();
+    [Parameter] public GuildDerivedStats Stats { get; set; } = new();
+    [Parameter] public Guid CampaignId { get; set; }
+
+    private static readonly System.Text.Json.JsonSerializerOptions JsonOpts = new(System.Text.Json.JsonSerializerDefaults.Web);
+
+    // Full list (incl. archived) fetched once; keep an archived doctrine visible if it's still
+    // selected so its checkbox/option renders (same pattern as the identity picker).
+    private List<CatalogEntryResponse> _doctrines = [];
+    private readonly Dictionary<Guid, string> _bonusById = [];
+
+    private IEnumerable<CatalogEntryResponse> _doctrineOptions =>
+        _doctrines.Where(e => !e.IsArchived
+            || e.Id == Data.Identity.MainDoctrineId
+            || Data.ActiveDoctrineIds.Contains(e.Id));
+
+    protected override async Task OnInitializedAsync()
+    {
+        _doctrines = (await CatalogService.GetByTypeAsync("Doctrine", CampaignId, includeArchived: true))?.Data?.ToList() ?? [];
+        foreach (var entry in _doctrines)
+        {
+            try
+            {
+                var data = System.Text.Json.JsonSerializer.Deserialize<DoctrineCatalogData>(entry.DataJson, JsonOpts);
+                if (data is not null) _bonusById[entry.Id] = data.Bonus;
+            }
+            catch (System.Text.Json.JsonException) { /* malformed entry — no bonus text */ }
+        }
+    }
+
+    private string? BonusFor(Guid id) => _bonusById.TryGetValue(id, out var bonus) ? bonus : null;
+
+    private void ToggleDoctrine(Guid id, bool selected)
+    {
+        if (selected)
+        {
+            if (!Data.ActiveDoctrineIds.Contains(id)) Data.ActiveDoctrineIds.Add(id);
+        }
+        else
+        {
+            Data.ActiveDoctrineIds.Remove(id);
+        }
+    }
+
+    private static Guid? ParseGuid(object? value) =>
+        Guid.TryParse(value?.ToString(), out var id) ? id : null;
+}

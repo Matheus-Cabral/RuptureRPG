@@ -1,0 +1,299 @@
+@using Microsoft.Extensions.Localization
+@using Ruptura.Web.Resources
+@using Ruptura.Shared.Guilds
+@inject IStringLocalizer<AppStrings> L
+@inject IGuildClientService GuildService
+@inject ToastService Toast
+@inject ConfirmService Confirm
+
+<div style="display:flex;flex-direction:column;gap:1.5rem">
+    @if (_editing is not null)
+    {
+        <div style="border:1px solid var(--border);border-radius:6px;padding:1rem;display:flex;flex-direction:column;gap:.75rem;max-width:640px">
+            <div style="display:flex;flex-wrap:wrap;gap:1rem">
+                <div>
+                    <label class="form-label">@L["Guild.Staff.Kind"]</label>
+                    <select class="form-select" value="@_editing.Kind" @onchange="OnKindChanged">
+                        @foreach (var (value, key) in Kinds)
+                        {
+                            <option value="@value">@L[key]</option>
+                        }
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">@L["Guild.Staff.TypeOrRanking"]</label>
+                    <select class="form-select" value="@_editing.TypeOrRanking" @onchange="OnTypeChanged">
+                        @foreach (var option in OptionsFor(_editing.Kind))
+                        {
+                            <option value="@option">@L[LabelKey(option)]</option>
+                        }
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">@L["Guild.Staff.DailySalary"]</label>
+                    <input type="number" class="form-control" style="max-width:120px" min="0" @bind="_editing.DailySalary" />
+                </div>
+            </div>
+            <div>
+                <label class="form-label">@L["Guild.Staff.Name"]</label>
+                <input class="form-control" @bind="_editing.Name" @bind:event="oninput" />
+            </div>
+            @if (_editing.Kind == "Worker")
+            {
+                <div style="display:flex;flex-wrap:wrap;gap:1rem">
+                    <div>
+                        <label class="form-label">@L["Guild.Staff.Efficiency"]</label>
+                        <input type="number" class="form-control" style="max-width:120px" @bind="_editing.Efficiency" />
+                    </div>
+                    <div>
+                        <label class="form-label">@L["Guild.Staff.Morale"]</label>
+                        <input type="number" class="form-control" style="max-width:120px" @bind="_editing.Morale" />
+                    </div>
+                </div>
+            }
+            <div class="form-check">
+                <input type="checkbox" class="form-check-input" id="staff-active" @bind="_editing.IsActive" />
+                <label class="form-check-label" for="staff-active">@L["Guild.Staff.Active"]</label>
+            </div>
+            <div style="display:flex;gap:.5rem">
+                <button class="btn btn-primary btn-sm" @onclick="SaveAsync" disabled="@_saving">
+                    @if (_saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                    @L["Guild.Staff.Save"]
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" @onclick="CancelEdit">@L["Guild.Expedition.Cancel"]</button>
+            </div>
+        </div>
+    }
+    else
+    {
+        <button class="btn btn-primary btn-sm" style="align-self:flex-start" @onclick="StartCreate">@L["Guild.Staff.Add"]</button>
+    }
+
+    @if (Staff.Count == 0)
+    {
+        <div class="ledger-empty"><p>@L["Guild.Staff.Empty"]</p></div>
+    }
+    else
+    {
+        <div class="ledger-table-wrap">
+            <table class="ledger-table stack-mobile">
+                <thead>
+                    <tr>
+                        <th>@L["Guild.Staff.Kind"]</th>
+                        <th>@L["Guild.Staff.TypeOrRanking"]</th>
+                        <th>@L["Guild.Staff.Name"]</th>
+                        <th>@L["Guild.Staff.DailySalary"]</th>
+                        <th>@L["Guild.Staff.Active"]</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var member in Staff)
+                    {
+                        <tr>
+                            <td data-label="@L["Guild.Staff.Kind"]">@L[KindKey(member.Kind)]</td>
+                            <td data-label="@L["Guild.Staff.TypeOrRanking"]">@L[LabelKey(member.TypeOrRanking)]</td>
+                            <td data-label="@L["Guild.Staff.Name"]">@member.Name</td>
+                            <td data-label="@L["Guild.Staff.DailySalary"]">@member.DailySalary</td>
+                            <td data-label="@L["Guild.Staff.Active"]">@(member.IsActive ? L["Common.Yes"] : L["Common.No"])</td>
+                            <td data-label="">
+                                <div style="display:flex;gap:.5rem">
+                                    <button class="btn btn-outline-secondary btn-sm" @onclick="() => StartEdit(member)">@L["Guild.Expedition.Edit"]</button>
+                                    <button class="btn btn-outline-secondary btn-sm" @onclick="() => DeleteAsync(member)">@L["Guild.Remove"]</button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public Guid CampaignId { get; set; }
+    [Parameter] public List<GuildStaffResponse> Staff { get; set; } = [];
+    [Parameter] public EventCallback OnChanged { get; set; }
+
+    // Staff kinds (wire value, localization key).
+    private static readonly (string Value, string Key)[] Kinds =
+    [
+        ("Worker", "Guild.Staff.Kind.Worker"),
+        ("Mercenary", "Guild.Staff.Kind.Mercenary")
+    ];
+
+    // Canonical TypeOrRanking value → localization key. Worker types get their own keys;
+    // mercenary rankings reuse the shared Guild.Rank.* keys.
+    private static readonly Dictionary<string, string> LabelKeys = new()
+    {
+        [GuildStaffTypes.Operario] = "Guild.Staff.Worker.Operario",
+        [GuildStaffTypes.Artesao] = "Guild.Staff.Worker.Artesao",
+        [GuildStaffTypes.Pesquisador] = "Guild.Staff.Worker.Pesquisador",
+        [GuildStaffTypes.Instrutor] = "Guild.Staff.Worker.Instrutor",
+        [GuildStaffTypes.Mercador] = "Guild.Staff.Worker.Mercador",
+        [GuildStaffTypes.Medico] = "Guild.Staff.Worker.Medico",
+        [GuildStaffTypes.Administrador] = "Guild.Staff.Worker.Administrador",
+        ["Bronze"] = "Guild.Rank.Bronze",
+        ["Ferro"] = "Guild.Rank.Ferro",
+        ["Aço"] = "Guild.Rank.Aco",
+        ["Prata"] = "Guild.Rank.Prata",
+        ["Ouro"] = "Guild.Rank.Ouro",
+        ["Mithril"] = "Guild.Rank.Mithril",
+        ["Adamante"] = "Guild.Rank.Adamante",
+        ["Lendário"] = "Guild.Rank.Lendario"
+    };
+
+    private StaffForm? _editing;
+    private Guid? _editingId;
+    private bool _saving;
+
+    private static IReadOnlyList<string> OptionsFor(string kind) =>
+        kind == "Mercenary" ? GuildStaffReference.MercenaryRankings : GuildStaffReference.WorkerTypes;
+
+    private static string LabelKey(string value) =>
+        LabelKeys.TryGetValue(value, out var key) ? key : value;
+
+    private static string KindKey(string kind) =>
+        kind == "Mercenary" ? "Guild.Staff.Kind.Mercenary" : "Guild.Staff.Kind.Worker";
+
+    private void StartCreate()
+    {
+        _editingId = null;
+        var type = GuildStaffReference.WorkerTypes[0];
+        _editing = new StaffForm
+        {
+            Kind = "Worker",
+            TypeOrRanking = type,
+            DailySalary = DefaultSalary(type)
+        };
+    }
+
+    private void StartEdit(GuildStaffResponse member)
+    {
+        _editingId = member.Id;
+        _editing = new StaffForm
+        {
+            Kind = member.Kind,
+            TypeOrRanking = member.TypeOrRanking,
+            Name = member.Name,
+            DailySalary = member.DailySalary,
+            IsActive = member.IsActive,
+            Efficiency = member.Efficiency,
+            Morale = member.Morale
+        };
+    }
+
+    private void OnKindChanged(ChangeEventArgs e)
+    {
+        if (_editing is null) return;
+        _editing.Kind = e.Value?.ToString() ?? "Worker";
+        var type = OptionsFor(_editing.Kind).FirstOrDefault() ?? string.Empty;
+        _editing.TypeOrRanking = type;
+        _editing.DailySalary = DefaultSalary(type);
+        if (_editing.Kind != "Worker")
+        {
+            _editing.Efficiency = null;
+            _editing.Morale = null;
+        }
+    }
+
+    private void OnTypeChanged(ChangeEventArgs e)
+    {
+        if (_editing is null) return;
+        _editing.TypeOrRanking = e.Value?.ToString() ?? string.Empty;
+        _editing.DailySalary = DefaultSalary(_editing.TypeOrRanking);
+    }
+
+    private static int DefaultSalary(string type) =>
+        GuildStaffReference.DefaultSalary.TryGetValue(type, out var salary) ? salary : 0;
+
+    private void CancelEdit()
+    {
+        _editing = null;
+        _editingId = null;
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_editing is null) return;
+
+        _saving = true;
+
+        if (_editingId is null)
+        {
+            var result = await GuildService.AddStaffAsync(CampaignId, new CreateStaffRequest
+            {
+                Kind = _editing.Kind,
+                TypeOrRanking = _editing.TypeOrRanking,
+                Name = _editing.Name,
+                DailySalary = _editing.DailySalary,
+                IsActive = _editing.IsActive,
+                Efficiency = _editing.Efficiency,
+                Morale = _editing.Morale
+            });
+            await HandleResult(result?.Data is not null, result?.Message);
+        }
+        else
+        {
+            var result = await GuildService.UpdateStaffAsync(CampaignId, _editingId.Value, new UpdateStaffRequest
+            {
+                Kind = _editing.Kind,
+                TypeOrRanking = _editing.TypeOrRanking,
+                Name = _editing.Name,
+                DailySalary = _editing.DailySalary,
+                IsActive = _editing.IsActive,
+                Efficiency = _editing.Efficiency,
+                Morale = _editing.Morale
+            });
+            await HandleResult(result?.Data is not null, result?.Message);
+        }
+
+        _saving = false;
+    }
+
+    private async Task HandleResult(bool success, string? message)
+    {
+        if (success)
+        {
+            Toast.Success(L["Guild.Staff.Saved"]);
+            CancelEdit();
+            await OnChanged.InvokeAsync();
+        }
+        else
+        {
+            Toast.Error(message ?? L["Common.Error"]);
+        }
+    }
+
+    private async Task DeleteAsync(GuildStaffResponse member)
+    {
+        var confirmed = await Confirm.AskAsync(
+            L["Guild.Staff.DeleteConfirm.Title"],
+            L["Guild.Staff.DeleteConfirm.Message"],
+            L["Guild.Remove"],
+            L["Guild.Expedition.Cancel"]);
+        if (!confirmed) return;
+
+        var result = await GuildService.DeleteStaffAsync(CampaignId, member.Id);
+        if (result?.Success == true)
+        {
+            Toast.Success(L["Guild.Staff.Deleted"]);
+            await OnChanged.InvokeAsync();
+        }
+        else
+        {
+            Toast.Error(result?.Message ?? L["Common.Error"]);
+        }
+    }
+
+    private class StaffForm
+    {
+        public string Kind { get; set; } = "Worker";
+        public string TypeOrRanking { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public int DailySalary { get; set; }
+        public bool IsActive { get; set; } = true;
+        public int? Efficiency { get; set; }
+        public int? Morale { get; set; }
+    }
+}

@@ -40,4 +40,40 @@ public class GuildClientService(IHttpClientFactory factory) : IGuildClientServic
         var response = await Http.DeleteAsync($"api/campaigns/{campaignId}/guild/expeditions/{expeditionId}");
         return await response.Content.ReadFromJsonAsync<ApiResponse>();
     }
+
+    public async Task<ApiResponse<GuildBuildingResponse>?> AddBuildingAsync(Guid campaignId, CreateBuildingRequest request)
+    {
+        var response = await Http.PostAsJsonAsync($"api/campaigns/{campaignId}/guild/buildings", request);
+        return await response.Content.ReadFromJsonAsync<ApiResponse<GuildBuildingResponse>>();
+    }
+
+    public async Task<ApiResponse<GuildBuildingResponse>?> UpdateBuildingAsync(Guid campaignId, Guid buildingId, UpdateBuildingRequest request)
+    {
+        var response = await Http.PutAsJsonAsync($"api/campaigns/{campaignId}/guild/buildings/{buildingId}", request);
+        return await response.Content.ReadFromJsonAsync<ApiResponse<GuildBuildingResponse>>();
+    }
+
+    public async Task<ApiResponse?> DeleteBuildingAsync(Guid campaignId, Guid buildingId)
+    {
+        var response = await Http.DeleteAsync($"api/campaigns/{campaignId}/guild/buildings/{buildingId}");
+        return await response.Content.ReadFromJsonAsync<ApiResponse>();
+    }
+
+    public async Task<ApiResponse<GuildStaffResponse>?> AddStaffAsync(Guid campaignId, CreateStaffRequest request)
+    {
+        var response = await Http.PostAsJsonAsync($"api/campaigns/{campaignId}/guild/staff", request);
+        return await response.Content.ReadFromJsonAsync<ApiResponse<GuildStaffResponse>>();
+    }
+
+    public async Task<ApiResponse<GuildStaffResponse>?> UpdateStaffAsync(Guid campaignId, Guid staffId, UpdateStaffRequest request)
+    {
+        var response = await Http.PutAsJsonAsync($"api/campaigns/{campaignId}/guild/staff/{staffId}", request);
+        return await response.Content.ReadFromJsonAsync<ApiResponse<GuildStaffResponse>>();
+    }
+
+    public async Task<ApiResponse?> DeleteStaffAsync(Guid campaignId, Guid staffId)
+    {
+        var response = await Http.DeleteAsync($"api/campaigns/{campaignId}/guild/staff/{staffId}");
+        return await response.Content.ReadFromJsonAsync<ApiResponse>();
+    }
 }

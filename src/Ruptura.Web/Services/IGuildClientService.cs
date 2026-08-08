@@ -14,4 +14,10 @@ public interface IGuildClientService
     Task<ApiResponse<ExpeditionResponse>?> AddExpeditionAsync(Guid campaignId, CreateExpeditionRequest request);
     Task<ApiResponse<ExpeditionResponse>?> UpdateExpeditionAsync(Guid campaignId, Guid expeditionId, UpdateExpeditionRequest request);
     Task<ApiResponse?> DeleteExpeditionAsync(Guid campaignId, Guid expeditionId);
+    Task<ApiResponse<GuildBuildingResponse>?> AddBuildingAsync(Guid campaignId, CreateBuildingRequest request);
+    Task<ApiResponse<GuildBuildingResponse>?> UpdateBuildingAsync(Guid campaignId, Guid buildingId, UpdateBuildingRequest request);
+    Task<ApiResponse?> DeleteBuildingAsync(Guid campaignId, Guid buildingId);
+    Task<ApiResponse<GuildStaffResponse>?> AddStaffAsync(Guid campaignId, CreateStaffRequest request);
+    Task<ApiResponse<GuildStaffResponse>?> UpdateStaffAsync(Guid campaignId, Guid staffId, UpdateStaffRequest request);
+    Task<ApiResponse?> DeleteStaffAsync(Guid campaignId, Guid staffId);
 }

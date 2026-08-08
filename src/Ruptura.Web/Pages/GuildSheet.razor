@@ -66,6 +66,18 @@
             {
                 <GuildIdentityTab Data="_data" CampaignId="CampaignId" />
             }
+            else if (_activeTab == "buildings")
+            {
+                <GuildBuildingsTab CampaignId="CampaignId" Guild="_guild" OnChanged="RefreshBuildingsAsync" />
+            }
+            else if (_activeTab == "staff")
+            {
+                <GuildStaffTab CampaignId="CampaignId" Staff="_guild.Staff" OnChanged="RefreshStaffAsync" />
+            }
+            else if (_activeTab == "doctrines")
+            {
+                <GuildDoctrinesTab Data="_data" Stats="_guild.DerivedStats" CampaignId="CampaignId" />
+            }
             else if (_activeTab == "resources")
             {
                 <GuildResourcesTab Data="_data" />
@@ -97,6 +109,9 @@
     {
         ["capacities"] = "Guild.Tab.Capacities",
         ["identity"] = "Guild.Tab.Identity",
+        ["buildings"] = "Guild.Tab.Buildings",
+        ["staff"] = "Guild.Tab.Staff",
+        ["doctrines"] = "Guild.Tab.Doctrines",
         ["resources"] = "Guild.Tab.Resources",
         ["influence"] = "Guild.Tab.Influence",
         ["knowledge"] = "Guild.Tab.Knowledge",
@@ -152,6 +167,34 @@
         if (refreshed?.Data is not null)
         {
             _guild.Expeditions = refreshed.Data.Expeditions;
+            _guild.Version = refreshed.Data.Version;
+        }
+    }
+
+    // After a building mutation, refresh ONLY the buildings list, the recomputed derived stats
+    // (capacities/overflow shift), and the concurrency token — never _data/_guildName, which may
+    // hold unsaved blob/name edits.
+    private async Task RefreshBuildingsAsync()
+    {
+        if (_guild is null) return;
+        var refreshed = await GuildService.GetGuildAsync(CampaignId);
+        if (refreshed?.Data is not null)
+        {
+            _guild.Buildings = refreshed.Data.Buildings;
+            _guild.DerivedStats = refreshed.Data.DerivedStats;
+            _guild.Version = refreshed.Data.Version;
+        }
+    }
+
+    // Same targeted-refresh rule for staff (maintenance/worker-income shift on the derived stats).
+    private async Task RefreshStaffAsync()
+    {
+        if (_guild is null) return;
+        var refreshed = await GuildService.GetGuildAsync(CampaignId);
+        if (refreshed?.Data is not null)
+        {
+            _guild.Staff = refreshed.Data.Staff;
+            _guild.DerivedStats = refreshed.Data.DerivedStats;
             _guild.Version = refreshed.Data.Version;
         }
     }

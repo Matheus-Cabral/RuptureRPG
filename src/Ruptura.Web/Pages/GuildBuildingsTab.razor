@@ -1,0 +1,217 @@
+@using Microsoft.Extensions.Localization
+@using Ruptura.Web.Resources
+@using Ruptura.Shared.Guilds
+@using Ruptura.Shared.Catalog
+@inject IStringLocalizer<AppStrings> L
+@inject IGuildClientService GuildService
+@inject ICatalogClientService CatalogService
+@inject ToastService Toast
+@inject ConfirmService Confirm
+
+<div style="display:flex;flex-direction:column;gap:1.5rem">
+    @if (Guild.DerivedStats.ActiveBuildingOverflow)
+    {
+        <div class="alert-danger">
+            @L["Guild.Building.Overflow", Guild.DerivedStats.ActiveBuildingCount, Guild.DerivedStats.Cs]
+        </div>
+    }
+
+    <div style="border:1px solid var(--border);border-radius:6px;padding:1rem;display:flex;flex-wrap:wrap;gap:1rem;align-items:flex-end">
+        <div>
+            <label class="form-label">@L["Guild.Building.Installation"]</label>
+            <select class="form-select" value="@_addCatalogId" @onchange="e => _addCatalogId = ParseGuid(e.Value)">
+                <option value="">@L["Guild.Building.SelectInstallation"]</option>
+                @foreach (var entry in AddableInstallations)
+                {
+                    <option value="@entry.Id">@entry.Name</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label class="form-label">@L["Guild.Building.Level"]</label>
+            <input type="number" class="form-control" style="max-width:100px" min="1" max="@AddLevelCap" @bind="_addLevel" />
+        </div>
+        <div class="form-check" style="padding-bottom:.5rem">
+            <input type="checkbox" class="form-check-input" id="add-building-active" @bind="_addActive" />
+            <label class="form-check-label" for="add-building-active">@L["Guild.Building.Active"]</label>
+        </div>
+        <button class="btn btn-primary btn-sm" @onclick="AddAsync" disabled="@(_addCatalogId is null || _saving)">
+            @if (_saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+            @L["Guild.Building.Add"]
+        </button>
+    </div>
+
+    @if (Guild.Buildings.Count == 0)
+    {
+        <div class="ledger-empty"><p>@L["Guild.Building.Empty"]</p></div>
+    }
+    else
+    {
+        <div class="ledger-table-wrap">
+            <table class="ledger-table stack-mobile">
+                <thead>
+                    <tr>
+                        <th>@L["Guild.Building.Installation"]</th>
+                        <th>@L["Guild.Building.Level"]</th>
+                        <th>@L["Guild.Building.Active"]</th>
+                        <th>@L["Guild.Building.Prerequisites"]</th>
+                        <th>@L["Guild.Building.Cost"]</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var building in Guild.Buildings)
+                    {
+                        var data = DataFor(building.CatalogEntryId);
+                        var cap = data?.LevelCap ?? 10;
+                        <tr>
+                            <td data-label="@L["Guild.Building.Installation"]">@building.InstallationName</td>
+                            <td data-label="@L["Guild.Building.Level"]">
+                                <input type="number" class="form-control" style="max-width:90px" min="1" max="@cap"
+                                       value="@building.Level"
+                                       @onchange="e => UpdateAsync(building, ParseLevel(e.Value, cap), building.IsActive)" />
+                            </td>
+                            <td data-label="@L["Guild.Building.Active"]">
+                                <input type="checkbox" class="form-check-input" checked="@building.IsActive"
+                                       @onchange="e => UpdateAsync(building, building.Level, (bool)(e.Value ?? false))" />
+                            </td>
+                            <td data-label="@L["Guild.Building.Prerequisites"]">
+                                @(string.IsNullOrWhiteSpace(data?.Prerequisites) ? "—" : data!.Prerequisites)
+                            </td>
+                            <td data-label="@L["Guild.Building.Cost"]">
+                                @if (data is not null)
+                                {
+                                    @L["Guild.Building.CostValue", building.Level * data.Weight * 10, building.Level * data.Weight * 3]
+                                }
+                                else
+                                {
+                                    <span>—</span>
+                                }
+                            </td>
+                            <td data-label="">
+                                <button class="btn btn-outline-secondary btn-sm" @onclick="() => DeleteAsync(building)">@L["Guild.Remove"]</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public Guid CampaignId { get; set; }
+    [Parameter] public GuildSheetResponse Guild { get; set; } = new();
+    [Parameter] public EventCallback OnChanged { get; set; }
+
+    // Full Installation catalog (incl. archived) so existing rows resolve their config data;
+    // the "add" picker excludes archived, non-constructible, and already-built installations.
+    private List<CatalogEntryResponse> _installations = [];
+    private readonly Dictionary<Guid, InstallationCatalogData> _dataById = [];
+
+    private Guid? _addCatalogId;
+    private int _addLevel = 1;
+    private bool _addActive = true;
+    private bool _saving;
+
+    private static readonly System.Text.Json.JsonSerializerOptions JsonOpts = new(System.Text.Json.JsonSerializerDefaults.Web);
+
+    private IEnumerable<CatalogEntryResponse> AddableInstallations =>
+        _installations.Where(e =>
+            !e.IsArchived
+            && !(DataFor(e.Id)?.NonConstructible ?? false)
+            && Guild.Buildings.All(b => b.CatalogEntryId != e.Id));
+
+    private int AddLevelCap => (_addCatalogId is { } id ? DataFor(id)?.LevelCap : null) ?? 10;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _installations = (await CatalogService.GetByTypeAsync("Installation", CampaignId, includeArchived: true))?.Data?.ToList() ?? [];
+        foreach (var entry in _installations)
+        {
+            try
+            {
+                var data = System.Text.Json.JsonSerializer.Deserialize<InstallationCatalogData>(entry.DataJson, JsonOpts);
+                if (data is not null) _dataById[entry.Id] = data;
+            }
+            catch (System.Text.Json.JsonException) { /* malformed entry — treat as no config */ }
+        }
+    }
+
+    private InstallationCatalogData? DataFor(Guid catalogEntryId) =>
+        _dataById.TryGetValue(catalogEntryId, out var data) ? data : null;
+
+    private async Task AddAsync()
+    {
+        if (_addCatalogId is not { } id) return;
+
+        _saving = true;
+        var result = await GuildService.AddBuildingAsync(CampaignId, new CreateBuildingRequest
+        {
+            CatalogEntryId = id,
+            Level = _addLevel,
+            IsActive = _addActive
+        });
+
+        if (result?.Data is not null)
+        {
+            Toast.Success(L["Guild.Building.Saved"]);
+            _addCatalogId = null;
+            _addLevel = 1;
+            _addActive = true;
+            await OnChanged.InvokeAsync();
+        }
+        else
+        {
+            Toast.Error(result?.Message ?? L["Common.Error"]);
+        }
+        _saving = false;
+    }
+
+    private async Task UpdateAsync(GuildBuildingResponse building, int level, bool isActive)
+    {
+        var result = await GuildService.UpdateBuildingAsync(CampaignId, building.Id, new UpdateBuildingRequest
+        {
+            Level = level,
+            IsActive = isActive
+        });
+
+        if (result?.Data is not null)
+        {
+            Toast.Success(L["Guild.Building.Saved"]);
+            await OnChanged.InvokeAsync();
+        }
+        else
+        {
+            Toast.Error(result?.Message ?? L["Common.Error"]);
+            await OnChanged.InvokeAsync();   // re-sync the row from the server after a rejected edit
+        }
+    }
+
+    private async Task DeleteAsync(GuildBuildingResponse building)
+    {
+        var confirmed = await Confirm.AskAsync(
+            L["Guild.Building.DeleteConfirm.Title"],
+            L["Guild.Building.DeleteConfirm.Message"],
+            L["Guild.Remove"],
+            L["Guild.Expedition.Cancel"]);
+        if (!confirmed) return;
+
+        var result = await GuildService.DeleteBuildingAsync(CampaignId, building.Id);
+        if (result?.Success == true)
+        {
+            Toast.Success(L["Guild.Building.Deleted"]);
+            await OnChanged.InvokeAsync();
+        }
+        else
+        {
+            Toast.Error(result?.Message ?? L["Common.Error"]);
+        }
+    }
+
+    private static Guid? ParseGuid(object? value) =>
+        Guid.TryParse(value?.ToString(), out var id) ? id : null;
+
+    private static int ParseLevel(object? value, int cap) =>
+        int.TryParse(value?.ToString(), out var level) ? Math.Clamp(level, 1, cap) : 1;
+}
