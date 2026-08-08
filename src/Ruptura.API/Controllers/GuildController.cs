@@ -298,4 +298,43 @@ public class GuildController(
             => BadRequest(ApiResponse.Fail(localizer[error])),
         _ => NotFound(ApiResponse.Fail(localizer[error]))
     };
+
+    [HttpGet("campaigns/{campaignId:guid}/guild/interlude/preview")]
+    [ProducesResponseType(typeof(ApiResponse<InterludeProjection>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> InterludePreview(
+        Guid campaignId, [FromQuery] int days, CancellationToken ct)
+    {
+        var callerId = Guid.Parse(User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
+        var result = await guildService.PreviewInterludeAsync(callerId, campaignId, days, ct);
+        if (result.IsFailure)
+            return InterludeFailure(result.Error!);
+        return Ok(ApiResponse<InterludeProjection>.Ok(result.Value!));
+    }
+
+    [HttpPost("campaigns/{campaignId:guid}/guild/interlude/apply")]
+    [ProducesResponseType(typeof(ApiResponse<GuildSheetResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> InterludeApply(
+        Guid campaignId, [FromBody] ApplyInterludeRequest request, CancellationToken ct)
+    {
+        var callerId = Guid.Parse(User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
+        var result = await guildService.ApplyInterludeAsync(callerId, campaignId, request, ct);
+        if (result.IsFailure)
+            return InterludeFailure(result.Error!);
+        return Ok(ApiResponse<GuildSheetResponse>.Ok(result.Value!, localizer["Guild.Saved"]));
+    }
+
+    // Bad days/kind → 400; concurrent write → 409; missing target/non-member → 404.
+    private IActionResult InterludeFailure(string error) => error switch
+    {
+        ErrorCodes.Guild.InterludeDaysInvalid
+            or ErrorCodes.Guild.InterludeKindInvalid
+            => BadRequest(ApiResponse.Fail(localizer[error])),
+        ErrorCodes.Guild.Conflict => Conflict(ApiResponse.Fail(localizer[error])),
+        _ => NotFound(ApiResponse.Fail(localizer[error]))
+    };
 }

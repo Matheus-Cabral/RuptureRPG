@@ -19,7 +19,8 @@ public class GuildSheetService(
     IExpeditionRepository expeditionRepo,
     IResearchProjectRepository researchRepo,
     ICraftingOrderRepository craftingRepo,
-    IGuildStatsCalculator calculator) : IGuildSheetService
+    IGuildStatsCalculator calculator,
+    IInterludeCalculator interludeCalculator) : IGuildSheetService
 {
     private static readonly JsonSerializerOptions JsonOpts = new(JsonSerializerDefaults.Web);
 
@@ -764,6 +765,114 @@ public class GuildSheetService(
             CreatedAt = guild.CreatedAt,
             UpdatedAt = guild.UpdatedAt
         };
+    }
+
+    private const int MaxInterludeDays = 3650;
+
+    // Builds the interlude projection from FRESH state (buildings/staff/research/crafting reloaded,
+    // derived stats recomputed). Shared by preview and apply so the apply always recomputes the
+    // numbers server-side rather than trusting anything on the wire.
+    private async Task<Result<(GuildSheet Guild, InterludeProjection Projection, GuildSheetData Data)>>
+        BuildInterludeProjectionAsync(Guid callerId, Guid campaignId, int days, CancellationToken ct)
+    {
+        if (days < 1 || days > MaxInterludeDays)
+            return Result.Failure<(GuildSheet, InterludeProjection, GuildSheetData)>(ErrorCodes.Guild.InterludeDaysInvalid);
+
+        var auth = await AuthorizeAsync(callerId, campaignId, ct);
+        if (auth.IsFailure)
+            return Result.Failure<(GuildSheet, InterludeProjection, GuildSheetData)>(auth.Error!);
+        var guild = auth.Value!;
+
+        var data = Deserialize(guild.DataJson);
+        var buildings = (await buildingRepo.GetByGuildAsync(guild.Id, ct)).ToList();
+        var staff = (await staffRepo.GetByGuildAsync(guild.Id, ct)).ToList();
+        var research = (await researchRepo.GetByGuildAsync(guild.Id, ct)).ToList();
+        var crafting = (await craftingRepo.GetByGuildAsync(guild.Id, ct)).ToList();
+
+        var installationIds = buildings.Select(b => b.CatalogEntryId).Distinct().ToList();
+        var installationCatalog = installationIds.Count == 0
+            ? new Dictionary<Guid, CatalogEntry>()
+            : (await catalogRepo.GetByIdsAsync(installationIds, ct)).ToDictionary(e => e.Id);
+        var researchPoints = research.Where(r => r.IsComplete).Sum(r => r.Points);
+        var derived = calculator.Calculate(data, buildings, staff, researchPoints, installationCatalog);
+
+        var projection = interludeCalculator.Project(derived, research, crafting, days);
+        return Result.Success((guild, projection, data));
+    }
+
+    public async Task<Result<InterludeProjection>> PreviewInterludeAsync(
+        Guid callerId, Guid campaignId, int days, CancellationToken ct = default)
+    {
+        var built = await BuildInterludeProjectionAsync(callerId, campaignId, days, ct);
+        return built.IsFailure
+            ? Result.Failure<InterludeProjection>(built.Error!)
+            : Result.Success(built.Value.Projection);
+    }
+
+    public async Task<Result<GuildSheetResponse>> ApplyInterludeAsync(
+        Guid callerId, Guid campaignId, ApplyInterludeRequest request, CancellationToken ct = default)
+    {
+        var validKinds = new[] { "Maintenance", "Income", "ResearchProgress", "CraftingProgress" };
+        if (!validKinds.Contains(request.Kind))
+            return Result.Failure<GuildSheetResponse>(ErrorCodes.Guild.InterludeKindInvalid);
+
+        var built = await BuildInterludeProjectionAsync(callerId, campaignId, request.Days, ct);
+        if (built.IsFailure)
+            return Result.Failure<GuildSheetResponse>(built.Error!);
+        var (guild, projection, data) = built.Value;
+
+        // Select the SERVER-computed indicator matching the client's selector. No client number is trusted.
+        var indicator = projection.Indicators.FirstOrDefault(i =>
+            i.Kind == request.Kind && i.TargetId == request.TargetId);
+        if (indicator is null)
+            return Result.Failure<GuildSheetResponse>(request.Kind switch
+            {
+                "ResearchProgress" => ErrorCodes.Guild.ResearchNotFound,
+                "CraftingProgress" => ErrorCodes.Guild.CraftingNotFound,
+                _ => ErrorCodes.Guild.InterludeKindInvalid
+            });
+
+        switch (request.Kind)
+        {
+            case "Maintenance":
+            case "Income":
+                data.Resources.Silver = Math.Max(0, data.Resources.Silver + (indicator.SilverDelta ?? 0));
+                guild.DataJson = JsonSerializer.Serialize(data, JsonOpts);
+                guild.UpdatedAt = DateTime.UtcNow;
+                guildRepo.SetExpectedVersion(guild, guild.Version);
+                guildRepo.Update(guild);
+                try { await guildRepo.SaveChangesAsync(ct); }
+                catch (DbUpdateConcurrencyException) { return Result.Failure<GuildSheetResponse>(ErrorCodes.Guild.Conflict); }
+                break;
+
+            case "ResearchProgress":
+            {
+                var r = (await researchRepo.GetByGuildAsync(guild.Id, ct)).FirstOrDefault(x => x.Id == request.TargetId);
+                if (r is null || r.IsComplete)
+                    return Result.Failure<GuildSheetResponse>(ErrorCodes.Guild.ResearchNotFound);
+                r.ProgressDays += indicator.DaysAdded ?? 0;
+                if (r.ProgressDays >= r.RequiredDays) { r.ProgressDays = r.RequiredDays; r.IsComplete = true; }
+                researchRepo.Update(r);
+                await researchRepo.SaveChangesAsync(ct);
+                break;
+            }
+
+            case "CraftingProgress":
+            {
+                var c = (await craftingRepo.GetByGuildAsync(guild.Id, ct)).FirstOrDefault(x => x.Id == request.TargetId);
+                if (c is null || c.Status != CraftingStatus.EmAndamento)
+                    return Result.Failure<GuildSheetResponse>(ErrorCodes.Guild.CraftingNotFound);
+                c.ProgressDays += indicator.DaysAdded ?? 0;
+                if (c.ProgressDays >= c.RequiredDays) { c.ProgressDays = c.RequiredDays; c.Status = CraftingStatus.Concluido; }
+                craftingRepo.Update(c);
+                await craftingRepo.SaveChangesAsync(ct);
+                break;
+            }
+        }
+
+        // Re-map from fresh state (need a fresh guild fetch for the maintenance/income Version bump).
+        var refreshed = await guildRepo.GetByCampaignAsync(campaignId, ct);
+        return Result.Success(await MapToResponseAsync(refreshed!, ct));
     }
 
     // Guarantee every blob module is non-null at the boundary (character-sheet #3 lesson).

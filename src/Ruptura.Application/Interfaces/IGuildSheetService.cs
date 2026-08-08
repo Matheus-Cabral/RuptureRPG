@@ -70,4 +70,13 @@ public interface IGuildSheetService
 
     Task<Result> DeleteCraftingAsync(
         Guid callerId, Guid campaignId, Guid craftingId, CancellationToken ct = default);
+
+    // Interlude preview: server-computed projection of advancing `days`. Display-only deltas.
+    Task<Result<InterludeProjection>> PreviewInterludeAsync(
+        Guid callerId, Guid campaignId, int days, CancellationToken ct = default);
+
+    // Interlude apply: re-runs the projection from FRESH state and applies ONLY the server-computed
+    // delta for the selected {Kind, TargetId} — never any number from the request body.
+    Task<Result<GuildSheetResponse>> ApplyInterludeAsync(
+        Guid callerId, Guid campaignId, ApplyInterludeRequest request, CancellationToken ct = default);
 }

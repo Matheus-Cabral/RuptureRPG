@@ -57,6 +57,7 @@ public static class InfrastructureExtensions
         services.AddSingleton<JwtService>();
         services.AddSingleton<ICharacterStatsCalculator, CharacterStatsCalculator>();
         services.AddSingleton<IGuildStatsCalculator, GuildStatsCalculator>();  // pure & stateless, like CharacterStatsCalculator
+        services.AddSingleton<IInterludeCalculator, InterludeCalculator>();    // pure & stateless
         services.AddSingleton<IFileStorageService, LocalFileStorageService>();
 
         // Application services
