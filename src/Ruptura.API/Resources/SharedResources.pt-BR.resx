@@ -69,6 +69,11 @@
   <data name="Guild.Forbidden"><value>Você não tem acesso a esta guilda.</value></data>
   <data name="Guild.Saved"><value>Ficha da guilda salva com sucesso.</value></data>
   <data name="Guild.Conflict"><value>Esta ficha da guilda foi modificada por outra pessoa. Recarregue e tente novamente.</value></data>
+  <data name="Guild.InstallationInvalid"><value>Esta entrada do catálogo não é uma instalação válida para esta campanha.</value></data>
+  <data name="Guild.BuildingNotConstructible"><value>Esta instalação não pode ser construída.</value></data>
+  <data name="Guild.BuildingLevelInvalid"><value>O nível da construção está fora do intervalo permitido para esta instalação.</value></data>
+  <data name="Guild.BuildingExists"><value>Esta instalação já foi construída.</value></data>
+  <data name="Guild.BuildingNotFound"><value>Construção não encontrada.</value></data>
 
   <!-- Journal -->
   <data name="Journal.NotFound"><value>Entrada de diário não encontrada.</value></data>

@@ -94,4 +94,56 @@ public class GuildController(
             return NotFound(ApiResponse.Fail(localizer[result.Error!]));
         return Ok(ApiResponse.Ok());
     }
+
+    [HttpPost("campaigns/{campaignId:guid}/guild/buildings")]
+    [ProducesResponseType(typeof(ApiResponse<GuildBuildingResponse>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> AddBuilding(
+        Guid campaignId, [FromBody] CreateBuildingRequest request, CancellationToken ct)
+    {
+        var callerId = Guid.Parse(User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
+        var result = await guildService.AddBuildingAsync(callerId, campaignId, request, ct);
+        if (result.IsFailure)
+            return BuildingFailure(result.Error!);
+        return StatusCode(StatusCodes.Status201Created, ApiResponse<GuildBuildingResponse>.Ok(result.Value!));
+    }
+
+    [HttpPut("campaigns/{campaignId:guid}/guild/buildings/{buildingId:guid}")]
+    [ProducesResponseType(typeof(ApiResponse<GuildBuildingResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateBuilding(
+        Guid campaignId, Guid buildingId, [FromBody] UpdateBuildingRequest request, CancellationToken ct)
+    {
+        var callerId = Guid.Parse(User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
+        var result = await guildService.UpdateBuildingAsync(callerId, campaignId, buildingId, request, ct);
+        if (result.IsFailure)
+            return BuildingFailure(result.Error!);
+        return Ok(ApiResponse<GuildBuildingResponse>.Ok(result.Value!));
+    }
+
+    [HttpDelete("campaigns/{campaignId:guid}/guild/buildings/{buildingId:guid}")]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteBuilding(
+        Guid campaignId, Guid buildingId, CancellationToken ct)
+    {
+        var callerId = Guid.Parse(User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
+        var result = await guildService.DeleteBuildingAsync(callerId, campaignId, buildingId, ct);
+        if (result.IsFailure)
+            return BuildingFailure(result.Error!);
+        return Ok(ApiResponse.Ok());
+    }
+
+    // Validation failures (bad installation/level/duplicate) → 400; missing/cross-guild/non-member → 404.
+    private IActionResult BuildingFailure(string error) => error switch
+    {
+        ErrorCodes.Guild.InstallationInvalid
+            or ErrorCodes.Guild.BuildingNotConstructible
+            or ErrorCodes.Guild.BuildingLevelInvalid
+            or ErrorCodes.Guild.BuildingExists
+            => BadRequest(ApiResponse.Fail(localizer[error])),
+        _ => NotFound(ApiResponse.Fail(localizer[error]))
+    };
 }

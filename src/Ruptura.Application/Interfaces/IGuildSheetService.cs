@@ -34,4 +34,13 @@ public interface IGuildSheetService
 
     Task<Result> DeleteExpeditionAsync(
         Guid callerId, Guid campaignId, Guid expeditionId, CancellationToken ct = default);
+
+    Task<Result<GuildBuildingResponse>> AddBuildingAsync(
+        Guid callerId, Guid campaignId, CreateBuildingRequest request, CancellationToken ct = default);
+
+    Task<Result<GuildBuildingResponse>> UpdateBuildingAsync(
+        Guid callerId, Guid campaignId, Guid buildingId, UpdateBuildingRequest request, CancellationToken ct = default);
+
+    Task<Result> DeleteBuildingAsync(
+        Guid callerId, Guid campaignId, Guid buildingId, CancellationToken ct = default);
 }

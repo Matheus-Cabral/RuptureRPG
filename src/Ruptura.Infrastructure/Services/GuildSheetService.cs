@@ -138,6 +138,123 @@ public class GuildSheetService(
         return Result.Success();
     }
 
+    // Returns the InstallationCatalogData if the entry is a valid, visible, non-archived,
+    // constructible Installation for this campaign; otherwise a failure with the right code.
+    // Catalog blobs use DEFAULT (PascalCase) JSON — not the Web convention used for the guild blob.
+    private async Task<Result<InstallationCatalogData>> ValidateInstallationAsync(
+        Guid catalogEntryId, Guid campaignId, int level, CancellationToken ct)
+    {
+        var entry = await catalogRepo.GetByIdAsync(catalogEntryId, ct);
+        if (entry is null || entry.Type != CatalogEntryType.Installation
+            || entry.IsArchived
+            || (entry.CampaignId is not null && entry.CampaignId != campaignId))
+            return Result.Failure<InstallationCatalogData>(ErrorCodes.Guild.InstallationInvalid);
+
+        InstallationCatalogData? data;
+        try { data = JsonSerializer.Deserialize<InstallationCatalogData>(entry.DataJson); }
+        catch (JsonException) { data = null; }
+        if (data is null)
+            return Result.Failure<InstallationCatalogData>(ErrorCodes.Guild.InstallationInvalid);
+        if (data.NonConstructible)
+            return Result.Failure<InstallationCatalogData>(ErrorCodes.Guild.BuildingNotConstructible);
+        if (level < 1 || level > data.LevelCap)
+            return Result.Failure<InstallationCatalogData>(ErrorCodes.Guild.BuildingLevelInvalid);
+        return Result.Success(data);
+    }
+
+    public async Task<Result<GuildBuildingResponse>> AddBuildingAsync(
+        Guid callerId, Guid campaignId, CreateBuildingRequest request, CancellationToken ct = default)
+    {
+        var auth = await AuthorizeAsync(callerId, campaignId, ct);
+        if (auth.IsFailure)
+            return Result.Failure<GuildBuildingResponse>(auth.Error!);
+        var guild = auth.Value!;
+
+        var validation = await ValidateInstallationAsync(request.CatalogEntryId, campaignId, request.Level, ct);
+        if (validation.IsFailure)
+            return Result.Failure<GuildBuildingResponse>(validation.Error!);
+
+        var building = new GuildBuilding
+        {
+            Id = Guid.NewGuid(),
+            GuildSheetId = guild.Id,
+            CatalogEntryId = request.CatalogEntryId,
+            Level = request.Level,
+            IsActive = request.IsActive
+        };
+        try
+        {
+            await buildingRepo.AddAsync(building, ct);
+            await buildingRepo.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException)
+        {
+            // ux_guild_buildings_sheet_installation — one building per installation type.
+            return Result.Failure<GuildBuildingResponse>(ErrorCodes.Guild.BuildingExists);
+        }
+
+        return Result.Success(await MapBuildingAsync(building, ct));
+    }
+
+    public async Task<Result<GuildBuildingResponse>> UpdateBuildingAsync(
+        Guid callerId, Guid campaignId, Guid buildingId, UpdateBuildingRequest request, CancellationToken ct = default)
+    {
+        var auth = await AuthorizeAsync(callerId, campaignId, ct);
+        if (auth.IsFailure)
+            return Result.Failure<GuildBuildingResponse>(auth.Error!);
+        var guild = auth.Value!;
+
+        var building = await buildingRepo.GetByIdAsync(buildingId, ct);
+        // Cross-guild safety: the target must belong to this campaign's guild, else hide its existence.
+        if (building is null || building.GuildSheetId != guild.Id)
+            return Result.Failure<GuildBuildingResponse>(ErrorCodes.Guild.BuildingNotFound);
+
+        var validation = await ValidateInstallationAsync(building.CatalogEntryId, campaignId, request.Level, ct);
+        if (validation.IsFailure)
+            return Result.Failure<GuildBuildingResponse>(validation.Error!);
+
+        building.Level = request.Level;
+        building.IsActive = request.IsActive;
+        buildingRepo.Update(building);
+        await buildingRepo.SaveChangesAsync(ct);
+
+        return Result.Success(await MapBuildingAsync(building, ct));
+    }
+
+    public async Task<Result> DeleteBuildingAsync(
+        Guid callerId, Guid campaignId, Guid buildingId, CancellationToken ct = default)
+    {
+        var auth = await AuthorizeAsync(callerId, campaignId, ct);
+        if (auth.IsFailure)
+            return Result.Failure(auth.Error!);
+        var guild = auth.Value!;
+
+        var building = await buildingRepo.GetByIdAsync(buildingId, ct);
+        // Cross-guild safety: the target must belong to this campaign's guild, else hide its existence.
+        if (building is null || building.GuildSheetId != guild.Id)
+            return Result.Failure(ErrorCodes.Guild.BuildingNotFound);
+
+        buildingRepo.Remove(building);
+        await buildingRepo.SaveChangesAsync(ct);
+
+        return Result.Success();
+    }
+
+    private async Task<GuildBuildingResponse> MapBuildingAsync(GuildBuilding b, CancellationToken ct)
+    {
+        var entry = await catalogRepo.GetByIdAsync(b.CatalogEntryId, ct);
+        return MapBuilding(b, entry?.Name ?? string.Empty);
+    }
+
+    private static GuildBuildingResponse MapBuilding(GuildBuilding b, string installationName) => new()
+    {
+        Id = b.Id,
+        CatalogEntryId = b.CatalogEntryId,
+        InstallationName = installationName,
+        Level = b.Level,
+        IsActive = b.IsActive
+    };
+
     public async Task<Result<GuildSheet>> AuthorizeGuildAccessByIdAsync(
         Guid callerId, Guid guildSheetId, CancellationToken ct = default)
     {
@@ -292,6 +409,10 @@ public class GuildSheetService(
             Data = data,
             DerivedStats = derived,
             Expeditions = (await expeditionRepo.GetByGuildAsync(guild.Id, ct)).Select(MapExpedition).ToList(),
+            // Reuse the installationCatalog dict already loaded for the calculator — no N+1 GetByIdAsync.
+            Buildings = buildings
+                .Select(b => MapBuilding(b, installationCatalog.TryGetValue(b.CatalogEntryId, out var e) ? e.Name : string.Empty))
+                .ToList(),
             Version = guild.Version,
             CreatedAt = guild.CreatedAt,
             UpdatedAt = guild.UpdatedAt

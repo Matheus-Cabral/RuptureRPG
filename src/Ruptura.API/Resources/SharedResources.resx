@@ -69,6 +69,11 @@
   <data name="Guild.Forbidden"><value>You do not have access to this guild.</value></data>
   <data name="Guild.Saved"><value>Guild sheet saved successfully.</value></data>
   <data name="Guild.Conflict"><value>This guild sheet was modified by someone else. Reload and try again.</value></data>
+  <data name="Guild.InstallationInvalid"><value>That catalog entry is not a valid installation for this campaign.</value></data>
+  <data name="Guild.BuildingNotConstructible"><value>This installation cannot be built.</value></data>
+  <data name="Guild.BuildingLevelInvalid"><value>The building level is outside the allowed range for this installation.</value></data>
+  <data name="Guild.BuildingExists"><value>This installation has already been built.</value></data>
+  <data name="Guild.BuildingNotFound"><value>Building not found.</value></data>
 
   <!-- Journal -->
   <data name="Journal.NotFound"><value>Journal entry not found.</value></data>
