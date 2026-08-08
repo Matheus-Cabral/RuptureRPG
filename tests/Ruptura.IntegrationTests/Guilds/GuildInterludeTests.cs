@@ -156,8 +156,9 @@ public class GuildInterludeTests(IntegrationTestFactory factory)
         await AddOperarioAsync(client, campaign.Id, dailySalary: 5); // maintenance 5/d
         await SetSilverAsync(client, campaign.Id, 100);
 
+        var current = await GetGuildAsync(client, campaign.Id);
         var response = await client.PostAsJsonAsync($"api/campaigns/{campaign.Id}/guild/interlude/apply",
-            new ApplyInterludeRequest { Kind = "Maintenance", Days = 10 });
+            new ApplyInterludeRequest { Kind = "Maintenance", Days = 10, Version = current.Version });
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         (await ReadGuildAsync(response)).Data.Resources.Silver.Should().Be(50); // 100 - 5×10
 
@@ -179,8 +180,9 @@ public class GuildInterludeTests(IntegrationTestFactory factory)
         await AddOperarioAsync(client, campaign.Id, dailySalary: 5); // maintenance 5/d
         await SetSilverAsync(client, campaign.Id, 100);
 
+        var current = await GetGuildAsync(client, campaign.Id);
         var applyResponse = await client.PostAsJsonAsync($"api/campaigns/{campaign.Id}/guild/interlude/apply",
-            new ApplyInterludeRequest { Kind = "Maintenance", Days = 10 });
+            new ApplyInterludeRequest { Kind = "Maintenance", Days = 10, Version = current.Version });
         applyResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var refreshed = await ReadGuildAsync(applyResponse);
         refreshed.Data.Resources.Silver.Should().Be(50); // 100 - 5×10
@@ -203,6 +205,34 @@ public class GuildInterludeTests(IntegrationTestFactory factory)
         (await GetGuildAsync(client, campaign.Id)).Data.Resources.Silver.Should().Be(50);
     }
 
+    // A Maintenance apply is a blob read-modify-write, so it must be version-aware: if a concurrent
+    // blob save moves the row's xmin between the client's load and the apply, the apply must 409 (and
+    // NOT deduct) rather than silently swallow the concurrent writer's change. Regression for the
+    // "SetExpectedVersion(guild, guild.Version) compares the row against itself" no-op bug.
+    [Fact]
+    public async Task ApplyMaintenance_WithStaleVersion_Returns409_AndDoesNotDeduct()
+    {
+        var (client, campaign, playerToken, _) = await SetUpCampaignWithMemberAsync();
+        AuthHelper.SetBearerToken(client, playerToken);
+        await GetGuildAsync(client, campaign.Id);
+        await AddOperarioAsync(client, campaign.Id, dailySalary: 5); // maintenance 5/d
+        await SetSilverAsync(client, campaign.Id, 100);
+
+        // The client's projection is based on v1.
+        var v1 = (await GetGuildAsync(client, campaign.Id)).Version;
+
+        // A concurrent blob save bumps the row to v2 (Silver → 200), invalidating v1.
+        await SetSilverAsync(client, campaign.Id, 200);
+
+        // Applying Maintenance with the STALE v1 must be rejected, not applied on top of the v2 state.
+        var response = await client.PostAsJsonAsync($"api/campaigns/{campaign.Id}/guild/interlude/apply",
+            new ApplyInterludeRequest { Kind = "Maintenance", Days = 10, Version = v1 });
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+
+        // The concurrent writer's balance stands; no deduction leaked through.
+        (await GetGuildAsync(client, campaign.Id)).Data.Resources.Silver.Should().Be(200);
+    }
+
     [Fact]
     public async Task ApplyMaintenance_FloorsSilverAtZero_WhenItWouldGoNegative()
     {
@@ -212,8 +242,9 @@ public class GuildInterludeTests(IntegrationTestFactory factory)
         await AddOperarioAsync(client, campaign.Id, dailySalary: 5); // maintenance 5/d → 50 over 10 days
         await SetSilverAsync(client, campaign.Id, 10); // less than the 50 due
 
+        var current = await GetGuildAsync(client, campaign.Id);
         var response = await client.PostAsJsonAsync($"api/campaigns/{campaign.Id}/guild/interlude/apply",
-            new ApplyInterludeRequest { Kind = "Maintenance", Days = 10 });
+            new ApplyInterludeRequest { Kind = "Maintenance", Days = 10, Version = current.Version });
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         (await ReadGuildAsync(response)).Data.Resources.Silver.Should().Be(0); // floored, not negative
     }
@@ -227,8 +258,9 @@ public class GuildInterludeTests(IntegrationTestFactory factory)
         await AddOperarioAsync(client, campaign.Id, dailySalary: 0); // income 2/d, no maintenance
         await SetSilverAsync(client, campaign.Id, 100);
 
+        var current = await GetGuildAsync(client, campaign.Id);
         var response = await client.PostAsJsonAsync($"api/campaigns/{campaign.Id}/guild/interlude/apply",
-            new ApplyInterludeRequest { Kind = "Income", Days = 10 });
+            new ApplyInterludeRequest { Kind = "Income", Days = 10, Version = current.Version });
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         (await ReadGuildAsync(response)).Data.Resources.Silver.Should().Be(120); // 100 + 2×10
     }

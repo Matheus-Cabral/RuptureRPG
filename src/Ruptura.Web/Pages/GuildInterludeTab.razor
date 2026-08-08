@@ -64,6 +64,11 @@
 
 @code {
     [Parameter] public Guid CampaignId { get; set; }
+    // The current guild blob version, threaded from the parent's _guild.Version. A Maintenance/Income
+    // apply is a blob read-modify-write, so it must carry the version the user's projection was based
+    // on; the server 409s if a concurrent blob save moved it. The parent re-passes the bumped version
+    // after each OnGuildReplaced.
+    [Parameter] public uint GuildVersion { get; set; }
     // Apply returns the whole refreshed guild; hand it up so the parent adopts DerivedStats/Version/child lists.
     [Parameter] public EventCallback<GuildSheetResponse> OnGuildReplaced { get; set; }
 
@@ -152,7 +157,8 @@
             {
                 Kind = indicator.Kind,
                 TargetId = indicator.TargetId,
-                Days = _projection?.Days ?? _days
+                Days = _projection?.Days ?? _days,
+                Version = GuildVersion
             });
 
             if (result.Response?.Data is not null)

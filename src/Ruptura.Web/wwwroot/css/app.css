@@ -328,6 +328,16 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 400; color: var(--te
     scrollbar-width: thin;
 }
 
+/* flex-wrap:nowrap alone doesn't stop flex items shrinking/wrapping — pin each tab to its content
+   width and keep its label on one line so the strip scrolls horizontally instead of squashing. */
+.nav-tabs.guild-tab-strip .nav-item {
+    flex: 0 0 auto;
+}
+
+.nav-tabs.guild-tab-strip .nav-link {
+    white-space: nowrap;
+}
+
 /* ── App Shell ─────────────────────────────────────────────────────────────── */
 .app-shell {
     /* bare wrapper — body handles min-height, sidebar+topbar are fixed */

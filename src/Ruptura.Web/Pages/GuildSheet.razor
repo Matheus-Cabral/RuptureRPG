@@ -109,7 +109,7 @@
             }
             else if (_activeTab == "interlude")
             {
-                <GuildInterludeTab CampaignId="CampaignId" OnGuildReplaced="ReplaceGuild" />
+                <GuildInterludeTab CampaignId="CampaignId" GuildVersion="_guild.Version" OnGuildReplaced="ReplaceGuild" />
             }
         </div>
     }
@@ -139,8 +139,6 @@
     private GuildSheetData _data = new();
     private List<BreadcrumbItem> _breadcrumbs = [];
     private string _guildName = string.Empty;
-    private string _baselineBlobJson = "{}";
-    private string _baselineName = string.Empty;
     private string? _emblemDataUri;
     private bool _uploadingEmblem;
     private bool _loading = true;
@@ -182,37 +180,25 @@
         _data = _guild.Data;
         _guildName = _guild.GuildName;
         _emblemDataUri = await MediaService.GetDataUriAsync(_data.Identity.EmblemImagePath);
-        SyncBaseline();
     }
 
-    // Capture the last server-confirmed blob + name so a later child-refresh can tell whether the
-    // user has unsaved blob/name edits. Serialize with the SAME options SaveAsync uses to send
-    // DataJson (plain JsonSerializer.Serialize(_data), no options) so baseline == wire form.
-    private void SyncBaseline()
-    {
-        _baselineBlobJson = System.Text.Json.JsonSerializer.Serialize(_data);
-        _baselineName = _guildName;
-    }
-
-    private bool BlobDirty() =>
-        GuildBlobDirtyState.IsDirty(System.Text.Json.JsonSerializer.Serialize(_data), _baselineBlobJson, _guildName, _baselineName);
-
-    // After a child (expedition) mutation, refresh ONLY the expedition list and the concurrency
-    // token — re-GETting into _data/_guildName would wipe the user's unsaved blob/name edits.
+    // Child-row mutations (expedition/building/staff/research/crafting) do NOT bump the guild blob's
+    // xmin, so the user's load-time _guild.Version stays valid through any number of them. These
+    // refreshes therefore NEVER touch _guild.Version: adopting refreshed.Data.Version here would mean
+    // silently swallowing a CONCURRENT blob save (the only thing that moves xmin) while keeping the
+    // now-stale local _data — exactly the lost update the token exists to prevent. The next blob Save
+    // will 409 correctly if such a concurrent write happened; a user who only manages child entities
+    // never PUTs the blob and so never sees a spurious 409.
     private async Task RefreshExpeditionsAsync()
     {
         if (_guild is null) return;
         var refreshed = await GuildService.GetGuildAsync(CampaignId);
         if (refreshed?.Data is not null)
-        {
             _guild.Expeditions = refreshed.Data.Expeditions;
-            if (!BlobDirty()) _guild.Version = refreshed.Data.Version; // don't mask a concurrent blob save
-        }
     }
 
-    // After a building mutation, refresh ONLY the buildings list, the recomputed derived stats
-    // (capacities/overflow shift), and the concurrency token — never _data/_guildName, which may
-    // hold unsaved blob/name edits.
+    // Refresh the buildings list and the recomputed derived stats (capacities/overflow shift) —
+    // never _data/_guildName (unsaved blob/name edits) and never _guild.Version (see above).
     private async Task RefreshBuildingsAsync()
     {
         if (_guild is null) return;
@@ -221,7 +207,6 @@
         {
             _guild.Buildings = refreshed.Data.Buildings;
             _guild.DerivedStats = refreshed.Data.DerivedStats;
-            if (!BlobDirty()) _guild.Version = refreshed.Data.Version; // don't mask a concurrent blob save
         }
     }
 
@@ -234,12 +219,11 @@
         {
             _guild.Staff = refreshed.Data.Staff;
             _guild.DerivedStats = refreshed.Data.DerivedStats;
-            if (!BlobDirty()) _guild.Version = refreshed.Data.Version; // don't mask a concurrent blob save
         }
     }
 
     // Research mutations shift the CG Pesquisa capacity (completed projects add Points), so refresh
-    // the derived stats alongside the list and token — never _data/_guildName.
+    // the derived stats alongside the list — never _data/_guildName or _guild.Version.
     private async Task RefreshResearchAsync()
     {
         if (_guild is null) return;
@@ -248,7 +232,6 @@
         {
             _guild.Research = refreshed.Data.Research;
             _guild.DerivedStats = refreshed.Data.DerivedStats;
-            if (!BlobDirty()) _guild.Version = refreshed.Data.Version; // don't mask a concurrent blob save
         }
     }
 
@@ -261,7 +244,6 @@
         {
             _guild.Crafting = refreshed.Data.Crafting;
             _guild.DerivedStats = refreshed.Data.DerivedStats;
-            if (!BlobDirty()) _guild.Version = refreshed.Data.Version; // don't mask a concurrent blob save
         }
     }
 
@@ -275,12 +257,9 @@
     {
         _guild = refreshed;
         _data.Resources = refreshed.Data.Resources;
-        // The apply read fresh server state, so refreshed.Version is current and _guild adopts it
-        // wholesale above. Reset the baseline to the SERVER's blob so BlobDirty() reports only
-        // genuine unsaved edits (not the server-applied Resources deduction we just adopted); any
-        // later local edit re-dirties, and a concurrent save is still caught on the next Save.
-        _baselineBlobJson = System.Text.Json.JsonSerializer.Serialize(refreshed.Data);
-        _baselineName = refreshed.GuildName;
+        // The apply read fresh server state and is version-aware (it 409s if the client's version was
+        // stale), so refreshed.Version is current and _guild adopts it wholesale above. The next Save
+        // carries that adopted version and stays correct.
     }
 
     private async Task SaveAsync()
@@ -303,7 +282,6 @@
                 _guild = result.Response.Data;
                 _data = _guild.Data;
                 _guildName = _guild.GuildName;
-                SyncBaseline();
                 Toast.Success(L["Guild.Saved"]);
             }
             else if (result.IsConflict)

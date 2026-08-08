@@ -846,7 +846,9 @@ public class GuildSheetService(
                 data.Resources.Silver = (int)Math.Clamp((long)data.Resources.Silver + (indicator.SilverDelta ?? 0), 0, int.MaxValue);
                 guild.DataJson = JsonSerializer.Serialize(data, JsonOpts);
                 guild.UpdatedAt = DateTime.UtcNow;
-                guildRepo.SetExpectedVersion(guild, guild.Version);
+                // Check the CLIENT's expected version (not guild.Version, which would compare the row
+                // against itself — a no-op). A concurrent blob save since the client's load → 409.
+                guildRepo.SetExpectedVersion(guild, request.Version);
                 guildRepo.Update(guild);
                 try { await guildRepo.SaveChangesAsync(ct); }
                 catch (DbUpdateConcurrencyException) { return Result.Failure<GuildSheetResponse>(ErrorCodes.Guild.Conflict); }
