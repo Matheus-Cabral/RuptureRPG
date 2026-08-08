@@ -316,6 +316,18 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 400; color: var(--te
     border-color: transparent transparent var(--primary);
 }
 
+/* Guild sheet has 12 tabs — scoped to .guild-tab-strip so the strip stays a
+   self-contained horizontal scroller at ~375px (page body never scrolls) without
+   depending on the shared .nav-tabs rule and without disturbing other tab bars. */
+.nav-tabs.guild-tab-strip {
+    flex-wrap: nowrap;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
+}
+
 /* ── App Shell ─────────────────────────────────────────────────────────────── */
 .app-shell {
     /* bare wrapper — body handles min-height, sidebar+topbar are fixed */

@@ -146,26 +146,33 @@
         if (_addCatalogId is not { } id) return;
 
         _saving = true;
-        var result = await GuildService.AddBuildingAsync(CampaignId, new CreateBuildingRequest
+        try
         {
-            CatalogEntryId = id,
-            Level = _addLevel,
-            IsActive = _addActive
-        });
+            var result = await GuildService.AddBuildingAsync(CampaignId, new CreateBuildingRequest
+            {
+                CatalogEntryId = id,
+                Level = _addLevel,
+                IsActive = _addActive
+            });
 
-        if (result?.Data is not null)
-        {
-            Toast.Success(L["Guild.Building.Saved"]);
-            _addCatalogId = null;
-            _addLevel = 1;
-            _addActive = true;
-            await OnChanged.InvokeAsync();
+            if (result?.Data is not null)
+            {
+                Toast.Success(L["Guild.Building.Saved"]);
+                _addCatalogId = null;
+                _addLevel = 1;
+                _addActive = true;
+                await OnChanged.InvokeAsync();
+            }
+            else
+            {
+                Toast.Error(result?.Message ?? L["Common.Error"]);
+            }
         }
-        else
+        finally
         {
-            Toast.Error(result?.Message ?? L["Common.Error"]);
+            _saving = false;
+            StateHasChanged();
         }
-        _saving = false;
     }
 
     private async Task UpdateAsync(GuildBuildingResponse building, int level, bool isActive)

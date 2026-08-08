@@ -151,36 +151,42 @@
 
         _saving = true;
 
-        if (_editingId is null)
+        try
         {
-            var result = await GuildService.AddExpeditionAsync(CampaignId, new CreateExpeditionRequest
+            if (_editingId is null)
             {
-                Kind = _editing.Kind,
-                Date = _editing.Date,
-                Participants = _editing.Participants,
-                Objective = _editing.Objective,
-                Result = _editing.Result,
-                Losses = _editing.Losses,
-                ResourcesGained = _editing.ResourcesGained
-            });
-            await HandleResult(result?.Data is not null, result?.Message);
+                var result = await GuildService.AddExpeditionAsync(CampaignId, new CreateExpeditionRequest
+                {
+                    Kind = _editing.Kind,
+                    Date = _editing.Date,
+                    Participants = _editing.Participants,
+                    Objective = _editing.Objective,
+                    Result = _editing.Result,
+                    Losses = _editing.Losses,
+                    ResourcesGained = _editing.ResourcesGained
+                });
+                await HandleResult(result?.Data is not null, result?.Message);
+            }
+            else
+            {
+                var result = await GuildService.UpdateExpeditionAsync(CampaignId, _editingId.Value, new UpdateExpeditionRequest
+                {
+                    Kind = _editing.Kind,
+                    Date = _editing.Date,
+                    Participants = _editing.Participants,
+                    Objective = _editing.Objective,
+                    Result = _editing.Result,
+                    Losses = _editing.Losses,
+                    ResourcesGained = _editing.ResourcesGained
+                });
+                await HandleResult(result?.Data is not null, result?.Message);
+            }
         }
-        else
+        finally
         {
-            var result = await GuildService.UpdateExpeditionAsync(CampaignId, _editingId.Value, new UpdateExpeditionRequest
-            {
-                Kind = _editing.Kind,
-                Date = _editing.Date,
-                Participants = _editing.Participants,
-                Objective = _editing.Objective,
-                Result = _editing.Result,
-                Losses = _editing.Losses,
-                ResourcesGained = _editing.ResourcesGained
-            });
-            await HandleResult(result?.Data is not null, result?.Message);
+            _saving = false;
+            StateHasChanged();
         }
-
-        _saving = false;
     }
 
     private async Task HandleResult(bool success, string? message)

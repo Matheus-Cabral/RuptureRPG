@@ -224,38 +224,44 @@
 
         _saving = true;
 
-        if (_editingId is null)
+        try
         {
-            var result = await GuildService.AddResearchAsync(CampaignId, new CreateResearchProjectRequest
+            if (_editingId is null)
             {
-                Name = _editing.Name,
-                ResearchType = _editing.ResearchType,
-                Complexity = _editing.Complexity,
-                Stage = _editing.Stage,
-                ProgressDays = _editing.ProgressDays,
-                Researchers = _editing.Researchers,
-                Points = _editing.Points,
-                IsComplete = _editing.IsComplete
-            });
-            await HandleResult(result?.Data is not null, result?.Message);
+                var result = await GuildService.AddResearchAsync(CampaignId, new CreateResearchProjectRequest
+                {
+                    Name = _editing.Name,
+                    ResearchType = _editing.ResearchType,
+                    Complexity = _editing.Complexity,
+                    Stage = _editing.Stage,
+                    ProgressDays = _editing.ProgressDays,
+                    Researchers = _editing.Researchers,
+                    Points = _editing.Points,
+                    IsComplete = _editing.IsComplete
+                });
+                await HandleResult(result?.Data is not null, result?.Message);
+            }
+            else
+            {
+                var result = await GuildService.UpdateResearchAsync(CampaignId, _editingId.Value, new UpdateResearchProjectRequest
+                {
+                    Name = _editing.Name,
+                    ResearchType = _editing.ResearchType,
+                    Complexity = _editing.Complexity,
+                    Stage = _editing.Stage,
+                    ProgressDays = _editing.ProgressDays,
+                    Researchers = _editing.Researchers,
+                    Points = _editing.Points,
+                    IsComplete = _editing.IsComplete
+                });
+                await HandleResult(result?.Data is not null, result?.Message);
+            }
         }
-        else
+        finally
         {
-            var result = await GuildService.UpdateResearchAsync(CampaignId, _editingId.Value, new UpdateResearchProjectRequest
-            {
-                Name = _editing.Name,
-                ResearchType = _editing.ResearchType,
-                Complexity = _editing.Complexity,
-                Stage = _editing.Stage,
-                ProgressDays = _editing.ProgressDays,
-                Researchers = _editing.Researchers,
-                Points = _editing.Points,
-                IsComplete = _editing.IsComplete
-            });
-            await HandleResult(result?.Data is not null, result?.Message);
+            _saving = false;
+            StateHasChanged();
         }
-
-        _saving = false;
     }
 
     private async Task HandleResult(bool success, string? message)

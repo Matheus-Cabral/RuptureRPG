@@ -47,7 +47,7 @@
             </button>
         </div>
 
-        <ul class="nav nav-tabs">
+        <ul class="nav nav-tabs guild-tab-strip">
             @foreach (var tab in Tabs)
             {
                 <li class="nav-item">
@@ -289,32 +289,38 @@
 
         _saving = true;
 
-        var result = await GuildService.UpdateGuildAsync(CampaignId, new UpdateGuildSheetRequest
+        try
         {
-            GuildName = _guildName,
-            DataJson = System.Text.Json.JsonSerializer.Serialize(_data),
-            Version = _guild.Version
-        });
+            var result = await GuildService.UpdateGuildAsync(CampaignId, new UpdateGuildSheetRequest
+            {
+                GuildName = _guildName,
+                DataJson = System.Text.Json.JsonSerializer.Serialize(_data),
+                Version = _guild.Version
+            });
 
-        if (result.Response?.Data is not null)
-        {
-            _guild = result.Response.Data;
-            _data = _guild.Data;
-            _guildName = _guild.GuildName;
-            SyncBaseline();
-            Toast.Success(L["Guild.Saved"]);
+            if (result.Response?.Data is not null)
+            {
+                _guild = result.Response.Data;
+                _data = _guild.Data;
+                _guildName = _guild.GuildName;
+                SyncBaseline();
+                Toast.Success(L["Guild.Saved"]);
+            }
+            else if (result.IsConflict)
+            {
+                Toast.Error(L["Guild.Conflict"]);
+                await LoadGuildAsync();
+            }
+            else
+            {
+                Toast.Error(result.Response?.Message ?? L["Common.Error"]);
+            }
         }
-        else if (result.IsConflict)
+        finally
         {
-            Toast.Error(L["Guild.Conflict"]);
-            await LoadGuildAsync();
+            _saving = false;
+            StateHasChanged();
         }
-        else
-        {
-            Toast.Error(result.Response?.Message ?? L["Common.Error"]);
-        }
-
-        _saving = false;
     }
 
     private async Task UploadEmblemAsync(InputFileChangeEventArgs e)

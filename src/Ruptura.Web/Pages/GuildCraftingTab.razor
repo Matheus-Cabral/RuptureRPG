@@ -185,34 +185,40 @@
 
         _saving = true;
 
-        if (_editingId is null)
+        try
         {
-            var result = await GuildService.AddCraftingAsync(CampaignId, new CreateCraftingOrderRequest
+            if (_editingId is null)
             {
-                Category = _editing.Category,
-                ItemName = _editing.ItemName,
-                Quality = _editing.Quality,
-                RequiredDays = _editing.RequiredDays,
-                ProgressDays = _editing.ProgressDays,
-                Status = _editing.Status
-            });
-            await HandleResult(result?.Data is not null, result?.Message);
+                var result = await GuildService.AddCraftingAsync(CampaignId, new CreateCraftingOrderRequest
+                {
+                    Category = _editing.Category,
+                    ItemName = _editing.ItemName,
+                    Quality = _editing.Quality,
+                    RequiredDays = _editing.RequiredDays,
+                    ProgressDays = _editing.ProgressDays,
+                    Status = _editing.Status
+                });
+                await HandleResult(result?.Data is not null, result?.Message);
+            }
+            else
+            {
+                var result = await GuildService.UpdateCraftingAsync(CampaignId, _editingId.Value, new UpdateCraftingOrderRequest
+                {
+                    Category = _editing.Category,
+                    ItemName = _editing.ItemName,
+                    Quality = _editing.Quality,
+                    RequiredDays = _editing.RequiredDays,
+                    ProgressDays = _editing.ProgressDays,
+                    Status = _editing.Status
+                });
+                await HandleResult(result?.Data is not null, result?.Message);
+            }
         }
-        else
+        finally
         {
-            var result = await GuildService.UpdateCraftingAsync(CampaignId, _editingId.Value, new UpdateCraftingOrderRequest
-            {
-                Category = _editing.Category,
-                ItemName = _editing.ItemName,
-                Quality = _editing.Quality,
-                RequiredDays = _editing.RequiredDays,
-                ProgressDays = _editing.ProgressDays,
-                Status = _editing.Status
-            });
-            await HandleResult(result?.Data is not null, result?.Message);
+            _saving = false;
+            StateHasChanged();
         }
-
-        _saving = false;
     }
 
     private async Task HandleResult(bool success, string? message)

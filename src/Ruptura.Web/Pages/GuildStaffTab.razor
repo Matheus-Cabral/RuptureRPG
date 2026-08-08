@@ -219,36 +219,42 @@
 
         _saving = true;
 
-        if (_editingId is null)
+        try
         {
-            var result = await GuildService.AddStaffAsync(CampaignId, new CreateStaffRequest
+            if (_editingId is null)
             {
-                Kind = _editing.Kind,
-                TypeOrRanking = _editing.TypeOrRanking,
-                Name = _editing.Name,
-                DailySalary = _editing.DailySalary,
-                IsActive = _editing.IsActive,
-                Efficiency = _editing.Efficiency,
-                Morale = _editing.Morale
-            });
-            await HandleResult(result?.Data is not null, result?.Message);
+                var result = await GuildService.AddStaffAsync(CampaignId, new CreateStaffRequest
+                {
+                    Kind = _editing.Kind,
+                    TypeOrRanking = _editing.TypeOrRanking,
+                    Name = _editing.Name,
+                    DailySalary = _editing.DailySalary,
+                    IsActive = _editing.IsActive,
+                    Efficiency = _editing.Efficiency,
+                    Morale = _editing.Morale
+                });
+                await HandleResult(result?.Data is not null, result?.Message);
+            }
+            else
+            {
+                var result = await GuildService.UpdateStaffAsync(CampaignId, _editingId.Value, new UpdateStaffRequest
+                {
+                    Kind = _editing.Kind,
+                    TypeOrRanking = _editing.TypeOrRanking,
+                    Name = _editing.Name,
+                    DailySalary = _editing.DailySalary,
+                    IsActive = _editing.IsActive,
+                    Efficiency = _editing.Efficiency,
+                    Morale = _editing.Morale
+                });
+                await HandleResult(result?.Data is not null, result?.Message);
+            }
         }
-        else
+        finally
         {
-            var result = await GuildService.UpdateStaffAsync(CampaignId, _editingId.Value, new UpdateStaffRequest
-            {
-                Kind = _editing.Kind,
-                TypeOrRanking = _editing.TypeOrRanking,
-                Name = _editing.Name,
-                DailySalary = _editing.DailySalary,
-                IsActive = _editing.IsActive,
-                Efficiency = _editing.Efficiency,
-                Morale = _editing.Morale
-            });
-            await HandleResult(result?.Data is not null, result?.Message);
+            _saving = false;
+            StateHasChanged();
         }
-
-        _saving = false;
     }
 
     private async Task HandleResult(bool success, string? message)
