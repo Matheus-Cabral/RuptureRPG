@@ -35,7 +35,8 @@ public class CampaignDashboardService(
             return Result.Failure<CampaignDashboardResponse>(ErrorCodes.Campaign.FloorStateInvalid);
 
         campaign.CurrentFloor = Math.Max(1, request.CurrentFloor);
-        campaign.FloorName = request.FloorName ?? string.Empty;
+        var floorName = request.FloorName ?? string.Empty;
+        campaign.FloorName = floorName.Length > 120 ? floorName[..120] : floorName;
         campaign.FloorState = request.FloorState;
         campaign.Pressure = Math.Clamp(request.Pressure, 0, 100);
         campaign.UpdatedAt = DateTime.UtcNow;

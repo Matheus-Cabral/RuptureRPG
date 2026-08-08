@@ -43,7 +43,7 @@
         <div class="dash-grid" style="max-width:640px">
             <div class="dash-field">
                 <label class="dash-label">@L["Dashboard.CurrentFloor"]</label>
-                <input type="number" class="form-control" min="0" @bind="_currentFloor"
+                <input type="number" class="form-control" min="1" @bind="_currentFloor"
                        @bind:after="PersistMetaAsync" disabled="@_updating" />
             </div>
             <div class="dash-field">
@@ -231,21 +231,26 @@
     {
         _updating = true;
 
-        var result = await CampaignService.UpdateDungeonAsync(Id, request);
-
-        if (result?.Success == true && result.Data is not null)
+        try
         {
-            _dashboard = result.Data;
-            SyncFromResponse();
-            Toast.Success(L["Dashboard.UpdateSuccess"]);
-        }
-        else
-        {
-            // Never echo the raw API error code (.Message); show a generic localized toast.
-            Toast.Error(L["Dashboard.UpdateFailed"]);
-        }
+            var result = await CampaignService.UpdateDungeonAsync(Id, request);
 
-        _updating = false;
+            if (result?.Success == true && result.Data is not null)
+            {
+                _dashboard = result.Data;
+                SyncFromResponse();
+                Toast.Success(L["Dashboard.UpdateSuccess"]);
+            }
+            else
+            {
+                // Never echo the raw API error code (.Message); show a generic localized toast.
+                Toast.Error(L["Dashboard.UpdateFailed"]);
+            }
+        }
+        finally
+        {
+            _updating = false;
+        }
     }
 
     private Task PersistMetaAsync() => PersistAsync(CurrentRequest());

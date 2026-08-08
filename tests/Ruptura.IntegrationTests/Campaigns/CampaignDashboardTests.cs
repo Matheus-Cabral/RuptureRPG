@@ -135,6 +135,43 @@ public class CampaignDashboardTests(IntegrationTestFactory factory)
     }
 
     [Fact]
+    public async Task PutDungeon_ByADifferentGameMaster_Returns404_AndDoesNotMutate()
+    {
+        // Owner GM sets a known dungeon state on their campaign.
+        var (client, _, campaign) = await SetupGmWithCampaignAsync();
+        var seed = await client.PutAsJsonAsync(
+            $"api/campaigns/{campaign.Id}/dashboard/dungeon", new UpdateDungeonStateRequest
+            {
+                CurrentFloor = 4,
+                FloorName = "Salão Original",
+                FloorState = "Explorado",
+                Pressure = 30
+            });
+        seed.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // A different GM (owning a different campaign) attempts to PUT this campaign's dungeon.
+        var (otherClient, otherToken, _) = await SetupGmWithCampaignAsync();
+        AuthHelper.SetBearerToken(otherClient, otherToken);
+
+        var response = await otherClient.PutAsJsonAsync(
+            $"api/campaigns/{campaign.Id}/dashboard/dungeon", new UpdateDungeonStateRequest
+            {
+                CurrentFloor = 99,
+                FloorName = "Invasão",
+                FloorState = "Inexplorado",
+                Pressure = 100
+            });
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+
+        // The unauthorized PUT must not have mutated the owner's dungeon state.
+        var dashboard = await GetDashboardAsync(client, campaign.Id);
+        dashboard.Dungeon.CurrentFloor.Should().Be(4);
+        dashboard.Dungeon.FloorName.Should().Be("Salão Original");
+        dashboard.Dungeon.FloorState.Should().Be("Explorado");
+        dashboard.Dungeon.Pressure.Should().Be(30);
+    }
+
+    [Fact]
     public async Task Get_AsPlayer_IsRoleGated()
     {
         var (client, _, campaign) = await SetupGmWithCampaignAsync();

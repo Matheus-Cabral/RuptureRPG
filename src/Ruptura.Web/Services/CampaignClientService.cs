@@ -61,6 +61,7 @@ public class CampaignClientService(IHttpClientFactory factory) : ICampaignClient
         Guid campaignId, UpdateDungeonStateRequest request)
     {
         var response = await Http.PutAsJsonAsync($"api/campaigns/{campaignId}/dashboard/dungeon", request);
+        if (!response.IsSuccessStatusCode) return null;
         return await response.Content.ReadFromJsonAsync<ApiResponse<CampaignDashboardResponse>>();
     }
 }
