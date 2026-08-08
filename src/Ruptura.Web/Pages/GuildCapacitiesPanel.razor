@@ -81,6 +81,35 @@
     </div>
 </div>
 
+<div class="section-header">
+    <span class="section-title">@L["Guild.PriceReference"]</span>
+    <span style="font-size:var(--text-xs);color:var(--text-muted)">@L["Guild.PriceInflation", Stats.InflationIndex.ToString("0.##")]</span>
+</div>
+<div style="overflow-x:auto;margin-bottom:1rem">
+    <table class="ledger-table">
+        <thead>
+            <tr>
+                <th>@L["Guild.PriceItem"]</th>
+                <th style="text-align:right">@L["Guild.PriceBase"]</th>
+                <th style="text-align:right">@L["Guild.PriceAdjusted"]</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var p in GuildPriceReference.Items)
+            {
+                <tr>
+                    <td>@L[$"Guild.Price.{p.Key}"]</td>
+                    <td style="text-align:right">@p.BasePrice</td>
+                    <td style="text-align:right">@AdjustedPrice(p.BasePrice)</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
 @code {
     [Parameter] public GuildDerivedStats Stats { get; set; } = new();
+
+    // Inflation-adjusted price rounds UP — prices never get cheaper via rounding (GDD §10.6.1).
+    private int AdjustedPrice(int basePrice) => (int)Math.Ceiling(basePrice * Stats.InflationIndex);
 }

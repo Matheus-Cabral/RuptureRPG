@@ -336,6 +336,15 @@
   <data name="Guild.Storage"><value>Capacidade de Armazenamento</value></data>
   <data name="Guild.Residency"><value>Capacidade de Residência</value></data>
   <data name="Guild.DoctrineLimit"><value>Limite de Doutrinas</value></data>
+  <data name="Guild.PriceReference"><value>Economia / Preços</value></data>
+  <data name="Guild.PriceInflation"><value>Multiplicador de inflação ×{0}</value></data>
+  <data name="Guild.PriceItem"><value>Item</value></data>
+  <data name="Guild.PriceBase"><value>Base (Prata)</value></data>
+  <data name="Guild.PriceAdjusted"><value>Ajustado (Prata)</value></data>
+  <data name="Guild.Price.Ration"><value>Ração de comida (1 dia)</value></data>
+  <data name="Guild.Price.Lodging"><value>Estadia simples (1 noite)</value></data>
+  <data name="Guild.Price.LaborerWage"><value>Salário diário — Operário</value></data>
+  <data name="Guild.Price.ArtisanWage"><value>Salário diário — Artesão/Pesquisador</value></data>
   <data name="Guild.ActiveBuildingOverflow"><value>Construções ativas ({0}) excedem a Capacidade de Suporte ({1}). Desative construções ou aumente a Capacidade de Suporte.</value></data>
   <data name="Guild.Stage.Fundacao"><value>Fundação</value></data>
   <data name="Guild.Stage.Menor"><value>Menor</value></data>
