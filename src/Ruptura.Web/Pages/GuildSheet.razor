@@ -8,6 +8,7 @@
 @inject IGuildClientService GuildService
 @inject IMediaClientService MediaService
 @inject ToastService Toast
+@inject AuthenticationStateProvider AuthState
 
 <PageTitle>@(_guild?.GuildName ?? L["Guild.Title"]) — RUPTURA</PageTitle>
 
@@ -150,9 +151,17 @@
     {
         var campaignsResult = await CampaignService.GetMineAsync();
         var campaignName = campaignsResult?.Data?.FirstOrDefault(c => c.Id == CampaignId)?.Name;
+
+        // The guild page is shared by GMs and players, so the campaigns crumb must be role-aware:
+        // GMs go to /gm/campaigns ("Campaigns"); players go to /campaigns ("My Campaigns").
+        var state = await AuthState.GetAuthenticationStateAsync();
+        var isGm = state.User.FindFirst("role")?.Value == "GameMaster";
+        var campaignsCrumb = isGm
+            ? new BreadcrumbItem(L["Nav.Campaigns"], "/gm/campaigns")
+            : new BreadcrumbItem(L["Nav.Campaigns.Player"], "/campaigns");
         _breadcrumbs =
         [
-            new BreadcrumbItem(L["Nav.Campaigns"], null),
+            campaignsCrumb,
             new BreadcrumbItem(campaignName ?? L["Guild.Title"], null)
         ];
 

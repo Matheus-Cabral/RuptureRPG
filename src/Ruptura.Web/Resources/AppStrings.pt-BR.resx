@@ -335,7 +335,7 @@
   <data name="Guild.WorkerIncome"><value>Renda de Operários/dia</value></data>
   <data name="Guild.Storage"><value>Capacidade de Armazenamento</value></data>
   <data name="Guild.Residency"><value>Capacidade de Residência</value></data>
-  <data name="Guild.DoctrineLimit"><value>Doutrinas</value></data>
+  <data name="Guild.DoctrineLimit"><value>Limite de Doutrinas</value></data>
   <data name="Guild.ActiveBuildingOverflow"><value>Construções ativas ({0}) excedem a Capacidade de Suporte ({1}). Desative construções ou aumente a Capacidade de Suporte.</value></data>
   <data name="Guild.Stage.Fundacao"><value>Fundação</value></data>
   <data name="Guild.Stage.Menor"><value>Menor</value></data>

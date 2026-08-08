@@ -48,6 +48,11 @@ public class GuildSheetService(
         var incoming = Deserialize(request.DataJson);
         incoming.Identity.EmblemImagePath = stored.Identity.EmblemImagePath;
 
+        // Enforce the GDD reputation range server-side (mirrors the research Points / staff salary
+        // clamps) — an out-of-range value on the wire is clamped, never trusted.
+        foreach (var rel in incoming.Influence)
+            rel.Reputation = Math.Clamp(rel.Reputation, -100, 100);
+
         var doctrineError = await ValidateDoctrinesAsync(incoming, campaignId, ct);
         if (doctrineError is not null)
             return Result.Failure<GuildSheetResponse>(doctrineError);

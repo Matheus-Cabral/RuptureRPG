@@ -208,6 +208,36 @@ public class GuildUpdateTests(IntegrationTestFactory factory)
         final.Data.Identity.EmblemImagePath.Should().Be(emblemPath);
     }
 
+    // Server-side reputation clamp (GDD range -100..100): out-of-range values sent by the client
+    // are clamped on write rather than trusted, mirroring the research Points / staff salary clamps.
+    [Fact]
+    public async Task Update_WithOutOfRangeReputation_ClampsToGdRange()
+    {
+        var (client, campaign, _, _, gmToken) = await SetUpCampaignWithMemberAsync();
+        AuthHelper.SetBearerToken(client, gmToken);
+
+        var current = await GetGuildAsync(client, campaign.Id);
+        current.Data.Influence =
+        [
+            new InfluenceRelation { Name = "Cidade Alta", Kind = "Cidade", Reputation = 999 },
+            new InfluenceRelation { Name = "Culto Sombrio", Kind = "Facção", Reputation = -999 }
+        ];
+
+        var request = new UpdateGuildSheetRequest
+        {
+            GuildName = current.GuildName,
+            DataJson = Serialize(current.Data),
+            Version = current.Version
+        };
+
+        var response = await client.PutAsJsonAsync($"api/campaigns/{campaign.Id}/guild", request);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var final = await GetGuildAsync(client, campaign.Id);
+        final.Data.Influence.Single(r => r.Name == "Cidade Alta").Reputation.Should().Be(100);
+        final.Data.Influence.Single(r => r.Name == "Culto Sombrio").Reputation.Should().Be(-100);
+    }
+
     // The structural validator (fix #1/#5) now rejects a null Knowledge list at the boundary
     // rather than silently coercing it on write — a null module/list is a malformed payload.
     [Fact]
