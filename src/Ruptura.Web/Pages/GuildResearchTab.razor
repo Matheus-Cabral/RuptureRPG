@@ -1,0 +1,307 @@
+@using Microsoft.Extensions.Localization
+@using Ruptura.Web.Resources
+@using Ruptura.Shared.Guilds
+@inject IStringLocalizer<AppStrings> L
+@inject IGuildClientService GuildService
+@inject ToastService Toast
+@inject ConfirmService Confirm
+
+<div style="display:flex;flex-direction:column;gap:1.5rem">
+    <div style="color:var(--text-muted);font-size:var(--text-sm)">@L["Guild.Research.CgNote"]</div>
+
+    @if (_editing is not null)
+    {
+        <div style="border:1px solid var(--border);border-radius:6px;padding:1rem;display:flex;flex-direction:column;gap:.75rem;max-width:720px">
+            <div>
+                <label class="form-label">@L["Guild.Research.Name"]</label>
+                <input class="form-control" @bind="_editing.Name" @bind:event="oninput" />
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:1rem">
+                <div>
+                    <label class="form-label">@L["Guild.Research.Type"]</label>
+                    <select class="form-select" @bind="_editing.ResearchType">
+                        @foreach (var type in ResearchReference.ResearchTypes)
+                        {
+                            <option value="@type">@L[TypeKey(type)]</option>
+                        }
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">@L["Guild.Research.Complexity"]</label>
+                    <select class="form-select" value="@_editing.Complexity" @onchange="OnComplexityChanged">
+                        @foreach (var complexity in ResearchReference.Complexities)
+                        {
+                            <option value="@complexity">@L[ComplexityKey(complexity)]</option>
+                        }
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">@L["Guild.Research.RequiredDays"]</label>
+                    <input class="form-control" style="max-width:100px" value="@RequiredDaysFor(_editing.Complexity)" disabled />
+                </div>
+                <div>
+                    <label class="form-label">@L["Guild.Research.Stage"]</label>
+                    <select class="form-select" @bind="_editing.Stage">
+                        @foreach (var stage in ResearchReference.Stages)
+                        {
+                            <option value="@stage">@L[StageKey(stage)]</option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:1rem">
+                <div>
+                    <label class="form-label">@L["Guild.Research.Researchers"]</label>
+                    <input type="number" class="form-control" style="max-width:100px" min="0" @bind="_editing.Researchers" />
+                </div>
+                <div>
+                    <label class="form-label">@L["Guild.Research.ProgressDays"]</label>
+                    <input type="number" class="form-control" style="max-width:100px" min="0" @bind="_editing.ProgressDays" />
+                </div>
+                <div>
+                    <label class="form-label">@L["Guild.Research.Points"]</label>
+                    <input type="number" class="form-control" style="max-width:100px" min="0" @bind="_editing.Points" />
+                </div>
+            </div>
+            <div class="form-check">
+                <input type="checkbox" class="form-check-input" id="research-complete" @bind="_editing.IsComplete" />
+                <label class="form-check-label" for="research-complete">@L["Guild.Research.IsComplete"]</label>
+            </div>
+            <div style="display:flex;gap:.5rem">
+                <button class="btn btn-primary btn-sm" @onclick="SaveAsync" disabled="@_saving">
+                    @if (_saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                    @L["Guild.Research.Save"]
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" @onclick="CancelEdit">@L["Guild.Expedition.Cancel"]</button>
+            </div>
+        </div>
+    }
+    else
+    {
+        <button class="btn btn-primary btn-sm" style="align-self:flex-start" @onclick="StartCreate">@L["Guild.Research.Add"]</button>
+    }
+
+    @if (Research.Count == 0)
+    {
+        <div class="ledger-empty"><p>@L["Guild.Research.Empty"]</p></div>
+    }
+    else
+    {
+        <div class="ledger-table-wrap">
+            <table class="ledger-table stack-mobile">
+                <thead>
+                    <tr>
+                        <th>@L["Guild.Research.Name"]</th>
+                        <th>@L["Guild.Research.Type"]</th>
+                        <th>@L["Guild.Research.Complexity"]</th>
+                        <th>@L["Guild.Research.Stage"]</th>
+                        <th>@L["Guild.Research.Progress"]</th>
+                        <th>@L["Guild.Research.Researchers"]</th>
+                        <th>@L["Guild.Research.Points"]</th>
+                        <th>@L["Guild.Research.IsComplete"]</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var project in Research)
+                    {
+                        <tr>
+                            <td data-label="@L["Guild.Research.Name"]">@project.Name</td>
+                            <td data-label="@L["Guild.Research.Type"]">@L[TypeKey(project.ResearchType)]</td>
+                            <td data-label="@L["Guild.Research.Complexity"]">@L[ComplexityKey(project.Complexity)]</td>
+                            <td data-label="@L["Guild.Research.Stage"]">@L[StageKey(project.Stage)]</td>
+                            <td data-label="@L["Guild.Research.Progress"]">@project.ProgressDays / @project.RequiredDays</td>
+                            <td data-label="@L["Guild.Research.Researchers"]">@project.Researchers</td>
+                            <td data-label="@L["Guild.Research.Points"]">@project.Points</td>
+                            <td data-label="@L["Guild.Research.IsComplete"]">@(project.IsComplete ? L["Common.Yes"] : L["Common.No"])</td>
+                            <td data-label="">
+                                <div style="display:flex;gap:.5rem">
+                                    <button class="btn btn-outline-secondary btn-sm" @onclick="() => StartEdit(project)">@L["Guild.Expedition.Edit"]</button>
+                                    <button class="btn btn-outline-secondary btn-sm" @onclick="() => DeleteAsync(project)">@L["Guild.Remove"]</button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public Guid CampaignId { get; set; }
+    [Parameter] public List<ResearchProjectResponse> Research { get; set; } = [];
+    [Parameter] public EventCallback OnChanged { get; set; }
+
+    // Canonical wire value (with accents) → ASCII localization key.
+    private static readonly Dictionary<string, string> TypeKeys = new()
+    {
+        ["Arcana"] = "Guild.Research.Type.Arcana",
+        ["Biológica"] = "Guild.Research.Type.Biologica",
+        ["Tecnológica"] = "Guild.Research.Type.Tecnologica",
+        ["Dimensional"] = "Guild.Research.Type.Dimensional",
+        ["Histórica"] = "Guild.Research.Type.Historica",
+        ["Militar"] = "Guild.Research.Type.Militar"
+    };
+
+    private static readonly Dictionary<string, string> ComplexityKeys = new()
+    {
+        ["Menor"] = "Guild.Research.Complexity.Menor",
+        ["Moderada"] = "Guild.Research.Complexity.Moderada",
+        ["Maior"] = "Guild.Research.Complexity.Maior",
+        ["Suprema"] = "Guild.Research.Complexity.Suprema"
+    };
+
+    private static readonly Dictionary<string, string> StageKeys = new()
+    {
+        ["Descobrir"] = "Guild.Research.Stage.Descobrir",
+        ["Pesquisar"] = "Guild.Research.Stage.Pesquisar",
+        ["Dominar"] = "Guild.Research.Stage.Dominar",
+        ["Aplicar"] = "Guild.Research.Stage.Aplicar"
+    };
+
+    private ResearchForm? _editing;
+    private Guid? _editingId;
+    private bool _saving;
+
+    private static string TypeKey(string value) => TypeKeys.TryGetValue(value, out var k) ? k : value;
+    private static string ComplexityKey(string value) => ComplexityKeys.TryGetValue(value, out var k) ? k : value;
+    private static string StageKey(string value) => StageKeys.TryGetValue(value, out var k) ? k : value;
+
+    private static int RequiredDaysFor(string complexity) =>
+        ResearchReference.RequiredDays.TryGetValue(complexity, out var days) ? days : 0;
+
+    private static int DefaultPointsFor(string complexity) =>
+        ResearchReference.DefaultPoints.TryGetValue(complexity, out var points) ? points : 0;
+
+    private void StartCreate()
+    {
+        _editingId = null;
+        var complexity = ResearchReference.Complexities[0];
+        _editing = new ResearchForm
+        {
+            ResearchType = ResearchReference.ResearchTypes[0],
+            Complexity = complexity,
+            Stage = ResearchReference.Stages[0],
+            Researchers = 1,
+            Points = DefaultPointsFor(complexity)
+        };
+    }
+
+    private void StartEdit(ResearchProjectResponse project)
+    {
+        _editingId = project.Id;
+        _editing = new ResearchForm
+        {
+            Name = project.Name,
+            ResearchType = project.ResearchType,
+            Complexity = project.Complexity,
+            Stage = project.Stage,
+            ProgressDays = project.ProgressDays,
+            Researchers = project.Researchers,
+            Points = project.Points,
+            IsComplete = project.IsComplete
+        };
+    }
+
+    // Changing complexity shifts the derived RequiredDays and pre-fills Points (overridable).
+    private void OnComplexityChanged(ChangeEventArgs e)
+    {
+        if (_editing is null) return;
+        _editing.Complexity = e.Value?.ToString() ?? ResearchReference.Complexities[0];
+        _editing.Points = DefaultPointsFor(_editing.Complexity);
+    }
+
+    private void CancelEdit()
+    {
+        _editing = null;
+        _editingId = null;
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_editing is null) return;
+
+        _saving = true;
+
+        if (_editingId is null)
+        {
+            var result = await GuildService.AddResearchAsync(CampaignId, new CreateResearchProjectRequest
+            {
+                Name = _editing.Name,
+                ResearchType = _editing.ResearchType,
+                Complexity = _editing.Complexity,
+                Stage = _editing.Stage,
+                ProgressDays = _editing.ProgressDays,
+                Researchers = _editing.Researchers,
+                Points = _editing.Points,
+                IsComplete = _editing.IsComplete
+            });
+            await HandleResult(result?.Data is not null, result?.Message);
+        }
+        else
+        {
+            var result = await GuildService.UpdateResearchAsync(CampaignId, _editingId.Value, new UpdateResearchProjectRequest
+            {
+                Name = _editing.Name,
+                ResearchType = _editing.ResearchType,
+                Complexity = _editing.Complexity,
+                Stage = _editing.Stage,
+                ProgressDays = _editing.ProgressDays,
+                Researchers = _editing.Researchers,
+                Points = _editing.Points,
+                IsComplete = _editing.IsComplete
+            });
+            await HandleResult(result?.Data is not null, result?.Message);
+        }
+
+        _saving = false;
+    }
+
+    private async Task HandleResult(bool success, string? message)
+    {
+        if (success)
+        {
+            Toast.Success(L["Guild.Research.Saved"]);
+            CancelEdit();
+            await OnChanged.InvokeAsync();
+        }
+        else
+        {
+            Toast.Error(message ?? L["Common.Error"]);
+        }
+    }
+
+    private async Task DeleteAsync(ResearchProjectResponse project)
+    {
+        var confirmed = await Confirm.AskAsync(
+            L["Guild.Research.DeleteConfirm.Title"],
+            L["Guild.Research.DeleteConfirm.Message"],
+            L["Guild.Remove"],
+            L["Guild.Expedition.Cancel"]);
+        if (!confirmed) return;
+
+        var result = await GuildService.DeleteResearchAsync(CampaignId, project.Id);
+        if (result?.Success == true)
+        {
+            Toast.Success(L["Guild.Research.Deleted"]);
+            await OnChanged.InvokeAsync();
+        }
+        else
+        {
+            Toast.Error(result?.Message ?? L["Common.Error"]);
+        }
+    }
+
+    private class ResearchForm
+    {
+        public string Name { get; set; } = string.Empty;
+        public string ResearchType { get; set; } = string.Empty;
+        public string Complexity { get; set; } = string.Empty;
+        public string Stage { get; set; } = string.Empty;
+        public int ProgressDays { get; set; }
+        public int Researchers { get; set; } = 1;
+        public int Points { get; set; }
+        public bool IsComplete { get; set; }
+    }
+}

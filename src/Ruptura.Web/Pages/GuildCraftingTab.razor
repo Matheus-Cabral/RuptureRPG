@@ -1,0 +1,262 @@
+@using Microsoft.Extensions.Localization
+@using Ruptura.Web.Resources
+@using Ruptura.Shared.Guilds
+@inject IStringLocalizer<AppStrings> L
+@inject IGuildClientService GuildService
+@inject ToastService Toast
+@inject ConfirmService Confirm
+
+<div style="display:flex;flex-direction:column;gap:1.5rem">
+    @if (_editing is not null)
+    {
+        <div style="border:1px solid var(--border);border-radius:6px;padding:1rem;display:flex;flex-direction:column;gap:.75rem;max-width:720px">
+            <div>
+                <label class="form-label">@L["Guild.Crafting.ItemName"]</label>
+                <input class="form-control" @bind="_editing.ItemName" @bind:event="oninput" />
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:1rem">
+                <div>
+                    <label class="form-label">@L["Guild.Crafting.Category"]</label>
+                    <select class="form-select" @bind="_editing.Category">
+                        @foreach (var category in ResearchReference.CraftingCategories)
+                        {
+                            <option value="@category">@L[CategoryKey(category)]</option>
+                        }
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">@L["Guild.Crafting.Quality"]</label>
+                    <select class="form-select" @bind="_editing.Quality">
+                        @foreach (var quality in ResearchReference.Qualities)
+                        {
+                            <option value="@quality">@L[QualityKey(quality)]</option>
+                        }
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">@L["Guild.Crafting.Status"]</label>
+                    <select class="form-select" @bind="_editing.Status">
+                        @foreach (var status in ResearchReference.CraftingStatuses)
+                        {
+                            <option value="@status">@L[StatusKey(status)]</option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:1rem">
+                <div>
+                    <label class="form-label">@L["Guild.Crafting.RequiredDays"]</label>
+                    <input type="number" class="form-control" style="max-width:100px" min="0" @bind="_editing.RequiredDays" />
+                </div>
+                <div>
+                    <label class="form-label">@L["Guild.Crafting.ProgressDays"]</label>
+                    <input type="number" class="form-control" style="max-width:100px" min="0" @bind="_editing.ProgressDays" />
+                </div>
+            </div>
+            <div style="display:flex;gap:.5rem">
+                <button class="btn btn-primary btn-sm" @onclick="SaveAsync" disabled="@_saving">
+                    @if (_saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                    @L["Guild.Crafting.Save"]
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" @onclick="CancelEdit">@L["Guild.Expedition.Cancel"]</button>
+            </div>
+        </div>
+    }
+    else
+    {
+        <button class="btn btn-primary btn-sm" style="align-self:flex-start" @onclick="StartCreate">@L["Guild.Crafting.Add"]</button>
+    }
+
+    @if (Crafting.Count == 0)
+    {
+        <div class="ledger-empty"><p>@L["Guild.Crafting.Empty"]</p></div>
+    }
+    else
+    {
+        <div class="ledger-table-wrap">
+            <table class="ledger-table stack-mobile">
+                <thead>
+                    <tr>
+                        <th>@L["Guild.Crafting.Category"]</th>
+                        <th>@L["Guild.Crafting.ItemName"]</th>
+                        <th>@L["Guild.Crafting.Quality"]</th>
+                        <th>@L["Guild.Crafting.Progress"]</th>
+                        <th>@L["Guild.Crafting.Status"]</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var order in Crafting)
+                    {
+                        <tr>
+                            <td data-label="@L["Guild.Crafting.Category"]">@L[CategoryKey(order.Category)]</td>
+                            <td data-label="@L["Guild.Crafting.ItemName"]">@order.ItemName</td>
+                            <td data-label="@L["Guild.Crafting.Quality"]">@L[QualityKey(order.Quality)]</td>
+                            <td data-label="@L["Guild.Crafting.Progress"]">@order.ProgressDays / @order.RequiredDays</td>
+                            <td data-label="@L["Guild.Crafting.Status"]">@L[StatusKey(order.Status)]</td>
+                            <td data-label="">
+                                <div style="display:flex;gap:.5rem">
+                                    <button class="btn btn-outline-secondary btn-sm" @onclick="() => StartEdit(order)">@L["Guild.Expedition.Edit"]</button>
+                                    <button class="btn btn-outline-secondary btn-sm" @onclick="() => DeleteAsync(order)">@L["Guild.Remove"]</button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public Guid CampaignId { get; set; }
+    [Parameter] public List<CraftingOrderResponse> Crafting { get; set; } = [];
+    [Parameter] public EventCallback OnChanged { get; set; }
+
+    // Canonical wire value (with accents) → ASCII localization key.
+    private static readonly Dictionary<string, string> CategoryKeys = new()
+    {
+        ["Forja"] = "Guild.Crafting.Category.Forja",
+        ["Alquimia"] = "Guild.Crafting.Category.Alquimia",
+        ["Encantamento"] = "Guild.Crafting.Category.Encantamento",
+        ["Engenharia"] = "Guild.Crafting.Category.Engenharia",
+        ["Artefatos"] = "Guild.Crafting.Category.Artefatos"
+    };
+
+    private static readonly Dictionary<string, string> StatusKeys = new()
+    {
+        ["EmAndamento"] = "Guild.Crafting.Status.EmAndamento",
+        ["Concluido"] = "Guild.Crafting.Status.Concluido",
+        ["Cancelado"] = "Guild.Crafting.Status.Cancelado"
+    };
+
+    private static readonly Dictionary<string, string> QualityKeys = new()
+    {
+        ["Comum"] = "Guild.Crafting.Quality.Comum",
+        ["Superior"] = "Guild.Crafting.Quality.Superior",
+        ["Raro"] = "Guild.Crafting.Quality.Raro",
+        ["Épico"] = "Guild.Crafting.Quality.Epico",
+        ["Lendário"] = "Guild.Crafting.Quality.Lendario",
+        ["Divino"] = "Guild.Crafting.Quality.Divino"
+    };
+
+    private CraftingForm? _editing;
+    private Guid? _editingId;
+    private bool _saving;
+
+    private static string CategoryKey(string value) => CategoryKeys.TryGetValue(value, out var k) ? k : value;
+    private static string StatusKey(string value) => StatusKeys.TryGetValue(value, out var k) ? k : value;
+    private static string QualityKey(string value) => QualityKeys.TryGetValue(value, out var k) ? k : value;
+
+    private void StartCreate()
+    {
+        _editingId = null;
+        _editing = new CraftingForm
+        {
+            Category = ResearchReference.CraftingCategories[0],
+            Quality = ResearchReference.Qualities[0],
+            Status = ResearchReference.CraftingStatuses[0]
+        };
+    }
+
+    private void StartEdit(CraftingOrderResponse order)
+    {
+        _editingId = order.Id;
+        _editing = new CraftingForm
+        {
+            Category = order.Category,
+            ItemName = order.ItemName,
+            Quality = order.Quality,
+            RequiredDays = order.RequiredDays,
+            ProgressDays = order.ProgressDays,
+            Status = order.Status
+        };
+    }
+
+    private void CancelEdit()
+    {
+        _editing = null;
+        _editingId = null;
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_editing is null) return;
+
+        _saving = true;
+
+        if (_editingId is null)
+        {
+            var result = await GuildService.AddCraftingAsync(CampaignId, new CreateCraftingOrderRequest
+            {
+                Category = _editing.Category,
+                ItemName = _editing.ItemName,
+                Quality = _editing.Quality,
+                RequiredDays = _editing.RequiredDays,
+                ProgressDays = _editing.ProgressDays,
+                Status = _editing.Status
+            });
+            await HandleResult(result?.Data is not null, result?.Message);
+        }
+        else
+        {
+            var result = await GuildService.UpdateCraftingAsync(CampaignId, _editingId.Value, new UpdateCraftingOrderRequest
+            {
+                Category = _editing.Category,
+                ItemName = _editing.ItemName,
+                Quality = _editing.Quality,
+                RequiredDays = _editing.RequiredDays,
+                ProgressDays = _editing.ProgressDays,
+                Status = _editing.Status
+            });
+            await HandleResult(result?.Data is not null, result?.Message);
+        }
+
+        _saving = false;
+    }
+
+    private async Task HandleResult(bool success, string? message)
+    {
+        if (success)
+        {
+            Toast.Success(L["Guild.Crafting.Saved"]);
+            CancelEdit();
+            await OnChanged.InvokeAsync();
+        }
+        else
+        {
+            Toast.Error(message ?? L["Common.Error"]);
+        }
+    }
+
+    private async Task DeleteAsync(CraftingOrderResponse order)
+    {
+        var confirmed = await Confirm.AskAsync(
+            L["Guild.Crafting.DeleteConfirm.Title"],
+            L["Guild.Crafting.DeleteConfirm.Message"],
+            L["Guild.Remove"],
+            L["Guild.Expedition.Cancel"]);
+        if (!confirmed) return;
+
+        var result = await GuildService.DeleteCraftingAsync(CampaignId, order.Id);
+        if (result?.Success == true)
+        {
+            Toast.Success(L["Guild.Crafting.Deleted"]);
+            await OnChanged.InvokeAsync();
+        }
+        else
+        {
+            Toast.Error(result?.Message ?? L["Common.Error"]);
+        }
+    }
+
+    private class CraftingForm
+    {
+        public string Category { get; set; } = string.Empty;
+        public string ItemName { get; set; } = string.Empty;
+        public string Quality { get; set; } = string.Empty;
+        public int RequiredDays { get; set; }
+        public int ProgressDays { get; set; }
+        public string Status { get; set; } = string.Empty;
+    }
+}

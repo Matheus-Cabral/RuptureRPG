@@ -76,4 +76,40 @@ public class GuildClientService(IHttpClientFactory factory) : IGuildClientServic
         var response = await Http.DeleteAsync($"api/campaigns/{campaignId}/guild/staff/{staffId}");
         return await response.Content.ReadFromJsonAsync<ApiResponse>();
     }
+
+    public async Task<ApiResponse<ResearchProjectResponse>?> AddResearchAsync(Guid campaignId, CreateResearchProjectRequest request)
+    {
+        var response = await Http.PostAsJsonAsync($"api/campaigns/{campaignId}/guild/research", request);
+        return await response.Content.ReadFromJsonAsync<ApiResponse<ResearchProjectResponse>>();
+    }
+
+    public async Task<ApiResponse<ResearchProjectResponse>?> UpdateResearchAsync(Guid campaignId, Guid researchId, UpdateResearchProjectRequest request)
+    {
+        var response = await Http.PutAsJsonAsync($"api/campaigns/{campaignId}/guild/research/{researchId}", request);
+        return await response.Content.ReadFromJsonAsync<ApiResponse<ResearchProjectResponse>>();
+    }
+
+    public async Task<ApiResponse?> DeleteResearchAsync(Guid campaignId, Guid researchId)
+    {
+        var response = await Http.DeleteAsync($"api/campaigns/{campaignId}/guild/research/{researchId}");
+        return await response.Content.ReadFromJsonAsync<ApiResponse>();
+    }
+
+    public async Task<ApiResponse<CraftingOrderResponse>?> AddCraftingAsync(Guid campaignId, CreateCraftingOrderRequest request)
+    {
+        var response = await Http.PostAsJsonAsync($"api/campaigns/{campaignId}/guild/crafting", request);
+        return await response.Content.ReadFromJsonAsync<ApiResponse<CraftingOrderResponse>>();
+    }
+
+    public async Task<ApiResponse<CraftingOrderResponse>?> UpdateCraftingAsync(Guid campaignId, Guid craftingId, UpdateCraftingOrderRequest request)
+    {
+        var response = await Http.PutAsJsonAsync($"api/campaigns/{campaignId}/guild/crafting/{craftingId}", request);
+        return await response.Content.ReadFromJsonAsync<ApiResponse<CraftingOrderResponse>>();
+    }
+
+    public async Task<ApiResponse?> DeleteCraftingAsync(Guid campaignId, Guid craftingId)
+    {
+        var response = await Http.DeleteAsync($"api/campaigns/{campaignId}/guild/crafting/{craftingId}");
+        return await response.Content.ReadFromJsonAsync<ApiResponse>();
+    }
 }

@@ -90,6 +90,14 @@
             {
                 <GuildKnowledgeTab Data="_data" />
             }
+            else if (_activeTab == "research")
+            {
+                <GuildResearchTab CampaignId="CampaignId" Research="_guild.Research" OnChanged="RefreshResearchAsync" />
+            }
+            else if (_activeTab == "crafting")
+            {
+                <GuildCraftingTab CampaignId="CampaignId" Crafting="_guild.Crafting" OnChanged="RefreshCraftingAsync" />
+            }
             else if (_activeTab == "legacy")
             {
                 <GuildLegacyTab Data="_data" />
@@ -115,6 +123,8 @@
         ["resources"] = "Guild.Tab.Resources",
         ["influence"] = "Guild.Tab.Influence",
         ["knowledge"] = "Guild.Tab.Knowledge",
+        ["research"] = "Guild.Tab.Research",
+        ["crafting"] = "Guild.Tab.Crafting",
         ["legacy"] = "Guild.Tab.Legacy",
         ["expeditions"] = "Guild.Tab.Expeditions"
     };
@@ -194,6 +204,33 @@
         if (refreshed?.Data is not null)
         {
             _guild.Staff = refreshed.Data.Staff;
+            _guild.DerivedStats = refreshed.Data.DerivedStats;
+            _guild.Version = refreshed.Data.Version;
+        }
+    }
+
+    // Research mutations shift the CG Pesquisa capacity (completed projects add Points), so refresh
+    // the derived stats alongside the list and token — never _data/_guildName.
+    private async Task RefreshResearchAsync()
+    {
+        if (_guild is null) return;
+        var refreshed = await GuildService.GetGuildAsync(CampaignId);
+        if (refreshed?.Data is not null)
+        {
+            _guild.Research = refreshed.Data.Research;
+            _guild.DerivedStats = refreshed.Data.DerivedStats;
+            _guild.Version = refreshed.Data.Version;
+        }
+    }
+
+    // Crafting has no derived-stat impact, but keep the same targeted-refresh shape for consistency.
+    private async Task RefreshCraftingAsync()
+    {
+        if (_guild is null) return;
+        var refreshed = await GuildService.GetGuildAsync(CampaignId);
+        if (refreshed?.Data is not null)
+        {
+            _guild.Crafting = refreshed.Data.Crafting;
             _guild.DerivedStats = refreshed.Data.DerivedStats;
             _guild.Version = refreshed.Data.Version;
         }
