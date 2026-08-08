@@ -49,9 +49,14 @@ public class GuildController(
         var callerId = Guid.Parse(User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
         var result = await guildService.UpdateAsync(callerId, campaignId, request, ct);
         if (result.IsFailure)
-            return result.Error == ErrorCodes.Guild.Conflict
-                ? Conflict(ApiResponse.Fail(localizer[result.Error!]))
-                : NotFound(ApiResponse.Fail(localizer[result.Error!]));
+            return result.Error switch
+            {
+                ErrorCodes.Guild.Conflict => Conflict(ApiResponse.Fail(localizer[result.Error!])),
+                ErrorCodes.Guild.DoctrineInvalid
+                    or ErrorCodes.Guild.DoctrineLimitExceeded
+                    => BadRequest(ApiResponse.Fail(localizer[result.Error!])),
+                _ => NotFound(ApiResponse.Fail(localizer[result.Error!]))
+            };
 
         return Ok(ApiResponse<GuildSheetResponse>.Ok(result.Value!, localizer["Guild.Saved"]));
     }

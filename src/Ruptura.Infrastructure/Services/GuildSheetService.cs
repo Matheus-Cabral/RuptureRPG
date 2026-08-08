@@ -45,6 +45,10 @@ public class GuildSheetService(
         var incoming = Deserialize(request.DataJson);
         incoming.Identity.EmblemImagePath = stored.Identity.EmblemImagePath;
 
+        var doctrineError = await ValidateDoctrinesAsync(incoming, guild.Id, campaignId, ct);
+        if (doctrineError is not null)
+            return Result.Failure<GuildSheetResponse>(doctrineError);
+
         guild.GuildName = request.GuildName;
         guild.DataJson = JsonSerializer.Serialize(incoming, JsonOpts);
         guild.UpdatedAt = DateTime.UtcNow;
@@ -63,6 +67,43 @@ public class GuildSheetService(
         }
 
         return Result.Success(await MapToResponseAsync(guild, ct));
+    }
+
+    // Every referenced doctrine id (ActiveDoctrineIds + Identity.MainDoctrineId) must resolve to a
+    // Doctrine catalog entry visible to this campaign; ActiveDoctrineIds count must be within the
+    // derived limit min(4, 2 + Câmara do Conselho level). Returns an error code or null when valid.
+    private async Task<string?> ValidateDoctrinesAsync(
+        GuildSheetData data, Guid guildSheetId, Guid campaignId, CancellationToken ct)
+    {
+        var ids = new List<Guid>(data.ActiveDoctrineIds ?? []);
+        if (data.Identity.MainDoctrineId is { } main) ids.Add(main);
+        if (ids.Count == 0 && (data.ActiveDoctrineIds?.Count ?? 0) == 0) return null;
+
+        // Every referenced id must be a Doctrine visible to this campaign.
+        var distinct = ids.Distinct().ToList();
+        if (distinct.Count > 0)
+        {
+            var entries = (await catalogRepo.GetByIdsAsync(distinct, ct)).ToDictionary(e => e.Id);
+            foreach (var id in distinct)
+            {
+                if (!entries.TryGetValue(id, out var e) || e.Type != CatalogEntryType.Doctrine
+                    || (e.CampaignId is not null && e.CampaignId != campaignId))
+                    return ErrorCodes.Guild.DoctrineInvalid;
+            }
+        }
+
+        // ActiveDoctrineIds count must be within the derived limit (min(4, 2 + Câmara level)).
+        // camaraLevel uses IsActive to match the calculator's LevelOf (benefits exclude inactive
+        // buildings — sub-plan #2 rule).
+        var buildings = (await buildingRepo.GetByGuildAsync(guildSheetId, ct)).ToList();
+        var camaraLevel = buildings
+            .Where(b => b.CatalogEntryId == GuildCatalogIds.CamaraDoConselho && b.IsActive)
+            .Select(b => b.Level).FirstOrDefault();
+        var limit = Math.Min(4, 2 + camaraLevel);
+        if ((data.ActiveDoctrineIds?.Count ?? 0) > limit)
+            return ErrorCodes.Guild.DoctrineLimitExceeded;
+
+        return null;
     }
 
     public async Task<Result<ExpeditionResponse>> AddExpeditionAsync(
