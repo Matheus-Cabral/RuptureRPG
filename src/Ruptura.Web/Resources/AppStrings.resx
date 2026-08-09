@@ -388,6 +388,8 @@
   <data name="Guild.Resources.Materials"><value>Materials</value></data>
   <data name="Guild.Resources.MaterialName"><value>Material</value></data>
   <data name="Guild.Resources.MaterialQty"><value>Quantity</value></data>
+  <data name="Guild.Resources.MaterialVE"><value>VE</value></data>
+  <data name="Guild.Resources.MaterialVEHint"><value>Strategic Value (0–5) is what counts toward the guild's CG — not quantity.</value></data>
   <data name="Guild.Resources.AddMaterial"><value>Add material</value></data>
   <data name="Guild.Resources.Artifacts"><value>Artifacts</value></data>
   <data name="Guild.Resources.AddArtifact"><value>Add artifact</value></data>

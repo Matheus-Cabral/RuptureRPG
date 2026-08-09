@@ -388,6 +388,8 @@
   <data name="Guild.Resources.Materials"><value>Materiais</value></data>
   <data name="Guild.Resources.MaterialName"><value>Material</value></data>
   <data name="Guild.Resources.MaterialQty"><value>Quantidade</value></data>
+  <data name="Guild.Resources.MaterialVE"><value>VE</value></data>
+  <data name="Guild.Resources.MaterialVEHint"><value>O Valor Estratégico (0–5) é o que conta para a CG da guilda — não a quantidade.</value></data>
   <data name="Guild.Resources.AddMaterial"><value>Adicionar material</value></data>
   <data name="Guild.Resources.Artifacts"><value>Artefatos</value></data>
   <data name="Guild.Resources.AddArtifact"><value>Adicionar artefato</value></data>

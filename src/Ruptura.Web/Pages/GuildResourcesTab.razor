@@ -26,12 +26,14 @@
 
     <div>
         <span class="section-title" style="display:block;margin-bottom:.5rem">@L["Guild.Resources.Materials"]</span>
+        <div class="dash-label" style="margin-bottom:.5rem">@L["Guild.Resources.MaterialVEHint"]</div>
         <div class="ledger-table-wrap">
             <table class="ledger-table stack-mobile">
                 <thead>
                     <tr>
                         <th>@L["Guild.Resources.MaterialName"]</th>
                         <th>@L["Guild.Resources.MaterialQty"]</th>
+                        <th>@L["Guild.Resources.MaterialVE"]</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -44,6 +46,9 @@
                             </td>
                             <td data-label="@L["Guild.Resources.MaterialQty"]">
                                 <input type="number" class="form-control" @bind="material.Quantity" />
+                            </td>
+                            <td data-label="@L["Guild.Resources.MaterialVE"]">
+                                <input type="number" class="form-control" min="0" max="5" @bind="material.StrategicValue" />
                             </td>
                             <td data-label="">
                                 <button class="btn btn-outline-secondary btn-sm" @onclick="() => Data.Resources.Materials.Remove(material)">@L["Guild.Remove"]</button>
