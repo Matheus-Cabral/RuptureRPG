@@ -51,7 +51,8 @@ public class GuildResources
 public class MaterialStock
 {
     public string Name { get; set; } = string.Empty;
-    public int Quantity { get; set; }
+    public int Quantity { get; set; }             // inventory only — no longer feeds CG
+    public int StrategicValue { get; set; }       // VE 0..5 — the CG Recursos contribution
 }
 
 public class GuildKnowledge

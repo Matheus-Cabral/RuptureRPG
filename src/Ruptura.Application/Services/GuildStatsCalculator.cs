@@ -58,12 +58,13 @@ public class GuildStatsCalculator : IGuildStatsCalculator
         var activeWorkers = staff.Count(s => s.Kind == GuildStaffKind.Worker && s.IsActive); // all workers qualify
         var logistica = cs + activeWorkers * 2;
 
-        // Sum in long, then clamp into int: a pre-#5 row may carry huge Materials quantities that would
-        // otherwise overflow the CHECKED int Sum and 500 the whole guild read.
+        // §10.8 Recursos = Moedas de Pacto (face value) + materiais estratégicos (VE 0..5).
+        // Raw Quantity and DimensionalFragments deliberately excluded (spec 2026-08-09 §11.3):
+        // Quantity is inventory only; Fragments are the separate RE pillar. long-sum + clamp keeps
+        // a legacy/hand-edited blob from overflowing the guild read.
         var recursos = ClampToInt(
             (long)resources.PactCoins
-            + resources.DimensionalFragments
-            + (resources.Materials ?? []).Sum(m => (long)m.Quantity));
+            + (resources.Materials ?? []).Sum(m => (long)Math.Clamp(m.StrategicValue, 0, 5)));
 
         // The four CG terms are each bounded ints, but their sum can still exceed int range — add in long.
         var cg = ClampToInt((long)infra + researchPoints + logistica + recursos);

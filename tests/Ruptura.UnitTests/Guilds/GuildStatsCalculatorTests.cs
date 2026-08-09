@@ -173,8 +173,12 @@ public class GuildStatsCalculatorTests
         {
             Resources = new GuildResources
             {
-                PactCoins = 5, DimensionalFragments = 2,
-                Materials = [ new MaterialStock { Name = "Ferro", Quantity = 10 } ]
+                PactCoins = 5, DimensionalFragments = 2, Silver = 999,
+                Materials =
+                [
+                    new MaterialStock { Name = "Ferro", Quantity = 10, StrategicValue = 3 },
+                    new MaterialStock { Name = "Cristal", Quantity = 1, StrategicValue = 4 },
+                ]
             }
         };
         var r = _calc.Calculate(data, buildings, staff, researchPoints: 7, catalog);
@@ -182,8 +186,8 @@ public class GuildStatsCalculatorTests
         r.CgInfra.Should().Be(11);
         r.CgPesquisa.Should().Be(7);
         r.CgLogistica.Should().Be(14);
-        r.CgRecursos.Should().Be(17);        // 5 + 2 + 10
-        r.Cg.Should().Be(11 + 7 + 14 + 17);  // 49
+        r.CgRecursos.Should().Be(12);        // 5 (PactCoins) + 3 + 4 (VE); Silver/Fragments/Quantity excluded
+        r.Cg.Should().Be(11 + 7 + 14 + 12);  // 44
     }
 
     [Fact]
@@ -308,21 +312,41 @@ public class GuildStatsCalculatorTests
             Resources = new GuildResources
             {
                 PactCoins = int.MaxValue,
-                DimensionalFragments = int.MaxValue,
+                DimensionalFragments = int.MaxValue,   // excluded from CG now
                 Materials =
                 [
-                    new MaterialStock { Name = "A", Quantity = int.MaxValue },
-                    new MaterialStock { Name = "B", Quantity = int.MaxValue },
+                    new MaterialStock { Name = "A", Quantity = int.MaxValue, StrategicValue = 5 },
+                    new MaterialStock { Name = "B", Quantity = int.MaxValue, StrategicValue = 5 },
                 ]
             }
         };
-
         var act = () => _calc.Calculate(data, [], [], int.MaxValue, new Dictionary<Guid, CatalogEntry>());
-
         act.Should().NotThrow();
         var r = act();
-        r.CgRecursos.Should().Be(int.MaxValue); // saturated, not overflowed
+        r.CgRecursos.Should().Be(int.MaxValue); // PactCoins(int.MaxValue) + 10 saturates, not overflows
         r.Cg.Should().Be(int.MaxValue);
+    }
+
+    [Fact]
+    public void CgRecursos_IsPactCoinsPlusStrategicValue_NotQuantity_AndExcludesSilverAndFragments()
+    {
+        var data = new GuildSheetData
+        {
+            Resources = new GuildResources
+            {
+                PactCoins = 40,
+                Silver = 100_000,          // must NOT affect CG
+                DimensionalFragments = 50, // must NOT affect CG
+                Materials =
+                [
+                    new MaterialStock { Name = "Ferro", Quantity = 10_000, StrategicValue = 1 }, // huge qty, VE 1
+                    new MaterialStock { Name = "Cristal", Quantity = 3, StrategicValue = 4 },
+                    new MaterialStock { Name = "Legado", Quantity = 1, StrategicValue = 99 },     // clamped to 5
+                ]
+            }
+        };
+        var r = _calc.Calculate(data, [], [], 0, new Dictionary<Guid, CatalogEntry>());
+        r.CgRecursos.Should().Be(50); // 40 + 1 + 4 + clamp(99->5)
     }
 
     [Fact]
