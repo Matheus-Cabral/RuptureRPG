@@ -5,6 +5,12 @@
 @inject IStringLocalizer<AppStrings> L
 @inject ICatalogClientService CatalogService
 
+@if (_loading)
+{
+    <LoadingIndicator Text="@L["Common.Loading"]" />
+}
+else
+{
 <div style="display:flex;flex-wrap:wrap;gap:1.5rem;margin-bottom:1.5rem">
     <div><span class="section-title" style="display:block">@L["Sheet.Equipment.CarryCapacity"]</span><span>@Derived?.CarryCapacity</span></div>
     <div><span class="section-title" style="display:block">@L["Sheet.Equipment.CurrentWeight"]</span><span>@Derived?.CurrentWeight</span></div>
@@ -67,6 +73,7 @@
     </select>
     <button class="btn btn-primary btn-sm" @onclick="AddItem" disabled="@(_selectedId == Guid.Empty)">@L["Sheet.RefList.Add"]</button>
 </div>
+}
 
 @code {
     [Parameter] public CharacterSheetData Data { get; set; } = new();
@@ -82,6 +89,7 @@
     private List<CharacterSkillEntry> _skills => Data.Skills;
     private List<CatalogEntryResponse> _skillCatalog = [];
     private Guid _selectedId;
+    private bool _loading = true;
 
     // A user must never be able to newly equip an archived item.
     private IEnumerable<CatalogEntryResponse> _availableItems => _allItems.Where(e => !e.IsArchived);
@@ -90,6 +98,7 @@
     {
         _allItems = (await CatalogService.GetByTypeAsync("EquipmentItem", CampaignId, includeArchived: true))?.Data?.ToList() ?? [];
         _skillCatalog = (await CatalogService.GetByTypeAsync("Skill", CampaignId, includeArchived: true))?.Data?.ToList() ?? [];
+        _loading = false;
     }
 
     private string NameOf(Guid id) => _allItems.FirstOrDefault(e => e.Id == id)?.Name ?? id.ToString();

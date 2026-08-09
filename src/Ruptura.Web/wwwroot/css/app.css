@@ -1213,6 +1213,18 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 400; color: var(--te
     }
 }
 
+/* A tiny corner ✕ overlaid on an 80×80 thumbnail must stay proportionate — opt it out
+   of the ≤1023px 44×44 touch-target floor above (.btn.thumb-remove outspecifies .btn). */
+.btn.thumb-remove {
+    min-height: 0;
+    min-width: 0;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    line-height: 20px;
+    text-align: center;
+}
+
 /* Sidebar icon rail — 600–1023px collapses text, keeps a monogram medallion
    per item; the native title="" attribute on each link supplies the tooltip. */
 .nav-link-mono {

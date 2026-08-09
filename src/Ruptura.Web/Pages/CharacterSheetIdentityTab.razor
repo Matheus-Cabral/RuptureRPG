@@ -5,6 +5,12 @@
 @inject IStringLocalizer<AppStrings> L
 @inject ICatalogClientService CatalogService
 
+@if (_loading)
+{
+    <LoadingIndicator Text="@L["Common.Loading"]" />
+}
+else
+{
 <div style="display:flex;flex-direction:column;gap:1rem;max-width:480px">
     <div>
         <label class="form-label">@L["Sheet.Identity.Origin"]</label>
@@ -63,6 +69,7 @@
         <input class="form-control" @bind="Data.Identity.PatronDisplayName" @bind:event="oninput" />
     </div>
 </div>
+}
 
 @code {
     [Parameter] public CharacterSheetData Data { get; set; } = new();
@@ -78,6 +85,7 @@
     private List<CatalogEntryResponse> _lineages = [];
     private List<CatalogEntryResponse> _aptitudes = [];
     private List<CatalogEntryResponse> _talents = [];
+    private bool _loading = true;
 
     private IEnumerable<CatalogEntryResponse> _originOptions =>
         _origins.Where(e => !e.IsArchived || e.Id == Data.Identity.OriginId);
@@ -97,6 +105,7 @@
         _lineages = (await CatalogService.GetByTypeAsync("Lineage", CampaignId, includeArchived: true))?.Data?.ToList() ?? [];
         _aptitudes = (await CatalogService.GetByTypeAsync("Aptitude", CampaignId, includeArchived: true))?.Data?.ToList() ?? [];
         _talents = (await CatalogService.GetByTypeAsync("Talent", CampaignId, includeArchived: true))?.Data?.ToList() ?? [];
+        _loading = false;
     }
 
     private static Guid? ParseGuid(object? value) =>

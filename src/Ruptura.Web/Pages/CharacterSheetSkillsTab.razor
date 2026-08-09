@@ -5,6 +5,12 @@
 @inject IStringLocalizer<AppStrings> L
 @inject ICatalogClientService CatalogService
 
+@if (_loading)
+{
+    <LoadingIndicator Text="@L["Common.Loading"]" />
+}
+else
+{
 <div class="ledger-table-wrap">
     <table class="ledger-table stack-mobile">
         <thead>
@@ -41,6 +47,7 @@
     </select>
     <button class="btn btn-primary btn-sm" @onclick="AddSkill" disabled="@(_selectedSkillId == Guid.Empty)">@L["Sheet.Skills.Add"]</button>
 </div>
+}
 
 @code {
     [Parameter] public CharacterSheetData Data { get; set; } = new();
@@ -51,6 +58,7 @@
     // skill, so an archived-but-invested skill still shows its real name instead of a raw GUID.
     private List<CatalogEntryResponse> _all = [];
     private Guid _selectedSkillId;
+    private bool _loading = true;
 
     // A user must never be able to newly add an archived skill — only offer non-archived
     // entries that aren't already invested in.
@@ -60,6 +68,7 @@
     protected override async Task OnInitializedAsync()
     {
         _all = (await CatalogService.GetByTypeAsync("Skill", CampaignId, includeArchived: true))?.Data?.ToList() ?? [];
+        _loading = false;
     }
 
     private string NameOf(Guid id) => _all.FirstOrDefault(e => e.Id == id)?.Name ?? id.ToString();

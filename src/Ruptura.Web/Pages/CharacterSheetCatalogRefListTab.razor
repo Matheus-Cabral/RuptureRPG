@@ -5,6 +5,12 @@
 @inject IStringLocalizer<AppStrings> L
 @inject ICatalogClientService CatalogService
 
+@if (_loading)
+{
+    <LoadingIndicator Text="@L["Common.Loading"]" />
+}
+else
+{
 <div class="ledger-table-wrap">
     <table class="ledger-table stack-mobile">
         <thead>
@@ -31,6 +37,7 @@
     </select>
     <button class="btn btn-primary btn-sm" @onclick="AddEntry" disabled="@(_selectedId == Guid.Empty)">@L["Sheet.RefList.Add"]</button>
 </div>
+}
 
 @code {
     [Parameter] public List<CharacterCatalogRefEntry> Entries { get; set; } = [];
@@ -41,6 +48,7 @@
     // entry, so an archived-but-referenced entry still shows its real name instead of a raw GUID.
     private List<CatalogEntryResponse> _all = [];
     private Guid _selectedId;
+    private bool _loading = true;
 
     // A user must never be able to newly add an archived entry — only offer non-archived
     // entries that aren't already referenced.
@@ -50,6 +58,7 @@
     protected override async Task OnInitializedAsync()
     {
         _all = (await CatalogService.GetByTypeAsync(CatalogType, CampaignId, includeArchived: true))?.Data?.ToList() ?? [];
+        _loading = false;
     }
 
     private string NameOf(Guid id) => _all.FirstOrDefault(e => e.Id == id)?.Name ?? id.ToString();
