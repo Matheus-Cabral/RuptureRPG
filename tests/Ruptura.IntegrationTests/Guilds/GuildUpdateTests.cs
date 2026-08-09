@@ -335,6 +335,31 @@ public class GuildUpdateTests(IntegrationTestFactory factory)
         final.DerivedStats.CgRecursos.Should().Be(5);
     }
 
+    // Backward-compat: a legacy blob whose materials carry NO strategicValue property deserializes
+    // with VE 0, so those materials contribute 0 to CgRecursos — only PactCoins (face value) counts.
+    // The inert quantity (9999) must not influence CgRecursos.
+    [Fact]
+    public async Task Update_WithLegacyMaterialsMissingStrategicValue_ContributeZeroToCgRecursos()
+    {
+        var (client, campaign, _, _, gmToken) = await SetUpCampaignWithMemberAsync();
+        AuthHelper.SetBearerToken(client, gmToken);
+
+        var current = await GetGuildAsync(client, campaign.Id);
+        var request = new UpdateGuildSheetRequest
+        {
+            GuildName = current.GuildName,
+            DataJson = """{"resources":{"pactCoins":7,"materials":[{"name":"Ferro","quantity":9999}]}}""",
+            Version = current.Version
+        };
+
+        var response = await client.PutAsJsonAsync($"api/campaigns/{campaign.Id}/guild", request);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // CG Recursos = PactCoins (7) + VE (0, absent) = 7; the 9999 quantity is inert.
+        var final = await GetGuildAsync(client, campaign.Id);
+        final.DerivedStats.CgRecursos.Should().Be(7);
+    }
+
     [Fact]
     public async Task Update_WithNullMaterialElement_Returns400AndGetStill200()
     {

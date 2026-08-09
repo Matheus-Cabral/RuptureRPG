@@ -59,7 +59,7 @@ public class GuildStatsCalculator : IGuildStatsCalculator
         var logistica = cs + activeWorkers * 2;
 
         // §10.8 Recursos = Moedas de Pacto (face value) + materiais estratégicos (VE 0..5).
-        // Raw Quantity and DimensionalFragments deliberately excluded (spec 2026-08-09 §11.3):
+        // Raw Quantity and DimensionalFragments deliberately excluded (closes guild-sheet spec §11.3):
         // Quantity is inventory only; Fragments are the separate RE pillar. long-sum + clamp keeps
         // a legacy/hand-edited blob from overflowing the guild read.
         var recursos = ClampToInt(

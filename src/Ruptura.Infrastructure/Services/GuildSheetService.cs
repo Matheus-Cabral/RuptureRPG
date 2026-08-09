@@ -58,6 +58,10 @@ public class GuildSheetService(
         foreach (var material in incoming.Resources.Materials)
             material.StrategicValue = Math.Clamp(material.StrategicValue, 0, 5);
 
+        // PactCoins is the other CG Recursos term — floor at 0 so a negative can't drive CgRecursos
+        // negative. Kept at face value otherwise (no upper cap here by design).
+        incoming.Resources.PactCoins = Math.Max(0, incoming.Resources.PactCoins);
+
         var doctrineError = await ValidateDoctrinesAsync(incoming, campaignId, ct);
         if (doctrineError is not null)
             return Result.Failure<GuildSheetResponse>(doctrineError);

@@ -303,10 +303,12 @@ public class GuildStatsCalculatorTests
     }
 
     [Fact]
-    public void HugeMaterialsQuantity_DoesNotOverflow_And_ClampsCgToIntMax()
+    public void ExtremePactCoinsAndPoints_DoNotOverflow_And_ClampCgToIntMax()
     {
-        // A pre-#5 row could carry an int.MaxValue Materials quantity; the CgRecursos/Cg sums must be
-        // long-safe and saturate rather than throw OverflowException (which would 500 the guild read).
+        // Quantity is inert in the §10.8 formula; the real overflow hazard is extreme PactCoins +
+        // researchPoints saturating via the long-sum + ClampToInt, which must not throw
+        // OverflowException (that would 500 the guild read). Materials keep VE 5 so they still
+        // contribute their max to CgRecursos.
         var data = new GuildSheetData
         {
             Resources = new GuildResources
@@ -315,8 +317,8 @@ public class GuildStatsCalculatorTests
                 DimensionalFragments = int.MaxValue,   // excluded from CG now
                 Materials =
                 [
-                    new MaterialStock { Name = "A", Quantity = int.MaxValue, StrategicValue = 5 },
-                    new MaterialStock { Name = "B", Quantity = int.MaxValue, StrategicValue = 5 },
+                    new MaterialStock { Name = "A", StrategicValue = 5 },
+                    new MaterialStock { Name = "B", StrategicValue = 5 },
                 ]
             }
         };

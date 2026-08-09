@@ -11,7 +11,7 @@
         </div>
         <div>
             <label class="form-label">@L["Guild.Resources.PactCoins"]</label>
-            <input type="number" class="form-control" @bind="Data.Resources.PactCoins" />
+            <input type="number" class="form-control" min="0" @bind="Data.Resources.PactCoins" />
         </div>
         <div>
             <label class="form-label">@L["Guild.Resources.DimensionalFragments"]</label>
