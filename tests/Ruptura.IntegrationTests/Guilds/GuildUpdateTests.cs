@@ -300,6 +300,41 @@ public class GuildUpdateTests(IntegrationTestFactory factory)
         final.Data.Prestige.Value.Should().Be(55);
     }
 
+    // Server-side VE (StrategicValue) clamp (GDD range 0..5): out-of-range values sent by the client
+    // are clamped on write rather than trusted, mirroring the reputation / research Points clamps.
+    // VE is the CG Recursos contribution, so the clamp must also be reflected in DerivedStats.CgRecursos.
+    [Fact]
+    public async Task Update_WithOutOfRangeStrategicValue_ClampsToGdRangeAndCgRecursos()
+    {
+        var (client, campaign, _, _, gmToken) = await SetUpCampaignWithMemberAsync();
+        AuthHelper.SetBearerToken(client, gmToken);
+
+        var current = await GetGuildAsync(client, campaign.Id);
+        // PactCoins is the other CG Recursos term — zero it so CgRecursos == the clamped VE sum.
+        current.Data.Resources.PactCoins = 0;
+        current.Data.Resources.Materials =
+        [
+            new MaterialStock { Name = "X", Quantity = 1, StrategicValue = 99 },
+            new MaterialStock { Name = "Y", Quantity = 1, StrategicValue = -4 }
+        ];
+
+        var request = new UpdateGuildSheetRequest
+        {
+            GuildName = current.GuildName,
+            DataJson = Serialize(current.Data),
+            Version = current.Version
+        };
+
+        var response = await client.PutAsJsonAsync($"api/campaigns/{campaign.Id}/guild", request);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var final = await GetGuildAsync(client, campaign.Id);
+        final.Data.Resources.Materials.Single(m => m.Name == "X").StrategicValue.Should().Be(5);
+        final.Data.Resources.Materials.Single(m => m.Name == "Y").StrategicValue.Should().Be(0);
+        // CG Recursos = PactCoins (0) + clamp(99,0,5) + clamp(-4,0,5) = 5 + 0 = 5.
+        final.DerivedStats.CgRecursos.Should().Be(5);
+    }
+
     [Fact]
     public async Task Update_WithNullMaterialElement_Returns400AndGetStill200()
     {

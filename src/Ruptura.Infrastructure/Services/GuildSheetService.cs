@@ -53,6 +53,11 @@ public class GuildSheetService(
         foreach (var rel in incoming.Influence)
             rel.Reputation = Math.Clamp(rel.Reputation, -100, 100);
 
+        // VE (StrategicValue) is the CG Recursos contribution — enforce the GDD 0..5 range
+        // server-side (mirrors the reputation/Points clamps); out-of-range is clamped, never trusted.
+        foreach (var material in incoming.Resources.Materials)
+            material.StrategicValue = Math.Clamp(material.StrategicValue, 0, 5);
+
         var doctrineError = await ValidateDoctrinesAsync(incoming, campaignId, ct);
         if (doctrineError is not null)
             return Result.Failure<GuildSheetResponse>(doctrineError);
