@@ -124,17 +124,20 @@ public class GuildSheetService(
             return Result.Failure<ExpeditionResponse>(auth.Error!);
         var guild = auth.Value!;
 
+        if (!TryParseKind(request.Kind, out var kind))
+            return Result.Failure<ExpeditionResponse>(ErrorCodes.Guild.ExpeditionKindInvalid);
+
         var expedition = new Expedition
         {
             Id = Guid.NewGuid(),
             GuildSheetId = guild.Id,
-            Kind = ParseKind(request.Kind),
+            Kind = kind,
             Date = Utc(request.Date),
-            Participants = request.Participants,
-            Objective = request.Objective,
-            Result = request.Result,
-            Losses = request.Losses,
-            ResourcesGained = request.ResourcesGained
+            Participants = TruncText(request.Participants),
+            Objective = TruncText(request.Objective),
+            Result = TruncText(request.Result),
+            Losses = TruncText(request.Losses),
+            ResourcesGained = TruncText(request.ResourcesGained)
         };
 
         await expeditionRepo.AddAsync(expedition, ct);
@@ -156,13 +159,16 @@ public class GuildSheetService(
         if (expedition is null || expedition.GuildSheetId != guild.Id)
             return Result.Failure<ExpeditionResponse>(ErrorCodes.Guild.NotFound);
 
-        expedition.Kind = ParseKind(request.Kind);
+        if (!TryParseKind(request.Kind, out var kind))
+            return Result.Failure<ExpeditionResponse>(ErrorCodes.Guild.ExpeditionKindInvalid);
+
+        expedition.Kind = kind;
         expedition.Date = Utc(request.Date);
-        expedition.Participants = request.Participants;
-        expedition.Objective = request.Objective;
-        expedition.Result = request.Result;
-        expedition.Losses = request.Losses;
-        expedition.ResourcesGained = request.ResourcesGained;
+        expedition.Participants = TruncText(request.Participants);
+        expedition.Objective = TruncText(request.Objective);
+        expedition.Result = TruncText(request.Result);
+        expedition.Losses = TruncText(request.Losses);
+        expedition.ResourcesGained = TruncText(request.ResourcesGained);
 
         expeditionRepo.Update(expedition);
         await expeditionRepo.SaveChangesAsync(ct);
@@ -697,8 +703,14 @@ public class GuildSheetService(
     // Shared must not reference the Domain enum, so Kind is a string on the wire; parse leniently.
     // Enum.IsDefined guards against numeric/undefined strings ("5") that TryParse would accept —
     // a truly-unparseable Kind falls back to Principal.
-    private static ExpeditionKind ParseKind(string kind) =>
-        Enum.TryParse<ExpeditionKind>(kind, out var k) && Enum.IsDefined(k) ? k : ExpeditionKind.Principal;
+    // Mirrors the staff-kind validation: an unknown Kind is a 400, not silently coerced to Principal.
+    private static bool TryParseKind(string kind, out ExpeditionKind result) =>
+        Enum.TryParse(kind, out result) && Enum.IsDefined(result);
+
+    // Bound member-writable expedition free-text (Kestrel's 30MB is otherwise the only ceiling).
+    private const int ExpeditionTextMax = 4000;
+    private static string TruncText(string? s) =>
+        (s ?? string.Empty).Length > ExpeditionTextMax ? s![..ExpeditionTextMax] : (s ?? string.Empty);
 
     private static ExpeditionResponse MapExpedition(Expedition e) => new()
     {

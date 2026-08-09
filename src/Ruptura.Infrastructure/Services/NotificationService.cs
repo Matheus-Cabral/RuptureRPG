@@ -2,6 +2,7 @@ using Ruptura.Application.Common;
 using Ruptura.Application.Interfaces;
 using Ruptura.Domain.Entities;
 using Ruptura.Domain.Enums;
+using Ruptura.Shared;
 using Ruptura.Shared.Notifications;
 
 namespace Ruptura.Infrastructure.Services;
@@ -15,8 +16,7 @@ public class NotificationService(
     // Sequence and ceilings live here, not in CharacterStatsCalculator — this is a
     // save-time business rule about when to notify, not a rendered derived stat.
     // See design spec §4.5/§6.8 and this plan's Global Constraints.
-    private static readonly string[] RankOrder =
-        ["Bronze", "Ferro", "Aço", "Prata", "Ouro", "Mithril", "Adamante", "Lendário"];
+    private static readonly string[] RankOrder = RankProgression.Ordered.ToArray();
 
     private static readonly Dictionary<string, int> RankCeiling = new()
     {

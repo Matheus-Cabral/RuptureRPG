@@ -56,6 +56,7 @@ public static class ErrorCodes
         public const string BuildingNotFound = "Guild.BuildingNotFound";
         public const string StaffNotFound = "Guild.StaffNotFound";
         public const string StaffKindInvalid = "Guild.StaffKindInvalid";
+        public const string ExpeditionKindInvalid = "Guild.ExpeditionKindInvalid";
         public const string DoctrineInvalid = "Guild.DoctrineInvalid";
         public const string ResearchNotFound = "Guild.ResearchNotFound";
         public const string ResearchComplexityInvalid = "Guild.ResearchComplexityInvalid";

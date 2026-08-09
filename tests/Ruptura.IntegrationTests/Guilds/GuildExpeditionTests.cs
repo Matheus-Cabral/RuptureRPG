@@ -204,4 +204,43 @@ public class GuildExpeditionTests(IntegrationTestFactory factory)
         var guildA = await GetGuildAsync(clientA, campaignA.Id);
         guildA.Expeditions.Should().ContainSingle(e => e.Id == expeditionA.Id);
     }
+
+    [Fact]
+    public async Task AddExpedition_WithInvalidKind_Returns400ExpeditionKindInvalid()
+    {
+        var (client, campaign, playerToken, _) = await SetUpCampaignWithMemberAsync();
+        AuthHelper.SetBearerToken(client, playerToken);
+        await GetGuildAsync(client, campaign.Id);
+
+        var response = await client.PostAsJsonAsync(
+            $"api/campaigns/{campaign.Id}/guild/expeditions", NewExpedition("Bad kind", kind: "Nonsense"));
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var body = await response.Content.ReadFromJsonAsync<ApiResponse>();
+        // Runtime IStringLocalizer surfaces the raw error-code key (resx embedded but not resolved at
+        // runtime — same behavior asserted elsewhere); the 400 status is the real guarantee.
+        body!.Message.Should().Be("Guild.ExpeditionKindInvalid");
+
+        // The invalid expedition was not created.
+        var guild = await GetGuildAsync(client, campaign.Id);
+        guild.Expeditions.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task AddExpedition_WithOverlongFreeText_TruncatesTo4000()
+    {
+        var (client, campaign, playerToken, _) = await SetUpCampaignWithMemberAsync();
+        AuthHelper.SetBearerToken(client, playerToken);
+        await GetGuildAsync(client, campaign.Id);
+
+        var request = NewExpedition("x");
+        request.Objective = new string('A', 5000); // over the 4000 cap
+
+        var response = await client.PostAsJsonAsync($"api/campaigns/{campaign.Id}/guild/expeditions", request);
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var guild = await GetGuildAsync(client, campaign.Id);
+        guild.Expeditions.Should().ContainSingle();
+        guild.Expeditions[0].Objective.Length.Should().Be(4000);
+    }
 }

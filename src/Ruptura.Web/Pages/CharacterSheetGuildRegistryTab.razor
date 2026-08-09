@@ -44,6 +44,5 @@
     [Parameter] public CharacterSheetData Data { get; set; } = new();
     [Parameter] public bool CanEdit { get; set; }
 
-    private static readonly string[] Rankings =
-        ["Bronze", "Ferro", "Aço", "Prata", "Ouro", "Mithril", "Adamante", "Lendário"];
+    private static readonly IReadOnlyList<string> Rankings = Ruptura.Shared.RankProgression.Ordered;
 }

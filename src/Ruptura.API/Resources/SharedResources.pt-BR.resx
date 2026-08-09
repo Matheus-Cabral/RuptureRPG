@@ -76,6 +76,7 @@
   <data name="Guild.BuildingExists"><value>Esta instalação já foi construída.</value></data>
   <data name="Guild.BuildingNotFound"><value>Construção não encontrada.</value></data>
   <data name="Guild.StaffKindInvalid"><value>O tipo de pessoal deve ser Trabalhador (Worker) ou Mercenário (Mercenary).</value></data>
+  <data name="Guild.ExpeditionKindInvalid"><value>O tipo de expedição deve ser Principal ou Secundária.</value></data>
   <data name="Guild.StaffNotFound"><value>Membro do pessoal não encontrado.</value></data>
   <data name="Guild.DoctrineInvalid"><value>Uma ou mais doutrinas selecionadas não são válidas para esta campanha.</value></data>
   <data name="Guild.ResearchNotFound"><value>Projeto de pesquisa não encontrado.</value></data>

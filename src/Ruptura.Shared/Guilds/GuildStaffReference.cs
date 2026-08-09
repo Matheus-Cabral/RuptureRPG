@@ -9,9 +9,8 @@ public static class GuildStaffReference
         GuildStaffTypes.Administrador
     ];
 
-    // GDD §10.6.1 mercenary daily salaries by ranking (accented values are valid const/string).
-    public static readonly IReadOnlyList<string> MercenaryRankings =
-        ["Bronze", "Ferro", "Aço", "Prata", "Ouro", "Mithril", "Adamante", "Lendário"];
+    // GDD §10.6.1 mercenary daily salaries by ranking — the shared 8-rank progression.
+    public static readonly IReadOnlyList<string> MercenaryRankings = RankProgression.Ordered;
 
     // Default daily salary by type/ranking (Prata/dia). Workers: Operário 3, others skilled 8
     // (GDD fixes only Operário=3, Artesão/Pesquisador=8; the rest default to the skilled rate).
