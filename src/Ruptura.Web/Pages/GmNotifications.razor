@@ -52,7 +52,7 @@
                                         <button class="btn btn-primary btn-sm" @onclick="() => PromoteAsync(notification.Id)" disabled="@_busy">
                                             @L["Gm.Notifications.Promote"]
                                         </button>
-                                        <button class="btn btn-outline-secondary btn-sm" @onclick="() => DismissAsync(notification.Id, notification.CharacterName)" disabled="@_busy">
+                                        <button class="btn btn-outline-secondary btn-sm" @onclick="() => DismissAsync(notification.Id, notification.CharacterName ?? string.Empty)" disabled="@_busy">
                                             @L["Gm.Notifications.Dismiss"]
                                         </button>
                                     </td>

@@ -135,6 +135,7 @@
   <!-- Comum -->
   <data name="Common.Loading"><value>Carregando…</value></data>
   <data name="Common.Error"><value>Algo deu errado. Por favor, tente novamente.</value></data>
+  <data name="Common.UnknownCampaign"><value>Campanha desconhecida</value></data>
   <data name="Common.Close"><value>Fechar</value></data>
   <data name="Common.Yes"><value>Sim</value></data>
   <data name="Common.No"><value>Não</value></data>
@@ -559,6 +560,7 @@
   <data name="Gm.CampaignDetail.OpenDashboard"><value>Painel</value></data>
   <data name="Dashboard.UpdateSuccess"><value>Masmorra atualizada.</value></data>
   <data name="Dashboard.UpdateFailed"><value>Não foi possível atualizar a masmorra. Tente novamente.</value></data>
+  <data name="Dashboard.SaveFloor"><value>Salvar andar</value></data>
   <data name="Dashboard.Dungeon.Title"><value>Andar &amp; Pressão</value></data>
   <data name="Dashboard.CurrentFloor"><value>Andar atual</value></data>
   <data name="Dashboard.FloorName"><value>Nome do andar</value></data>

@@ -43,23 +43,24 @@
         <div class="dash-grid" style="max-width:640px">
             <div class="dash-field">
                 <label class="dash-label">@L["Dashboard.CurrentFloor"]</label>
-                <input type="number" class="form-control" min="1" @bind="_currentFloor"
-                       @bind:after="PersistMetaAsync" disabled="@_updating" />
+                <input type="number" class="form-control" min="1" @bind="_currentFloor" disabled="@_updating" />
             </div>
             <div class="dash-field">
                 <label class="dash-label">@L["Dashboard.FloorName"]</label>
-                <input class="form-control" @bind="_floorName"
-                       @bind:after="PersistMetaAsync" disabled="@_updating" />
+                <input class="form-control" @bind="_floorName" disabled="@_updating" />
             </div>
             <div class="dash-field">
                 <label class="dash-label">@L["Dashboard.FloorState.Label"]</label>
-                <select class="form-select" @bind="_floorState" @bind:after="PersistMetaAsync" disabled="@_updating">
+                <select class="form-select" @bind="_floorState" disabled="@_updating">
                     @foreach (var state in DungeonFloorStates.All)
                     {
                         <option value="@state">@L[$"Dashboard.FloorState.{state}"]</option>
                     }
                 </select>
             </div>
+        </div>
+        <div style="margin-top:.75rem;max-width:640px">
+            <button class="btn btn-primary btn-sm" @onclick="PersistMetaAsync" disabled="@_updating">@L["Dashboard.SaveFloor"]</button>
         </div>
 
         <div style="margin-top:1.25rem;max-width:640px">
@@ -204,7 +205,7 @@
         _breadcrumbs =
         [
             new BreadcrumbItem(L["Nav.Campaigns"], "/gm/campaigns"),
-            new BreadcrumbItem(_dashboard?.CampaignName ?? L["Dashboard.Title"], $"/gm/campaigns/{Id}"),
+            new BreadcrumbItem(_dashboard?.CampaignName ?? L["Common.UnknownCampaign"], $"/gm/campaigns/{Id}"),
             new BreadcrumbItem(L["Dashboard.Title"], null)
         ];
 
@@ -258,21 +259,22 @@
     private Task AddPressureAsync(int delta)
     {
         var request = CurrentRequest();
-        request.Pressure = Math.Clamp(request.Pressure + delta, 0, 100);
+        // long arithmetic so a huge custom +N can't overflow int and wrap negative before clamping.
+        request.Pressure = (int)Math.Clamp((long)request.Pressure + delta, 0L, 100L);
         return PersistAsync(request);
     }
 
     private Task AdvanceFloorAsync()
     {
         var request = CurrentRequest();
-        request.CurrentFloor += 1;
+        if (request.CurrentFloor < int.MaxValue) request.CurrentFloor += 1;
         request.Pressure = 0;
         request.FloorState = "Inexplorado";
         return PersistAsync(request);
     }
 
     private static string FormatMultiplier(decimal multiplier) =>
-        multiplier.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture);
+        multiplier.ToString("0.00", System.Globalization.CultureInfo.CurrentCulture);
 
     private static string PressureColor(string stateKey) => stateKey switch
     {

@@ -135,6 +135,7 @@
   <!-- Common -->
   <data name="Common.Loading"><value>Loading…</value></data>
   <data name="Common.Error"><value>Something went wrong. Please try again.</value></data>
+  <data name="Common.UnknownCampaign"><value>Unknown campaign</value></data>
   <data name="Common.Close"><value>Close</value></data>
   <data name="Common.Yes"><value>Yes</value></data>
   <data name="Common.No"><value>No</value></data>
@@ -559,6 +560,7 @@
   <data name="Gm.CampaignDetail.OpenDashboard"><value>Dashboard</value></data>
   <data name="Dashboard.UpdateSuccess"><value>Dungeon updated.</value></data>
   <data name="Dashboard.UpdateFailed"><value>Could not update the dungeon. Please try again.</value></data>
+  <data name="Dashboard.SaveFloor"><value>Save floor</value></data>
   <data name="Dashboard.Dungeon.Title"><value>Floor &amp; Pressure</value></data>
   <data name="Dashboard.CurrentFloor"><value>Current floor</value></data>
   <data name="Dashboard.FloorName"><value>Floor name</value></data>

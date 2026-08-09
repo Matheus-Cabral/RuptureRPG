@@ -1318,7 +1318,7 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 400; color: var(--te
     background: var(--danger-bg);
     border: 1px solid var(--danger-border);
     color: var(--danger);
-    border-radius: var(--radius, 6px);
+    border-radius: var(--radius);
     padding: 0.75rem 1rem;
     font-weight: 600;
     margin-bottom: 1rem;
@@ -1345,7 +1345,7 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 400; color: var(--te
     gap: 0.15rem;
     padding: 0.5rem 0.75rem;
     background: var(--surface-2, rgba(127,127,127,0.06));
-    border-radius: var(--radius, 6px);
+    border-radius: var(--radius);
 }
 .dash-stat strong {
     font-size: var(--text-lg);
@@ -1354,12 +1354,12 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 400; color: var(--te
     width: 100%;
     height: 14px;
     background: rgba(127,127,127,0.18);
-    border-radius: 999px;
+    border-radius: var(--radius);
     overflow: hidden;
 }
 .pressure-fill {
     height: 100%;
-    border-radius: 999px;
+    border-radius: var(--radius);
     transition: width 0.25s ease;
 }
 .dash-notif-list {
@@ -1373,5 +1373,5 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 400; color: var(--te
 .dash-notif-list li {
     padding: 0.5rem 0.75rem;
     background: var(--surface-2, rgba(127,127,127,0.06));
-    border-radius: var(--radius, 6px);
+    border-radius: var(--radius);
 }

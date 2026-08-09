@@ -43,7 +43,7 @@
         _breadcrumbs =
         [
             new BreadcrumbItem(L["Nav.Campaigns.Player"], "/campaigns"),
-            new BreadcrumbItem(campaignName ?? L["Sheet.UnknownCharacter"], null)
+            new BreadcrumbItem(campaignName ?? L["Common.UnknownCampaign"], null)
         ];
         if (result?.Data is { } sheet)
         {
