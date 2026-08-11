@@ -52,40 +52,52 @@
         }
         else
         {
-            <div class="ledger-table-wrap">
-                <table class="ledger-table stack-mobile">
-                    <thead>
-                        <tr>
-                            <th>@L["Gm.CampaignDetail.Col.Name"]</th>
-                            <th>@L["Gm.Catalog.TypeLabel"]</th>
-                            <th>DataJson</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var entry in FilteredEntries)
-                        {
-                            <tr>
-                                <td data-label="@L["Gm.CampaignDetail.Col.Name"]">@entry.Name</td>
-                                <td data-label="@L["Gm.Catalog.TypeLabel"]">@(entry.IsGlobal ? L["Gm.Catalog.Official"] : L["Gm.Catalog.Homebrew"])</td>
-                                <td data-label="DataJson" style="color:var(--text-muted);font-size:var(--text-sm);max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-                                    @entry.DataJson
-                                </td>
-                                <td data-label="">
-                                    @if (entry.IsArchived)
-                                    {
-                                        <span style="color:var(--text-muted)">@L["Gm.Catalog.Archived"]</span>
-                                    }
-                                    else if (!entry.IsGlobal)
-                                    {
-                                        <button class="btn btn-outline-secondary btn-sm" @onclick="() => StartEdit(entry)">@L["Gm.Catalog.Edit"]</button>
-                                        <button class="btn btn-outline-secondary btn-sm" @onclick="() => DeleteAsync(entry.Id, entry.Name)">@L["Gm.Catalog.Delete"]</button>
-                                    }
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+            <div class="master-detail">
+                <div class="master-detail-list">
+                    <div class="ledger-table-wrap">
+                        <table class="ledger-table stack-mobile">
+                            <thead>
+                                <tr>
+                                    <th>@L["Gm.CampaignDetail.Col.Name"]</th>
+                                    <th>@L["Gm.Catalog.TypeLabel"]</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var entry in FilteredEntries)
+                                {
+                                    <tr class="@(_selected?.Id == entry.Id ? "is-selected" : null)" @onclick="() => _selected = entry" style="cursor:pointer">
+                                        <td data-label="@L["Gm.CampaignDetail.Col.Name"]">@entry.Name</td>
+                                        <td data-label="@L["Gm.Catalog.TypeLabel"]">@(entry.IsGlobal ? L["Gm.Catalog.Official"] : L["Gm.Catalog.Homebrew"])</td>
+                                        <td data-label="" @onclick:stopPropagation="true">
+                                            @if (entry.IsArchived)
+                                            {
+                                                <span style="color:var(--text-muted)">@L["Gm.Catalog.Archived"]</span>
+                                            }
+                                            else if (!entry.IsGlobal)
+                                            {
+                                                <button class="btn btn-outline-secondary btn-sm" @onclick="() => StartEdit(entry)">@L["Gm.Catalog.Edit"]</button>
+                                                <button class="btn btn-outline-secondary btn-sm" @onclick="() => DeleteAsync(entry.Id, entry.Name)">@L["Gm.Catalog.Delete"]</button>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="detail-panel">
+                    @if (_selected is null || !FilteredEntries.Any(e => e.Id == _selected.Id))
+                    {
+                        <p class="detail-panel-empty">@L["Detail.SelectItem"]</p>
+                    }
+                    else
+                    {
+                        <h3>@_selected.Name</h3>
+                        <p class="detail-panel-empty">@(_selected.IsGlobal ? L["Gm.Catalog.Official"] : L["Gm.Catalog.Homebrew"])</p>
+                        <JsonDetailView Json="@_selected.DataJson" />
+                    }
+                </div>
             </div>
         }
     }
@@ -127,6 +139,7 @@
     private string _formDataJson = "{}";
     private string? _errorMessage;
     private string _searchTerm = string.Empty;
+    private CatalogEntryResponse? _selected;
 
     private List<CatalogEntryResponse> FilteredEntries =>
         _entries.Where(e => TableFilter.Matches(_searchTerm, e.Name, e.DataJson)).ToList();
@@ -138,6 +151,7 @@
         _selectedType = e.Value?.ToString() ?? Types[0];
         CancelEdit();
         _searchTerm = string.Empty;
+        _selected = null;
         await LoadAsync();
     }
 
@@ -145,6 +159,7 @@
     {
         _loading = true;
         _errorMessage = null;
+        _selected = null;
         var result = await CatalogService.GetByTypeAsync(_selectedType, CampaignId, includeArchived: true);
         if (result is null)
         {

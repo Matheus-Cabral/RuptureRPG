@@ -1,0 +1,33 @@
+@using System.Text.Json.Nodes
+@using Microsoft.Extensions.Localization
+@using Ruptura.Web.Resources
+@inject IStringLocalizer<AppStrings> L
+
+@if (_error)
+{
+    <pre class="detail-raw">@Json</pre>
+}
+else if (_root is null || (_root is JsonObject o && o.Count == 0))
+{
+    <p class="detail-empty">@L["Detail.None"]</p>
+}
+else
+{
+    <JsonValueView Node="_root" />
+}
+
+@code {
+    [Parameter] public string? Json { get; set; }
+
+    private JsonNode? _root;
+    private bool _error;
+
+    protected override void OnParametersSet()
+    {
+        _error = false;
+        _root = null;
+        if (string.IsNullOrWhiteSpace(Json)) return;
+        try { _root = JsonNode.Parse(Json); }
+        catch (System.Text.Json.JsonException) { _error = true; }
+    }
+}

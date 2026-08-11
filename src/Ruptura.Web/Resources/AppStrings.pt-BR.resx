@@ -139,6 +139,8 @@
   <data name="Common.Close"><value>Fechar</value></data>
   <data name="Common.Yes"><value>Sim</value></data>
   <data name="Common.No"><value>Não</value></data>
+  <data name="Detail.None"><value>Sem detalhes</value></data>
+  <data name="Detail.SelectItem"><value>Selecione um item para ver os detalhes.</value></data>
   <data name="Nav.ToggleMenu"><value>Alternar menu</value></data>
   <data name="Theme.Switcher.Label"><value>Tema</value></data>
   <data name="Theme.Light"><value>Claro</value></data>

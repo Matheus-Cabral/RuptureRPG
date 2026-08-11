@@ -1,0 +1,61 @@
+@using System.Text.Json.Nodes
+@using Microsoft.Extensions.Localization
+@using Ruptura.Web.Resources
+@inject IStringLocalizer<AppStrings> L
+
+@if (Node is JsonObject obj)
+{
+    <dl class="detail-list">
+        @foreach (var kv in obj)
+        {
+            <div class="detail-row">
+                <dt class="detail-key">@Prettify(kv.Key)</dt>
+                <dd class="detail-value"><JsonValueView Node="kv.Value" /></dd>
+            </div>
+        }
+    </dl>
+}
+else if (Node is JsonArray arr)
+{
+    @if (arr.Count == 0)
+    {
+        <span class="detail-value">—</span>
+    }
+    else
+    {
+        <ul class="detail-array">
+            @foreach (var item in arr)
+            {
+                <li><JsonValueView Node="item" /></li>
+            }
+        </ul>
+    }
+}
+else
+{
+    <span>@Scalar(Node)</span>
+}
+
+@code {
+    [Parameter] public JsonNode? Node { get; set; }
+
+    // camelCase / PascalCase / snake_case -> spaced Title Case.
+    private static string Prettify(string key)
+    {
+        if (string.IsNullOrEmpty(key)) return key;
+        var spaced = System.Text.RegularExpressions.Regex.Replace(key.Replace('_', ' '), "(?<=[a-z0-9])(?=[A-Z])", " ");
+        return char.ToUpperInvariant(spaced[0]) + spaced[1..];
+    }
+
+    private string Scalar(JsonNode? node)
+    {
+        if (node is null) return "—";
+        if (node is JsonValue v)
+        {
+            if (v.TryGetValue<bool>(out var b)) return b ? L["Common.Yes"] : L["Common.No"];
+            var s = v.ToString();
+            return string.IsNullOrWhiteSpace(s) ? "—" : s;
+        }
+        return node.ToString();
+    }
+}
