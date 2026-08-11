@@ -22,9 +22,11 @@ else
                     @foreach (var entry in Entries)
                     {
                         <tr class="@(_selectedRefId == entry.CatalogEntryId ? "is-selected" : null)"
-                            @onclick="() => _selectedRefId = entry.CatalogEntryId">
+                            tabindex="0" role="button"
+                            @onclick="() => _selectedRefId = entry.CatalogEntryId"
+                            @onkeydown="e => OnRowKey(e, entry.CatalogEntryId)">
                             <td data-label="@L["Gm.CampaignDetail.Col.Name"]">@NameOf(entry.CatalogEntryId)</td>
-                            <td data-label="" @onclick:stopPropagation="true"><button class="btn btn-outline-secondary btn-sm" @onclick="() => Entries.Remove(entry)">@L["Sheet.RefList.Remove"]</button></td>
+                            <td data-label="" @onclick:stopPropagation="true"><button class="btn btn-outline-secondary btn-sm" @onclick="() => RemoveEntry(entry)">@L["Sheet.RefList.Remove"]</button></td>
                         </tr>
                     }
                 </tbody>
@@ -84,10 +86,21 @@ else
 
     private string NameOf(Guid id) => _all.FirstOrDefault(e => e.Id == id)?.Name ?? id.ToString();
 
+    private void OnRowKey(KeyboardEventArgs e, Guid refId)
+    {
+        if (e.Key == "Enter" || e.Key == " ") _selectedRefId = refId;
+    }
+
     private void AddEntry()
     {
         if (_selectedId == Guid.Empty) return;
         Entries.Add(new CharacterCatalogRefEntry { CatalogEntryId = _selectedId });
         _selectedId = Guid.Empty;
+    }
+
+    private void RemoveEntry(CharacterCatalogRefEntry entry)
+    {
+        Entries.Remove(entry);
+        if (_selectedRefId == entry.CatalogEntryId) _selectedRefId = null;
     }
 }

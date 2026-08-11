@@ -39,7 +39,9 @@ else
                     @foreach (var item in Data.Equipment)
                     {
                         <tr class="@(_selectedRefId == item.CatalogEntryId ? "is-selected" : null)"
-                            @onclick="() => _selectedRefId = item.CatalogEntryId">
+                            tabindex="0" role="button"
+                            @onclick="() => _selectedRefId = item.CatalogEntryId"
+                            @onkeydown="e => OnRowKey(e, item.CatalogEntryId)">
                             <td data-label="@L["Gm.CampaignDetail.Col.Name"]">@NameOf(item.CatalogEntryId)</td>
                             <td data-label="@L["Sheet.Equipment.Quantity"]" style="width:80px" @onclick:stopPropagation="true">
                                 <input class="form-control form-control-sm" type="number" min="1"
@@ -60,7 +62,7 @@ else
                                     }
                                 </select>
                             </td>
-                            <td data-label="" @onclick:stopPropagation="true"><button class="btn btn-outline-secondary btn-sm" @onclick="() => Data.Equipment.Remove(item)">@L["Sheet.RefList.Remove"]</button></td>
+                            <td data-label="" @onclick:stopPropagation="true"><button class="btn btn-outline-secondary btn-sm" @onclick="() => RemoveItem(item)">@L["Sheet.RefList.Remove"]</button></td>
                         </tr>
                     }
                 </tbody>
@@ -124,6 +126,17 @@ else
 
     private string NameOf(Guid id) => _allItems.FirstOrDefault(e => e.Id == id)?.Name ?? id.ToString();
     private string SkillNameOf(Guid id) => _skillCatalog.FirstOrDefault(e => e.Id == id)?.Name ?? id.ToString();
+
+    private void OnRowKey(KeyboardEventArgs e, Guid refId)
+    {
+        if (e.Key == "Enter" || e.Key == " ") _selectedRefId = refId;
+    }
+
+    private void RemoveItem(CharacterEquipmentEntry item)
+    {
+        Data.Equipment.Remove(item);
+        if (_selectedRefId == item.CatalogEntryId) _selectedRefId = null;
+    }
 
     private static int ParseInt(object? value, int fallback) => int.TryParse(value?.ToString(), out var v) ? v : fallback;
     private static Guid? ParseGuid(object? value) => Guid.TryParse(value?.ToString(), out var id) ? id : null;

@@ -66,7 +66,10 @@
                             <tbody>
                                 @foreach (var entry in FilteredEntries)
                                 {
-                                    <tr class="@(_selected?.Id == entry.Id ? "is-selected" : null)" @onclick="() => _selected = entry" style="cursor:pointer">
+                                    <tr class="@(_selected?.Id == entry.Id ? "is-selected" : null)"
+                                        tabindex="0" role="button"
+                                        @onclick="() => _selected = entry"
+                                        @onkeydown="e => OnRowKey(e, entry)">
                                         <td data-label="@L["Gm.CampaignDetail.Col.Name"]">@entry.Name</td>
                                         <td data-label="@L["Gm.Catalog.TypeLabel"]">@(entry.IsGlobal ? L["Gm.Catalog.Official"] : L["Gm.Catalog.Homebrew"])</td>
                                         <td data-label="" @onclick:stopPropagation="true">
@@ -145,6 +148,11 @@
         _entries.Where(e => TableFilter.Matches(_searchTerm, e.Name, e.DataJson)).ToList();
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private void OnRowKey(KeyboardEventArgs e, CatalogEntryResponse entry)
+    {
+        if (e.Key == "Enter" || e.Key == " ") _selected = entry;
+    }
 
     private async Task OnTypeChanged(ChangeEventArgs e)
     {

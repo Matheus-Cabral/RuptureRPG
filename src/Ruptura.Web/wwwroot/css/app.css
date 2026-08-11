@@ -1500,11 +1500,12 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 400; color: var(--te
 }
 .detail-panel-empty { color: var(--text-muted); font-size: var(--text-sm); }
 .detail-list { margin: 0; }
-.detail-row { display: flex; gap: 0.75rem; padding: 0.25rem 0; border-bottom: 1px solid var(--border-subtle, rgba(127,127,127,0.15)); }
+.detail-row { display: flex; gap: 0.75rem; padding: 0.25rem 0; border-bottom: 1px solid var(--border); }
 .detail-key { flex: 0 0 40%; color: var(--text-muted); font-size: var(--text-2xs); text-transform: uppercase; letter-spacing: 0.05em; margin: 0; }
 .detail-value { flex: 1 1 60%; margin: 0; }
 .detail-array { margin: 0; padding-left: 1.1rem; }
 .detail-raw { white-space: pre-wrap; font-size: var(--text-2xs); color: var(--text-muted); }
 .detail-empty { color: var(--text-muted); font-size: var(--text-sm); }
+.master-detail-list .ledger-table tbody tr { cursor: pointer; }
 .ledger-table tr.is-selected > td { background: var(--surface-2, rgba(127,127,127,0.10)); }
 @media (max-width: 1023px) { .master-detail { flex-direction: column; } }

@@ -66,8 +66,10 @@
                             {
                                 var data = DataFor(building.CatalogEntryId);
                                 var cap = data?.LevelCap ?? 10;
-                                <tr class="@(_selectedBuilding?.Id == building.Id ? "is-selected" : null)"
-                                    @onclick="() => _selectedBuilding = building">
+                                <tr class="@(_selectedBuildingId == building.Id ? "is-selected" : null)"
+                                    tabindex="0" role="button"
+                                    @onclick="() => _selectedBuildingId = building.Id"
+                                    @onkeydown="e => OnRowKey(e, building.Id)">
                                     <td data-label="@L["Guild.Building.Installation"]">@building.InstallationName</td>
                                     <td data-label="@L["Guild.Building.Level"]" @onclick:stopPropagation="true">
                                         <input type="number" class="form-control" style="max-width:90px" min="1" max="@cap"
@@ -102,19 +104,22 @@
             </div>
 
             <div class="detail-panel">
-                @if (_selectedBuilding is null)
+                @{
+                    var selectedBuilding = Guild.Buildings.FirstOrDefault(b => b.Id == _selectedBuildingId);
+                }
+                @if (selectedBuilding is null)
                 {
                     <p class="detail-panel-empty">@L["Detail.SelectItem"]</p>
                 }
                 else
                 {
-                    <h3>@_selectedBuilding.InstallationName</h3>
+                    <h3>@selectedBuilding.InstallationName</h3>
                     <dl class="detail-list">
-                        <div class="detail-row"><dt class="detail-key">@L["Guild.Buildings.Category"]</dt><dd class="detail-value">@_selectedBuilding.Category</dd></div>
-                        <div class="detail-row"><dt class="detail-key">@L["Guild.Buildings.Weight"]</dt><dd class="detail-value">@_selectedBuilding.Weight</dd></div>
-                        <div class="detail-row"><dt class="detail-key">@L["Guild.Buildings.LevelCap"]</dt><dd class="detail-value">@_selectedBuilding.LevelCap</dd></div>
-                        <div class="detail-row"><dt class="detail-key">@L["Guild.Buildings.Prerequisites"]</dt><dd class="detail-value">@(string.IsNullOrEmpty(_selectedBuilding.Prerequisites) ? "—" : _selectedBuilding.Prerequisites)</dd></div>
-                        <div class="detail-row"><dt class="detail-key">@L["Guild.Buildings.Unlocks"]</dt><dd class="detail-value">@(string.IsNullOrEmpty(_selectedBuilding.Unlocks) ? "—" : _selectedBuilding.Unlocks)</dd></div>
+                        <div class="detail-row"><dt class="detail-key">@L["Guild.Buildings.Category"]</dt><dd class="detail-value">@selectedBuilding.Category</dd></div>
+                        <div class="detail-row"><dt class="detail-key">@L["Guild.Buildings.Weight"]</dt><dd class="detail-value">@selectedBuilding.Weight</dd></div>
+                        <div class="detail-row"><dt class="detail-key">@L["Guild.Buildings.LevelCap"]</dt><dd class="detail-value">@selectedBuilding.LevelCap</dd></div>
+                        <div class="detail-row"><dt class="detail-key">@L["Guild.Buildings.Prerequisites"]</dt><dd class="detail-value">@(string.IsNullOrEmpty(selectedBuilding.Prerequisites) ? "—" : selectedBuilding.Prerequisites)</dd></div>
+                        <div class="detail-row"><dt class="detail-key">@L["Guild.Buildings.Unlocks"]</dt><dd class="detail-value">@(string.IsNullOrEmpty(selectedBuilding.Unlocks) ? "—" : selectedBuilding.Unlocks)</dd></div>
                     </dl>
                 }
             </div>
@@ -136,7 +141,12 @@
     private int _addLevel = 1;
     private bool _addActive = true;
     private bool _saving;
-    private GuildBuildingResponse? _selectedBuilding;
+    private Guid? _selectedBuildingId;
+
+    private void OnRowKey(KeyboardEventArgs e, Guid buildingId)
+    {
+        if (e.Key == "Enter" || e.Key == " ") _selectedBuildingId = buildingId;
+    }
 
     private static readonly System.Text.Json.JsonSerializerOptions JsonOpts = new(System.Text.Json.JsonSerializerDefaults.Web);
 
