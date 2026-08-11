@@ -72,12 +72,18 @@ public class CreatureStatsCalculator : ICreatureStatsCalculator
     };
 
     // Open-ended categories (Chefe de Arco, Entidade Superior) use int.MaxValue as the upper
-    // bound sentinel — there is no ceiling, so overflow is always false and we must NEVER
-    // multiply the sentinel (that would overflow). The comparison runs in double for the rest.
+    // bound sentinel. This is a SEMANTIC guard, not overflow prevention: those categories have
+    // no ceiling by definition, so CategoryOverflow is always false for them. (npMax <= 0 is the
+    // unknown/unresolved-category case, likewise never an overflow.) Returning early here also
+    // keeps the sentinel out of the `npMax * 115L` multiply below.
+    //
+    // Boundary: the spec is "more than 15% over" (strict). Comparing `np * 100 > npMax * 115` in
+    // long avoids the floating-point drift of `np > npMax * 1.15` (e.g. 40*1.15 = 45.999…, which
+    // would wrongly flag np=46 — exactly +15% — as overflow).
     private static bool ExceedsCeiling(int np, int npMax)
     {
         if (npMax == int.MaxValue || npMax <= 0) return false;
-        return np > npMax * 1.15;
+        return np * 100L > npMax * 115L;
     }
 
     private static int ClampToInt(long value) =>

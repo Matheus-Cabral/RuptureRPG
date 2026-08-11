@@ -172,12 +172,16 @@ public class CreatureStatsCalculatorTests
         result.CategoryOverflow.Should().BeFalse();
     }
 
-    [Fact]
-    public void Calculate_OpenEndedCategory_NeverOverflows_EvenWithClampedNp()
+    // Documents the SEMANTIC invariant: an open-ended category (NpMax == int.MaxValue sentinel)
+    // has no ceiling by definition, so it must NEVER report CategoryOverflow regardless of NP.
+    // This asserts the behaviour, not a numeric guard-present-vs-absent distinction.
+    [Theory]
+    [InlineData("ChefeDeArco")]
+    [InlineData("EntidadeSuperior")]
+    public void Calculate_OpenEndedCategory_NeverReportsOverflow(string category)
     {
-        // ChefeDeArco has NpMax == int.MaxValue (sentinel). Must never multiply the sentinel.
         var data = BaseCreature();
-        data.Category = "ChefeDeArco";
+        data.Category = category;
         data.Attributes.Corpo = int.MaxValue;
         data.Attributes.Controle = int.MaxValue;
         data.Attributes.Vigor = int.MaxValue;
@@ -186,6 +190,28 @@ public class CreatureStatsCalculatorTests
 
         result.NpMax.Should().Be(int.MaxValue);
         result.CategoryOverflow.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Calculate_CategoryOverflow_ExactlyFifteenPercentOver_IsNotOverflow()
+    {
+        // Fraca ceiling 40 → +15% is exactly 46. Spec is strictly "more than 15%", so 46 → false,
+        // 47 → true. Guards against float drift (40*1.15 = 45.999… would wrongly flag 46).
+        var data = BaseCreature();
+        data.Category = "Fraca";                                                   // NpMax = 40
+        data.Abilities.Add(new CreatureAbility { Name = "A1", Tier = "Suprema" });  // 20
+        data.Abilities.Add(new CreatureAbility { Name = "A2", Tier = "Suprema" });  // 20
+        data.Characteristics.Add(new CreatureCharacteristic { Name = "C", Weight = "Media" }); // 3
+        data.Attributes.Corpo = 4;                                                  // +3
+
+        var atBoundary = _sut.Calculate(data);
+        atBoundary.Np.Should().Be(46);                 // 20+20+3+3
+        atBoundary.CategoryOverflow.Should().BeFalse(); // exactly +15% → not overflow
+
+        data.Attributes.Corpo = 5;                     // +4 → Np = 47
+        var overBoundary = _sut.Calculate(data);
+        overBoundary.Np.Should().Be(47);
+        overBoundary.CategoryOverflow.Should().BeTrue();
     }
 
     [Fact]
