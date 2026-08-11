@@ -1442,16 +1442,32 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 400; color: var(--te
     right: 4px;
     width: 28px;
     height: 28px;
-    display: none;              /* shown on hover */
+    display: inline-flex;       /* always laid out so InputFile stays focusable */
     align-items: center;
     justify-content: center;
     background: rgba(0,0,0,0.6);
     color: #fff;
     border-radius: var(--radius);
     cursor: pointer;
+    opacity: 0;                 /* revealed on hover / focus-within */
+    visibility: hidden;
+    transition: opacity 0.15s ease;
 }
 .image-slot-loaded:hover .image-slot-edit,
-.image-slot-loaded:focus-within .image-slot-edit { display: inline-flex; }
+.image-slot-loaded:focus-within .image-slot-edit {
+    opacity: 1;
+    visibility: visible;
+}
+/* Touch devices have no hover — pin the edit badge visible and give it the
+   documented 44×44 touch-target floor so the file picker stays reachable. */
+@media (hover: none) {
+    .image-slot-edit {
+        opacity: 1;
+        visibility: visible;
+        min-width: 44px;
+        min-height: 44px;
+    }
+}
 .image-slot-empty {
     flex-direction: column;
     gap: 0.25rem;

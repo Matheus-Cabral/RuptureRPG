@@ -14,12 +14,14 @@ else if (!string.IsNullOrEmpty(DataUri))
 {
     <div class="image-slot image-slot-loaded" style="width:@(Size)px;height:@(Size)px">
         <img class="image-slot-preview" src="@DataUri" alt="@Alt"
-             @onclick="() => Lightbox.Show(DataUri!, Alt)" />
+             tabindex="0" role="button"
+             @onclick="() => Lightbox.Show(DataUri!, Alt)"
+             @onkeydown="OnPreviewKeyDown" />
         @if (!Disabled)
         {
-            <label class="image-slot-edit" @onclick:stopPropagation="true" aria-label="@L["Image.Change"]" title="@L["Image.Change"]">
+            <label class="image-slot-edit" @onclick:stopPropagation="true" title="@L["Image.Change"]">
                 <span aria-hidden="true">✎</span>
-                <InputFile class="image-slot-file" OnChange="OnFilePicked" accept="image/*" />
+                <InputFile class="image-slot-file" OnChange="OnFilePicked" accept="image/*" aria-label="@L["Image.Change"]" />
             </label>
         }
     </div>
@@ -40,4 +42,13 @@ else if (!Disabled)
     [Parameter] public bool Disabled { get; set; }
     [Parameter] public string Alt { get; set; } = string.Empty;
     [Parameter] public EventCallback<InputFileChangeEventArgs> OnFilePicked { get; set; }
+
+    private void OnPreviewKeyDown(KeyboardEventArgs e)
+    {
+        if (string.IsNullOrEmpty(DataUri)) return;
+        if (e.Key == "Enter" || e.Key == " ")
+        {
+            Lightbox.Show(DataUri, Alt);
+        }
+    }
 }
