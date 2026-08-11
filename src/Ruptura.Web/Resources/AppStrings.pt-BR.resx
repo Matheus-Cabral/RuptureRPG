@@ -213,6 +213,8 @@
   <data name="Sheet.Attributes.Name"><value>Atributo</value></data>
   <data name="Sheet.PortraitLabel"><value>Retrato (caminho ou URL)</value></data>
   <data name="Sheet.PortraitUploaded"><value>Retrato atualizado.</value></data>
+  <data name="Image.Change"><value>Trocar imagem</value></data>
+  <data name="Image.Upload"><value>Enviar imagem</value></data>
   <data name="Sheet.RankLabel"><value>Ranking</value></data>
   <data name="Sheet.NpLabel"><value>NP</value></data>
   <data name="Sheet.MarkDead"><value>Morto</value></data>

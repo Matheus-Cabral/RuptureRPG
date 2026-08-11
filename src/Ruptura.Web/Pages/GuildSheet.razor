@@ -32,14 +32,8 @@
             </div>
             <div>
                 <label class="form-label">@L["Guild.EmblemLabel"]</label>
-                <div style="display:flex;align-items:center;gap:.5rem">
-                    @if (_emblemDataUri is not null)
-                    {
-                        <img src="@_emblemDataUri" style="width:48px;height:48px;object-fit:cover;border-radius:4px" />
-                    }
-                    <InputFile OnChange="UploadEmblemAsync" accept="image/*" disabled="@_uploadingEmblem" />
-                    @if (_uploadingEmblem) { <span class="spinner-border spinner-border-sm"></span> }
-                </div>
+                <ImageSlot DataUri="@_emblemDataUri" Uploading="_uploadingEmblem"
+                           Alt="@_guildName" OnFilePicked="UploadEmblemAsync" />
             </div>
             <button class="btn btn-primary btn-sm" @onclick="SaveAsync" disabled="@_saving">
                 @if (_saving) { <span class="spinner-border spinner-border-sm me-1"></span> }

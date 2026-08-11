@@ -23,14 +23,9 @@ else
         </div>
         <div>
             <label class="form-label">@L["Sheet.PortraitLabel"]</label>
-            <div style="display:flex;align-items:center;gap:.5rem">
-                @if (_portraitDataUri is not null)
-                {
-                    <img src="@_portraitDataUri" style="width:48px;height:48px;object-fit:cover;border-radius:4px" />
-                }
-                <InputFile OnChange="UploadPortraitAsync" accept="image/*" disabled="@_uploadingPortrait" />
-                @if (_uploadingPortrait) { <span class="spinner-border spinner-border-sm"></span> }
-            </div>
+            <ImageSlot DataUri="@_portraitDataUri" Uploading="_uploadingPortrait"
+                       Disabled="@(!IsOwner && !CanEditStatus)" Alt="@_characterName"
+                       OnFilePicked="UploadPortraitAsync" />
         </div>
         <div>
             <span class="section-title" style="display:block">@L["Sheet.RankLabel"]</span>
