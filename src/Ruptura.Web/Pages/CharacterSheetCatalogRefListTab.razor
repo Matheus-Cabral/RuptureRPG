@@ -11,21 +11,41 @@
 }
 else
 {
-<div class="ledger-table-wrap">
-    <table class="ledger-table stack-mobile">
-        <thead>
-            <tr><th>@L["Gm.CampaignDetail.Col.Name"]</th><th></th></tr>
-        </thead>
-        <tbody>
-            @foreach (var entry in Entries)
-            {
-                <tr>
-                    <td data-label="@L["Gm.CampaignDetail.Col.Name"]">@NameOf(entry.CatalogEntryId)</td>
-                    <td data-label=""><button class="btn btn-outline-secondary btn-sm" @onclick="() => Entries.Remove(entry)">@L["Sheet.RefList.Remove"]</button></td>
-                </tr>
-            }
-        </tbody>
-    </table>
+<div class="master-detail">
+    <div class="master-detail-list">
+        <div class="ledger-table-wrap">
+            <table class="ledger-table stack-mobile">
+                <thead>
+                    <tr><th>@L["Gm.CampaignDetail.Col.Name"]</th><th></th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var entry in Entries)
+                    {
+                        <tr class="@(_selectedRefId == entry.CatalogEntryId ? "is-selected" : null)"
+                            @onclick="() => _selectedRefId = entry.CatalogEntryId">
+                            <td data-label="@L["Gm.CampaignDetail.Col.Name"]">@NameOf(entry.CatalogEntryId)</td>
+                            <td data-label="" @onclick:stopPropagation="true"><button class="btn btn-outline-secondary btn-sm" @onclick="() => Entries.Remove(entry)">@L["Sheet.RefList.Remove"]</button></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="detail-panel">
+        @{
+            var sel = _all.FirstOrDefault(e => e.Id == _selectedRefId);
+        }
+        @if (sel is null)
+        {
+            <p class="detail-panel-empty">@L["Detail.SelectItem"]</p>
+        }
+        else
+        {
+            <h3>@sel.Name</h3>
+            <JsonDetailView Json="@sel.DataJson" />
+        }
+    </div>
 </div>
 
 <div style="display:flex;gap:.5rem;margin-top:1rem">
@@ -48,6 +68,7 @@ else
     // entry, so an archived-but-referenced entry still shows its real name instead of a raw GUID.
     private List<CatalogEntryResponse> _all = [];
     private Guid _selectedId;
+    private Guid? _selectedRefId;
     private bool _loading = true;
 
     // A user must never be able to newly add an archived entry — only offer non-archived

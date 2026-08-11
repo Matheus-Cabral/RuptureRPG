@@ -21,47 +21,67 @@ else
     </div>
 </div>
 
-<div class="ledger-table-wrap">
-    <table class="ledger-table stack-mobile">
-        <thead>
-            <tr>
-                <th>@L["Gm.CampaignDetail.Col.Name"]</th>
-                <th>@L["Sheet.Equipment.Quantity"]</th>
-                <th>@L["Sheet.Equipment.Durability"]</th>
-                <th>@L["Sheet.Equipment.Equipped"]</th>
-                <th>@L["Sheet.Equipment.LinkedSkill"]</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var item in Data.Equipment)
-            {
-                <tr>
-                    <td data-label="@L["Gm.CampaignDetail.Col.Name"]">@NameOf(item.CatalogEntryId)</td>
-                    <td data-label="@L["Sheet.Equipment.Quantity"]" style="width:80px">
-                        <input class="form-control form-control-sm" type="number" min="1"
-                               value="@item.Quantity" @onchange="e => item.Quantity = ParseInt(e.Value, 1)" />
-                    </td>
-                    <td data-label="@L["Sheet.Equipment.Durability"]" style="width:100px">
-                        <input class="form-control form-control-sm" type="number" min="0"
-                               value="@item.DurabilityRemaining" @onchange="e => item.DurabilityRemaining = ParseInt(e.Value, 0)" />
-                    </td>
-                    <td data-label="@L["Sheet.Equipment.Equipped"]"><input type="checkbox" checked="@item.IsEquipped" @onchange="e => item.IsEquipped = (bool)(e.Value ?? false)" /></td>
-                    <td data-label="@L["Sheet.Equipment.LinkedSkill"]">
-                        <select class="form-select form-select-sm" value="@item.LinkedSkillEntryId"
-                                @onchange="e => item.LinkedSkillEntryId = ParseGuid(e.Value)">
-                            <option value="">@L["Sheet.Equipment.NoneSkill"]</option>
-                            @foreach (var skill in _skills)
-                            {
-                                <option value="@skill.CatalogEntryId">@SkillNameOf(skill.CatalogEntryId)</option>
-                            }
-                        </select>
-                    </td>
-                    <td data-label=""><button class="btn btn-outline-secondary btn-sm" @onclick="() => Data.Equipment.Remove(item)">@L["Sheet.RefList.Remove"]</button></td>
-                </tr>
-            }
-        </tbody>
-    </table>
+<div class="master-detail">
+    <div class="master-detail-list">
+        <div class="ledger-table-wrap">
+            <table class="ledger-table stack-mobile">
+                <thead>
+                    <tr>
+                        <th>@L["Gm.CampaignDetail.Col.Name"]</th>
+                        <th>@L["Sheet.Equipment.Quantity"]</th>
+                        <th>@L["Sheet.Equipment.Durability"]</th>
+                        <th>@L["Sheet.Equipment.Equipped"]</th>
+                        <th>@L["Sheet.Equipment.LinkedSkill"]</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Data.Equipment)
+                    {
+                        <tr class="@(_selectedRefId == item.CatalogEntryId ? "is-selected" : null)"
+                            @onclick="() => _selectedRefId = item.CatalogEntryId">
+                            <td data-label="@L["Gm.CampaignDetail.Col.Name"]">@NameOf(item.CatalogEntryId)</td>
+                            <td data-label="@L["Sheet.Equipment.Quantity"]" style="width:80px" @onclick:stopPropagation="true">
+                                <input class="form-control form-control-sm" type="number" min="1"
+                                       value="@item.Quantity" @onchange="e => item.Quantity = ParseInt(e.Value, 1)" />
+                            </td>
+                            <td data-label="@L["Sheet.Equipment.Durability"]" style="width:100px" @onclick:stopPropagation="true">
+                                <input class="form-control form-control-sm" type="number" min="0"
+                                       value="@item.DurabilityRemaining" @onchange="e => item.DurabilityRemaining = ParseInt(e.Value, 0)" />
+                            </td>
+                            <td data-label="@L["Sheet.Equipment.Equipped"]" @onclick:stopPropagation="true"><input type="checkbox" checked="@item.IsEquipped" @onchange="e => item.IsEquipped = (bool)(e.Value ?? false)" /></td>
+                            <td data-label="@L["Sheet.Equipment.LinkedSkill"]" @onclick:stopPropagation="true">
+                                <select class="form-select form-select-sm" value="@item.LinkedSkillEntryId"
+                                        @onchange="e => item.LinkedSkillEntryId = ParseGuid(e.Value)">
+                                    <option value="">@L["Sheet.Equipment.NoneSkill"]</option>
+                                    @foreach (var skill in _skills)
+                                    {
+                                        <option value="@skill.CatalogEntryId">@SkillNameOf(skill.CatalogEntryId)</option>
+                                    }
+                                </select>
+                            </td>
+                            <td data-label="" @onclick:stopPropagation="true"><button class="btn btn-outline-secondary btn-sm" @onclick="() => Data.Equipment.Remove(item)">@L["Sheet.RefList.Remove"]</button></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="detail-panel">
+        @{
+            var sel = _allItems.FirstOrDefault(e => e.Id == _selectedRefId);
+        }
+        @if (sel is null)
+        {
+            <p class="detail-panel-empty">@L["Detail.SelectItem"]</p>
+        }
+        else
+        {
+            <h3>@sel.Name</h3>
+            <JsonDetailView Json="@sel.DataJson" />
+        }
+    </div>
 </div>
 
 <div style="display:flex;gap:.5rem;margin-top:1rem">
@@ -89,6 +109,7 @@ else
     private List<CharacterSkillEntry> _skills => Data.Skills;
     private List<CatalogEntryResponse> _skillCatalog = [];
     private Guid _selectedId;
+    private Guid? _selectedRefId;
     private bool _loading = true;
 
     // A user must never be able to newly equip an archived item.
