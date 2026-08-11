@@ -72,6 +72,29 @@ public class GuildBuildingTests(IntegrationTestFactory factory)
     }
 
     [Fact]
+    public async Task GetGuild_Building_CarriesInstallationDetailFromCatalog()
+    {
+        var (client, campaign, playerToken, _) = await SetUpCampaignWithMemberAsync();
+        AuthHelper.SetBearerToken(client, playerToken);
+        await GetGuildAsync(client, campaign.Id);
+
+        // Armazém (seeded Installation d0000000-…-003): Category "Fundação", Weight 1, LevelCap 5,
+        // Prerequisites "Nenhum", Unlocks "Armazenamento (Nível × 50 unidades)".
+        var request = new CreateBuildingRequest { CatalogEntryId = GuildCatalogIds.Armazem, Level = 2, IsActive = true };
+        var response = await client.PostAsJsonAsync($"api/campaigns/{campaign.Id}/guild/buildings", request);
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var guild = await GetGuildAsync(client, campaign.Id);
+        var building = guild.Buildings.Should().ContainSingle().Subject;
+        building.InstallationName.Should().Be("Armazém");
+        building.Category.Should().Be("Fundação");
+        building.Weight.Should().Be(1);
+        building.LevelCap.Should().Be(5);
+        building.Prerequisites.Should().Be("Nenhum");
+        building.Unlocks.Should().Be("Armazenamento (Nível × 50 unidades)");
+    }
+
+    [Fact]
     public async Task AddBuilding_WithNonInstallationId_Returns400InstallationInvalid()
     {
         var (client, campaign, playerToken, _) = await SetUpCampaignWithMemberAsync();

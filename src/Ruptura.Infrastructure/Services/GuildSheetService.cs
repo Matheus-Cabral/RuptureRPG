@@ -303,17 +303,34 @@ public class GuildSheetService(
     private async Task<GuildBuildingResponse> MapBuildingAsync(GuildBuilding b, CancellationToken ct)
     {
         var entry = await catalogRepo.GetByIdAsync(b.CatalogEntryId, ct);
-        return MapBuilding(b, entry?.Name ?? string.Empty);
+        return MapBuilding(b, entry);
     }
 
-    private static GuildBuildingResponse MapBuilding(GuildBuilding b, string installationName) => new()
+    // Read-time projection: deserialize the installation's catalog blob (DEFAULT PascalCase JSON,
+    // like ValidateInstallationAsync) to surface Category/Weight/LevelCap/Prerequisites/Unlocks.
+    // A malformed blob leaves the scalar defaults rather than throwing.
+    private static GuildBuildingResponse MapBuilding(GuildBuilding b, CatalogEntry? entry)
     {
-        Id = b.Id,
-        CatalogEntryId = b.CatalogEntryId,
-        InstallationName = installationName,
-        Level = b.Level,
-        IsActive = b.IsActive
-    };
+        InstallationCatalogData? data = null;
+        if (entry is not null)
+        {
+            try { data = JsonSerializer.Deserialize<InstallationCatalogData>(entry.DataJson); }
+            catch (JsonException) { /* leave defaults */ }
+        }
+        return new GuildBuildingResponse
+        {
+            Id = b.Id,
+            CatalogEntryId = b.CatalogEntryId,
+            InstallationName = entry?.Name ?? string.Empty,
+            Level = b.Level,
+            IsActive = b.IsActive,
+            Category = data?.Category ?? string.Empty,
+            Weight = data?.Weight ?? 0,
+            LevelCap = data?.LevelCap ?? 0,
+            Prerequisites = data?.Prerequisites ?? string.Empty,
+            Unlocks = data?.Unlocks ?? string.Empty
+        };
+    }
 
     public async Task<Result<GuildStaffResponse>> AddStaffAsync(
         Guid callerId, Guid campaignId, CreateStaffRequest request, CancellationToken ct = default)
@@ -782,7 +799,7 @@ public class GuildSheetService(
             Expeditions = (await expeditionRepo.GetByGuildAsync(guild.Id, ct)).Select(MapExpedition).ToList(),
             // Reuse the installationCatalog dict already loaded for the calculator — no N+1 GetByIdAsync.
             Buildings = buildings
-                .Select(b => MapBuilding(b, installationCatalog.TryGetValue(b.CatalogEntryId, out var e) ? e.Name : string.Empty))
+                .Select(b => MapBuilding(b, installationCatalog.GetValueOrDefault(b.CatalogEntryId)))
                 .ToList(),
             Staff = staff.Select(MapStaff).ToList(),
             Research = research.Select(MapResearch).ToList(),

@@ -47,54 +47,77 @@
     }
     else
     {
-        <div class="ledger-table-wrap">
-            <table class="ledger-table stack-mobile">
-                <thead>
-                    <tr>
-                        <th>@L["Guild.Building.Installation"]</th>
-                        <th>@L["Guild.Building.Level"]</th>
-                        <th>@L["Guild.Building.Active"]</th>
-                        <th>@L["Guild.Building.Prerequisites"]</th>
-                        <th>@L["Guild.Building.Cost"]</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var building in Guild.Buildings)
-                    {
-                        var data = DataFor(building.CatalogEntryId);
-                        var cap = data?.LevelCap ?? 10;
-                        <tr>
-                            <td data-label="@L["Guild.Building.Installation"]">@building.InstallationName</td>
-                            <td data-label="@L["Guild.Building.Level"]">
-                                <input type="number" class="form-control" style="max-width:90px" min="1" max="@cap"
-                                       value="@building.Level"
-                                       @onchange="e => UpdateAsync(building, ParseLevel(e.Value, cap), building.IsActive)" />
-                            </td>
-                            <td data-label="@L["Guild.Building.Active"]">
-                                <input type="checkbox" class="form-check-input" checked="@building.IsActive"
-                                       @onchange="e => UpdateAsync(building, building.Level, (bool)(e.Value ?? false))" />
-                            </td>
-                            <td data-label="@L["Guild.Building.Prerequisites"]">
-                                @(string.IsNullOrWhiteSpace(data?.Prerequisites) ? "—" : data!.Prerequisites)
-                            </td>
-                            <td data-label="@L["Guild.Building.Cost"]">
-                                @if (data is not null)
-                                {
-                                    @L["Guild.Building.CostValue", building.Level * data.Weight * 10, building.Level * data.Weight * 3]
-                                }
-                                else
-                                {
-                                    <span>—</span>
-                                }
-                            </td>
-                            <td data-label="">
-                                <button class="btn btn-outline-secondary btn-sm" @onclick="() => DeleteAsync(building)">@L["Guild.Remove"]</button>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+        <div class="master-detail">
+            <div class="master-detail-list">
+                <div class="ledger-table-wrap">
+                    <table class="ledger-table stack-mobile">
+                        <thead>
+                            <tr>
+                                <th>@L["Guild.Building.Installation"]</th>
+                                <th>@L["Guild.Building.Level"]</th>
+                                <th>@L["Guild.Building.Active"]</th>
+                                <th>@L["Guild.Building.Prerequisites"]</th>
+                                <th>@L["Guild.Building.Cost"]</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var building in Guild.Buildings)
+                            {
+                                var data = DataFor(building.CatalogEntryId);
+                                var cap = data?.LevelCap ?? 10;
+                                <tr class="@(_selectedBuilding?.Id == building.Id ? "is-selected" : null)"
+                                    @onclick="() => _selectedBuilding = building">
+                                    <td data-label="@L["Guild.Building.Installation"]">@building.InstallationName</td>
+                                    <td data-label="@L["Guild.Building.Level"]" @onclick:stopPropagation="true">
+                                        <input type="number" class="form-control" style="max-width:90px" min="1" max="@cap"
+                                               value="@building.Level"
+                                               @onchange="e => UpdateAsync(building, ParseLevel(e.Value, cap), building.IsActive)" />
+                                    </td>
+                                    <td data-label="@L["Guild.Building.Active"]" @onclick:stopPropagation="true">
+                                        <input type="checkbox" class="form-check-input" checked="@building.IsActive"
+                                               @onchange="e => UpdateAsync(building, building.Level, (bool)(e.Value ?? false))" />
+                                    </td>
+                                    <td data-label="@L["Guild.Building.Prerequisites"]">
+                                        @(string.IsNullOrWhiteSpace(data?.Prerequisites) ? "—" : data!.Prerequisites)
+                                    </td>
+                                    <td data-label="@L["Guild.Building.Cost"]">
+                                        @if (data is not null)
+                                        {
+                                            @L["Guild.Building.CostValue", building.Level * data.Weight * 10, building.Level * data.Weight * 3]
+                                        }
+                                        else
+                                        {
+                                            <span>—</span>
+                                        }
+                                    </td>
+                                    <td data-label="" @onclick:stopPropagation="true">
+                                        <button class="btn btn-outline-secondary btn-sm" @onclick="() => DeleteAsync(building)">@L["Guild.Remove"]</button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="detail-panel">
+                @if (_selectedBuilding is null)
+                {
+                    <p class="detail-panel-empty">@L["Detail.SelectItem"]</p>
+                }
+                else
+                {
+                    <h3>@_selectedBuilding.InstallationName</h3>
+                    <dl class="detail-list">
+                        <div class="detail-row"><dt class="detail-key">@L["Guild.Buildings.Category"]</dt><dd class="detail-value">@_selectedBuilding.Category</dd></div>
+                        <div class="detail-row"><dt class="detail-key">@L["Guild.Buildings.Weight"]</dt><dd class="detail-value">@_selectedBuilding.Weight</dd></div>
+                        <div class="detail-row"><dt class="detail-key">@L["Guild.Buildings.LevelCap"]</dt><dd class="detail-value">@_selectedBuilding.LevelCap</dd></div>
+                        <div class="detail-row"><dt class="detail-key">@L["Guild.Buildings.Prerequisites"]</dt><dd class="detail-value">@(string.IsNullOrEmpty(_selectedBuilding.Prerequisites) ? "—" : _selectedBuilding.Prerequisites)</dd></div>
+                        <div class="detail-row"><dt class="detail-key">@L["Guild.Buildings.Unlocks"]</dt><dd class="detail-value">@(string.IsNullOrEmpty(_selectedBuilding.Unlocks) ? "—" : _selectedBuilding.Unlocks)</dd></div>
+                    </dl>
+                }
+            </div>
         </div>
     }
 </div>
@@ -113,6 +136,7 @@
     private int _addLevel = 1;
     private bool _addActive = true;
     private bool _saving;
+    private GuildBuildingResponse? _selectedBuilding;
 
     private static readonly System.Text.Json.JsonSerializerOptions JsonOpts = new(System.Text.Json.JsonSerializerDefaults.Web);
 

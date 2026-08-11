@@ -454,6 +454,11 @@
   <data name="Guild.Building.Deleted"><value>Building removed.</value></data>
   <data name="Guild.Building.DeleteConfirm.Title"><value>Remove building</value></data>
   <data name="Guild.Building.DeleteConfirm.Message"><value>Remove this building from the guild?</value></data>
+  <data name="Guild.Buildings.Category"><value>Category</value></data>
+  <data name="Guild.Buildings.Weight"><value>Weight</value></data>
+  <data name="Guild.Buildings.LevelCap"><value>Level Cap</value></data>
+  <data name="Guild.Buildings.Prerequisites"><value>Prerequisites</value></data>
+  <data name="Guild.Buildings.Unlocks"><value>Unlocks</value></data>
   <data name="Guild.Staff.Kind"><value>Kind</value></data>
   <data name="Guild.Staff.Kind.Worker"><value>Worker</value></data>
   <data name="Guild.Staff.Kind.Mercenary"><value>Mercenary</value></data>
