@@ -29,6 +29,7 @@ builder.Services.AddScoped<AuthenticationStateProvider, JwtAuthStateProvider>();
 builder.Services.AddScoped<ThemeService>();
 builder.Services.AddScoped<ToastService>();
 builder.Services.AddScoped<ConfirmService>();
+builder.Services.AddScoped<LightboxService>();
 
 // HTTP client with JWT handler
 builder.Services.AddTransient<JwtAuthorizationHandler>();

@@ -1,0 +1,37 @@
+@using Microsoft.Extensions.Localization
+@using Ruptura.Web.Resources
+@inject LightboxService Lightbox
+@inject IStringLocalizer<AppStrings> L
+@implements IDisposable
+
+@if (Lightbox.CurrentImage is { } image)
+{
+    <div class="lightbox-overlay" @onclick="Lightbox.Close" @onkeydown="OnKeyDown" tabindex="0" @ref="_overlayRef" role="dialog" aria-modal="true">
+        <button class="lightbox-close" @onclick="Lightbox.Close" @onclick:stopPropagation="true" aria-label="@L["Common.Close"]">✕</button>
+        <img class="lightbox-img" src="@image" alt="@(Lightbox.CurrentAlt ?? string.Empty)" @onclick:stopPropagation="true" />
+    </div>
+}
+
+@code {
+    private ElementReference _overlayRef;
+    private bool _wasOpen;
+
+    protected override void OnInitialized() => Lightbox.OnChange += HandleChange;
+
+    private void HandleChange() => InvokeAsync(StateHasChanged);
+
+    private void OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape") Lightbox.Close();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        var isOpen = Lightbox.CurrentImage is not null;
+        if (isOpen && !_wasOpen)
+            await _overlayRef.FocusAsync(); // so @onkeydown/Esc works
+        _wasOpen = isOpen;
+    }
+
+    public void Dispose() => Lightbox.OnChange -= HandleChange;
+}

@@ -801,6 +801,39 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 400; color: var(--te
     gap: 0.6rem;
 }
 
+/* Lightbox (LightboxContainer.razor) */
+.lightbox-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 700; /* above confirm (600) */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    cursor: zoom-out;
+    outline: none;
+}
+.lightbox-img {
+    max-width: 90vw;
+    max-height: 90vh;
+    object-fit: contain;
+    cursor: default;
+    border: 1px solid var(--border-strong);
+}
+.lightbox-close {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-size: var(--text-2xl, 1.5rem);
+    cursor: pointer;
+    line-height: 1;
+    padding: 0.5rem;
+}
+
 /* ── Theme Switcher ─────────────────────────────────────────────────────────── */
 .theme-switcher {
     display: flex;
