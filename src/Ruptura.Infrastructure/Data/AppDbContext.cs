@@ -22,6 +22,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<CatalogEntry> CatalogEntries => Set<CatalogEntry>();
     public DbSet<CharacterJournalEntry> CharacterJournalEntries => Set<CharacterJournalEntry>();
     public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<Creature> Creatures => Set<Creature>();
+    public DbSet<Npc> Npcs => Set<Npc>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
