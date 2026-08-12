@@ -98,4 +98,16 @@ public static class ErrorCodes
         public const string NotFound = "Notification.NotFound";
         public const string NotPromotable = "Notification.NotPromotable";
     }
+
+    public static class Encounter
+    {
+        public const string NotFound = "Encounter.NotFound";
+        public const string Forbidden = "Encounter.Forbidden";
+        public const string NameRequired = "Encounter.NameRequired";
+        public const string IntelligenceInvalid = "Encounter.IntelligenceInvalid";
+        public const string TerrainInvalid = "Encounter.TerrainInvalid";
+        public const string ObjectiveInvalid = "Encounter.ObjectiveInvalid";
+        public const string DifficultyInvalid = "Encounter.DifficultyInvalid";
+        public const string DurationInvalid = "Encounter.DurationInvalid";
+    }
 }

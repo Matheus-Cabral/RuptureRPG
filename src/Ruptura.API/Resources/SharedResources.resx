@@ -126,4 +126,14 @@
   <data name="Media.UnsupportedFileType"><value>Unsupported file type. Allowed: JPEG, PNG, WEBP, GIF.</value></data>
   <data name="Media.TooManyImages"><value>This journal entry already has the maximum number of images.</value></data>
   <data name="Media.NotFound"><value>Media not found.</value></data>
+
+  <!-- Encounter -->
+  <data name="Encounter.NotFound"><value>Encounter not found.</value></data>
+  <data name="Encounter.Forbidden"><value>You cannot access this encounter.</value></data>
+  <data name="Encounter.NameRequired"><value>An encounter must have a name.</value></data>
+  <data name="Encounter.IntelligenceInvalid"><value>The encounter's intelligence is not valid.</value></data>
+  <data name="Encounter.TerrainInvalid"><value>The encounter's terrain is not valid.</value></data>
+  <data name="Encounter.ObjectiveInvalid"><value>The encounter's objective is not valid.</value></data>
+  <data name="Encounter.DifficultyInvalid"><value>The encounter's desired difficulty is not valid.</value></data>
+  <data name="Encounter.DurationInvalid"><value>The encounter's duration is not valid.</value></data>
 </root>

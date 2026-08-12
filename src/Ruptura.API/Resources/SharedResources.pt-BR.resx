@@ -126,4 +126,14 @@
   <data name="Media.UnsupportedFileType"><value>Tipo de arquivo não suportado. Permitidos: JPEG, PNG, WEBP, GIF.</value></data>
   <data name="Media.TooManyImages"><value>Esta entrada de diário já atingiu o número máximo de imagens.</value></data>
   <data name="Media.NotFound"><value>Mídia não encontrada.</value></data>
+
+  <!-- Encounter -->
+  <data name="Encounter.NotFound"><value>Encontro não encontrado.</value></data>
+  <data name="Encounter.Forbidden"><value>Você não pode acessar este encontro.</value></data>
+  <data name="Encounter.NameRequired"><value>Um encontro deve ter um nome.</value></data>
+  <data name="Encounter.IntelligenceInvalid"><value>A inteligência do encontro não é válida.</value></data>
+  <data name="Encounter.TerrainInvalid"><value>O terreno do encontro não é válido.</value></data>
+  <data name="Encounter.ObjectiveInvalid"><value>O objetivo do encontro não é válido.</value></data>
+  <data name="Encounter.DifficultyInvalid"><value>A dificuldade desejada do encontro não é válida.</value></data>
+  <data name="Encounter.DurationInvalid"><value>A duração do encontro não é válida.</value></data>
 </root>
