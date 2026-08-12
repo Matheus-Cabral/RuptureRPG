@@ -101,6 +101,48 @@ public class CreatureTests(IntegrationTestFactory factory)
         list.Should().NotContain(c => c.Id == theirs.Id);
     }
 
+    // The 10 GDD §9.5.10 base creatures seeded as official examples (BestiarySeedData).
+    // Guids are deterministic (c0000000-…-0001 … -0010).
+    private static readonly string[] SeedCreatureIds =
+    [
+        "c0000000-0000-0000-0000-000000000001",
+        "c0000000-0000-0000-0000-000000000002",
+        "c0000000-0000-0000-0000-000000000003",
+        "c0000000-0000-0000-0000-000000000004",
+        "c0000000-0000-0000-0000-000000000005",
+        "c0000000-0000-0000-0000-000000000006",
+        "c0000000-0000-0000-0000-000000000007",
+        "c0000000-0000-0000-0000-000000000008",
+        "c0000000-0000-0000-0000-000000000009",
+        "c0000000-0000-0000-0000-000000000010",
+    ];
+
+    [Fact]
+    public async Task Get_FreshGm_SeesAll10OfficialSeedCreatures_EachWithDerivedNpInCategoryRange()
+    {
+        var (client, _) = await RegisterGmAsync();
+
+        var list = (await (await client.GetAsync("api/bestiary/creatures"))
+            .Content.ReadFromJsonAsync<ApiResponse<IEnumerable<CreatureResponse>>>())!.Data!.ToList();
+
+        foreach (var id in SeedCreatureIds)
+        {
+            var guid = Guid.Parse(id);
+            var creature = list.SingleOrDefault(c => c.Id == guid);
+
+            creature.Should().NotBeNull($"official seed creature {id} must be visible to a fresh GM");
+            creature!.IsOfficial.Should().BeTrue($"seed creature {creature.Name} is a system-owned example");
+            creature.Name.Should().NotBeNullOrWhiteSpace();
+            creature.Data.Fraqueza.Should().NotBeNullOrWhiteSpace($"{creature.Name} must declare a Fraqueza (§9.5.8)");
+
+            // Acceptance criterion: server-computed NP lands inside the Category's advisory range (§9.5.6).
+            creature.DerivedNp.Should().BeGreaterThanOrEqualTo(creature.CategoryNpMin,
+                $"{creature.Name} NP {creature.DerivedNp} must be >= min {creature.CategoryNpMin}");
+            creature.DerivedNp.Should().BeLessThanOrEqualTo(creature.CategoryNpMax,
+                $"{creature.Name} NP {creature.DerivedNp} must be <= max {creature.CategoryNpMax}");
+        }
+    }
+
     [Fact]
     public async Task GetById_OtherGmHomebrew_Returns404()
     {
