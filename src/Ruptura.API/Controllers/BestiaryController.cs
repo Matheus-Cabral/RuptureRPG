@@ -16,6 +16,7 @@ namespace Ruptura.API.Controllers;
 [Authorize(Roles = "GameMaster")]
 public class BestiaryController(
     ICreatureService creatureService,
+    INpcService npcService,
     IStringLocalizer<SharedResources> localizer) : ControllerBase
 {
     [HttpGet("creatures")]
@@ -35,7 +36,7 @@ public class BestiaryController(
         var gameMasterId = CurrentGameMasterId();
         var result = await creatureService.GetByIdAsync(gameMasterId, id, ct);
         if (result.IsFailure)
-            return CreatureFailure(result.Error!);
+            return BestiaryFailure(result.Error!);
         return Ok(ApiResponse<CreatureResponse>.Ok(result.Value!));
     }
 
@@ -47,7 +48,7 @@ public class BestiaryController(
         var gameMasterId = CurrentGameMasterId();
         var result = await creatureService.CreateAsync(gameMasterId, request, ct);
         if (result.IsFailure)
-            return CreatureFailure(result.Error!);
+            return BestiaryFailure(result.Error!);
         return StatusCode(StatusCodes.Status201Created,
             ApiResponse<CreatureResponse>.Ok(result.Value!, localizer["Bestiary.Created"]));
     }
@@ -63,7 +64,7 @@ public class BestiaryController(
         var gameMasterId = CurrentGameMasterId();
         var result = await creatureService.UpdateAsync(gameMasterId, id, request, ct);
         if (result.IsFailure)
-            return CreatureFailure(result.Error!);
+            return BestiaryFailure(result.Error!);
         return Ok(ApiResponse<CreatureResponse>.Ok(result.Value!, localizer["Bestiary.Updated"]));
     }
 
@@ -76,8 +77,72 @@ public class BestiaryController(
         var gameMasterId = CurrentGameMasterId();
         var result = await creatureService.DeleteAsync(gameMasterId, id, ct);
         if (result.IsFailure)
-            return CreatureFailure(result.Error!);
+            return BestiaryFailure(result.Error!);
         return Ok(ApiResponse.Ok(localizer["Bestiary.Deleted"]));
+    }
+
+    // ── NPCs (non-combat; no NP calculation) ────────────────────────────────────
+
+    [HttpGet("npcs")]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<NpcResponse>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetNpcs(CancellationToken ct)
+    {
+        var gameMasterId = CurrentGameMasterId();
+        var result = await npcService.GetForGameMasterAsync(gameMasterId, ct);
+        return Ok(ApiResponse<IEnumerable<NpcResponse>>.Ok(result.Value!));
+    }
+
+    [HttpGet("npcs/{id:guid}")]
+    [ProducesResponseType(typeof(ApiResponse<NpcResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetNpc(Guid id, CancellationToken ct)
+    {
+        var gameMasterId = CurrentGameMasterId();
+        var result = await npcService.GetByIdAsync(gameMasterId, id, ct);
+        if (result.IsFailure)
+            return BestiaryFailure(result.Error!);
+        return Ok(ApiResponse<NpcResponse>.Ok(result.Value!));
+    }
+
+    [HttpPost("npcs")]
+    [ProducesResponseType(typeof(ApiResponse<NpcResponse>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> CreateNpc([FromBody] CreateNpcRequest request, CancellationToken ct)
+    {
+        var gameMasterId = CurrentGameMasterId();
+        var result = await npcService.CreateAsync(gameMasterId, request, ct);
+        if (result.IsFailure)
+            return BestiaryFailure(result.Error!);
+        return StatusCode(StatusCodes.Status201Created,
+            ApiResponse<NpcResponse>.Ok(result.Value!, localizer["Bestiary.NpcCreated"]));
+    }
+
+    [HttpPut("npcs/{id:guid}")]
+    [ProducesResponseType(typeof(ApiResponse<NpcResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateNpc(
+        Guid id, [FromBody] UpdateNpcRequest request, CancellationToken ct)
+    {
+        var gameMasterId = CurrentGameMasterId();
+        var result = await npcService.UpdateAsync(gameMasterId, id, request, ct);
+        if (result.IsFailure)
+            return BestiaryFailure(result.Error!);
+        return Ok(ApiResponse<NpcResponse>.Ok(result.Value!, localizer["Bestiary.NpcUpdated"]));
+    }
+
+    [HttpDelete("npcs/{id:guid}")]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteNpc(Guid id, CancellationToken ct)
+    {
+        var gameMasterId = CurrentGameMasterId();
+        var result = await npcService.DeleteAsync(gameMasterId, id, ct);
+        if (result.IsFailure)
+            return BestiaryFailure(result.Error!);
+        return Ok(ApiResponse.Ok(localizer["Bestiary.NpcDeleted"]));
     }
 
     private Guid CurrentGameMasterId() =>
@@ -85,7 +150,7 @@ public class BestiaryController(
 
     // Official write → 403 (existence known, but read-only); missing/other-GM homebrew → 404
     // (existence hidden); validation failures → 400.
-    private IActionResult CreatureFailure(string error) => error switch
+    private IActionResult BestiaryFailure(string error) => error switch
     {
         ErrorCodes.Bestiary.NotFound => NotFound(ApiResponse.Fail(localizer[error])),
         ErrorCodes.Bestiary.Forbidden

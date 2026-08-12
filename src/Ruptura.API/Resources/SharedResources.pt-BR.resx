@@ -115,6 +115,9 @@
   <data name="Bestiary.Created"><value>Criatura criada com sucesso.</value></data>
   <data name="Bestiary.Updated"><value>Criatura atualizada com sucesso.</value></data>
   <data name="Bestiary.Deleted"><value>Criatura excluída com sucesso.</value></data>
+  <data name="Bestiary.NpcCreated"><value>NPC criado com sucesso.</value></data>
+  <data name="Bestiary.NpcUpdated"><value>NPC atualizado com sucesso.</value></data>
+  <data name="Bestiary.NpcDeleted"><value>NPC excluído com sucesso.</value></data>
 
   <!-- Media -->
   <data name="Media.InvalidEntityType"><value>Tipo de entidade de mídia inválido.</value></data>

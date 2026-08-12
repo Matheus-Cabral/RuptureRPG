@@ -72,6 +72,7 @@ public static class InfrastructureExtensions
         services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<ICampaignDashboardService, CampaignDashboardService>();
         services.AddScoped<ICreatureService, CreatureService>();
+        services.AddScoped<INpcService, NpcService>();
 
         // Repositories
         services.AddScoped<IInviteCodeRepository, InviteCodeRepository>();
@@ -88,6 +89,7 @@ public static class InfrastructureExtensions
         services.AddScoped<IExpeditionRepository, ExpeditionRepository>();
         services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddScoped<ICreatureRepository, CreatureRepository>();
+        services.AddScoped<INpcRepository, NpcRepository>();
 
         // Validators
         services.AddScoped<IValidator<LoginRequest>, LoginRequestValidator>();
