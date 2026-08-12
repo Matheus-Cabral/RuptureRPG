@@ -106,6 +106,16 @@
   <data name="Error.Forbidden"><value>Você não tem permissão para realizar esta ação.</value></data>
   <data name="Error.ValidationFailed"><value>Um ou mais erros de validação ocorreram.</value></data>
 
+  <!-- Bestiary -->
+  <data name="Bestiary.NotFound"><value>Criatura não encontrada.</value></data>
+  <data name="Bestiary.Forbidden"><value>Criaturas oficiais não podem ser modificadas.</value></data>
+  <data name="Bestiary.FraquezaRequired"><value>A criatura deve definir uma fraqueza.</value></data>
+  <data name="Bestiary.BehaviorInvalid"><value>O comportamento da criatura não é válido.</value></data>
+  <data name="Bestiary.CategoryInvalid"><value>A categoria da criatura não é válida.</value></data>
+  <data name="Bestiary.Created"><value>Criatura criada com sucesso.</value></data>
+  <data name="Bestiary.Updated"><value>Criatura atualizada com sucesso.</value></data>
+  <data name="Bestiary.Deleted"><value>Criatura excluída com sucesso.</value></data>
+
   <!-- Media -->
   <data name="Media.InvalidEntityType"><value>Tipo de entidade de mídia inválido.</value></data>
   <data name="Media.FileRequired"><value>Um arquivo é obrigatório.</value></data>

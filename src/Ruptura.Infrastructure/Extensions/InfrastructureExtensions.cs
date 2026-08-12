@@ -58,6 +58,7 @@ public static class InfrastructureExtensions
         services.AddSingleton<ICharacterStatsCalculator, CharacterStatsCalculator>();
         services.AddSingleton<IGuildStatsCalculator, GuildStatsCalculator>();  // pure & stateless, like CharacterStatsCalculator
         services.AddSingleton<IInterludeCalculator, InterludeCalculator>();    // pure & stateless
+        services.AddSingleton<ICreatureStatsCalculator, CreatureStatsCalculator>(); // pure & stateless
         services.AddSingleton<IFileStorageService, LocalFileStorageService>();
 
         // Application services
@@ -70,6 +71,7 @@ public static class InfrastructureExtensions
         services.AddScoped<IJournalEntryService, JournalEntryService>();
         services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<ICampaignDashboardService, CampaignDashboardService>();
+        services.AddScoped<ICreatureService, CreatureService>();
 
         // Repositories
         services.AddScoped<IInviteCodeRepository, InviteCodeRepository>();
@@ -85,6 +87,7 @@ public static class InfrastructureExtensions
         services.AddScoped<ICraftingOrderRepository, CraftingOrderRepository>();
         services.AddScoped<IExpeditionRepository, ExpeditionRepository>();
         services.AddScoped<INotificationRepository, NotificationRepository>();
+        services.AddScoped<ICreatureRepository, CreatureRepository>();
 
         // Validators
         services.AddScoped<IValidator<LoginRequest>, LoginRequestValidator>();

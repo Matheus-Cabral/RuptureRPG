@@ -68,6 +68,15 @@ public static class ErrorCodes
         public const string InterludeKindInvalid = "Guild.InterludeKindInvalid";
     }
 
+    public static class Bestiary
+    {
+        public const string NotFound = "Bestiary.NotFound";
+        public const string Forbidden = "Bestiary.Forbidden";
+        public const string FraquezaRequired = "Bestiary.FraquezaRequired";
+        public const string BehaviorInvalid = "Bestiary.BehaviorInvalid";
+        public const string CategoryInvalid = "Bestiary.CategoryInvalid";
+    }
+
     public static class Journal
     {
         public const string NotFound = "Journal.NotFound";

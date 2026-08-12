@@ -106,6 +106,16 @@
   <data name="Error.Forbidden"><value>You do not have permission to perform this action.</value></data>
   <data name="Error.ValidationFailed"><value>One or more validation errors occurred.</value></data>
 
+  <!-- Bestiary -->
+  <data name="Bestiary.NotFound"><value>Creature not found.</value></data>
+  <data name="Bestiary.Forbidden"><value>Official creatures cannot be modified.</value></data>
+  <data name="Bestiary.FraquezaRequired"><value>A creature must define a weakness (Fraqueza).</value></data>
+  <data name="Bestiary.BehaviorInvalid"><value>The creature's behavior is not valid.</value></data>
+  <data name="Bestiary.CategoryInvalid"><value>The creature's category is not valid.</value></data>
+  <data name="Bestiary.Created"><value>Creature created successfully.</value></data>
+  <data name="Bestiary.Updated"><value>Creature updated successfully.</value></data>
+  <data name="Bestiary.Deleted"><value>Creature deleted successfully.</value></data>
+
   <!-- Media -->
   <data name="Media.InvalidEntityType"><value>Invalid media entity type.</value></data>
   <data name="Media.FileRequired"><value>A file is required.</value></data>
