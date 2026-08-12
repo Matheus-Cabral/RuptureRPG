@@ -36,8 +36,10 @@ public class EncounterCalculator : IEncounterCalculator
         long totalCount = 0;
         foreach (var (np, qty) in creatureList)
         {
-            baseNp += (long)np * qty;
-            totalCount += qty;
+            // Guard a stray negative qty (the service clamps to ≥1; defense-in-depth here so
+            // a negative line can't silently subtract from PE): floor each contribution at 0.
+            baseNp += Math.Max(0L, (long)np * qty);
+            totalCount += Math.Max(0L, (long)qty);
         }
 
         // Unknown enum keys fall back to the neutral 1.0 factor (fixed sets are validated on
@@ -51,20 +53,32 @@ public class EncounterCalculator : IEncounterCalculator
 
         var pe = ClampToInt(peDecimal);
 
-        // ---- R = PE / PG (guard PG ≤ 0 → safe sentinel, never divide by zero) ----
-        // Computed from the clamped int Pg/Pe so R stays consistent with the displayed values.
-        var r = pg > 0 ? (decimal)pe / pg : 0m;
-        var rLabel = EncounterReference.RLabelFor(r);
-
         // ---- OA = PG × DifficultyFactor × DurationFactor (§9.9) ----
         var oa = ClampToInt(
             (long)pg
             * EncounterReference.DifficultyFactor.GetValueOrDefault(difficulty ?? string.Empty, 1.0m)
             * EncounterReference.DurationFactor.GetValueOrDefault(duration ?? string.Empty, 1));
 
-        // ---- FCE advisory: RealStatMultiplier = 1 + (R − 1) × FCE ----
-        // Unknown band → FCE 0 (no advisory scaling: RealStatMultiplier collapses to 1).
+        // FCE band is advisory; unknown band → 0 (no scaling). Resolved here so it is available
+        // to both the normal and the unresolved-party branches.
         var fce = EncounterReference.FceByRankingBand.GetValueOrDefault(fceBand ?? string.Empty, 0m);
+
+        // ---- Unresolved party (PG ≤ 0): return a NEUTRAL, non-misleading record ----
+        // Never divide by zero AND never route through RLabelFor here — RLabelFor(0) would say
+        // "MuitoFacil" and RealStatMultiplier would collapse to 0.60, both of which misrepresent
+        // an encounter that has real PE. An empty RLabel unambiguously reads as "no verdict" and
+        // RealStatMultiplier = 1 is neutral, so the record is safe even for a consumer that reads
+        // it in isolation (the service still sets its own PartyResolved flag separately). Pe is
+        // returned as-is so the real enemy power is still visible.
+        if (pg <= 0)
+            return new EncounterThreatResult(pg, pe, 0m, string.Empty, oa, fce, 1m);
+
+        // ---- R = PE / PG ----
+        // Computed from the clamped int Pg/Pe so R stays consistent with the displayed values.
+        var r = (decimal)pe / pg;
+        var rLabel = EncounterReference.RLabelFor(r);
+
+        // ---- FCE advisory: RealStatMultiplier = 1 + (R − 1) × FCE ----
         var realStatMultiplier = 1m + (r - 1m) * fce;
 
         return new EncounterThreatResult(pg, pe, r, rLabel, oa, fce, realStatMultiplier);

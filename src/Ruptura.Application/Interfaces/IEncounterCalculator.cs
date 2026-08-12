@@ -21,8 +21,10 @@ public interface IEncounterCalculator
 
 // Computed encounter threat values (§9.8 PG/PE/R, §9.9 OA/FCE). Pg/Pe/Oa are long-summed
 // and clamped to int. R and the multipliers are decimal. When PG ≤ 0 (no resolvable party)
-// the calculator returns R = 0 and RLabel = RLabelFor(0) rather than dividing — it never
-// throws; the SERVICE is responsible for surfacing PartyResolved = false in that case.
+// the calculator returns a NEUTRAL, self-describing record — R = 0, RLabel = "" (no verdict),
+// RealStatMultiplier = 1 — rather than dividing or emitting a misleading "MuitoFacil"/0.60
+// sentinel; Pe is still returned so the real enemy power is visible. It never throws; the
+// SERVICE additionally surfaces PartyResolved = false in that case.
 public record EncounterThreatResult(
     int Pg,
     int Pe,

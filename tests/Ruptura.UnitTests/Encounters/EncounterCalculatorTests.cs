@@ -114,10 +114,12 @@ public class EncounterCalculatorTests
     // ---- OA = PG × DifficultyFactor × DurationFactor (§9.9) ----
 
     [Theory]
-    [InlineData("Seguro", "Curto", 75)]        // 100 × 0.75 × 1
-    [InlineData("Normal", "Normal", 200)]      // 100 × 1.0  × 2
-    [InlineData("Perigoso", "Longo", 375)]     // 100 × 1.25 × 3
-    [InlineData("Apocaliptico", "Extenso", 1200)] // 100 × 3.0 × 4
+    [InlineData("Seguro", "Curto", 75)]           // 100 × 0.75 × 1
+    [InlineData("Normal", "Normal", 200)]         // 100 × 1.0  × 2
+    [InlineData("Perigoso", "Longo", 375)]        // 100 × 1.25 × 3
+    [InlineData("Mortal", "Curto", 150)]          // 100 × 1.5  × 1
+    [InlineData("Infernal", "Curto", 200)]        // 100 × 2.0  × 1
+    [InlineData("Apocaliptico", "Extenso", 1200)] // 100 × 3.0  × 4
     public void Oa_AppliesDifficultyAndDuration(string difficulty, string duration, int expectedOa)
     {
         var result = Calc([100], 1, [(1, 1)], difficulty: difficulty, duration: duration);
@@ -161,7 +163,7 @@ public class EncounterCalculatorTests
     // ---- Empty party → PG=0, no divide-by-zero ----
 
     [Fact]
-    public void EmptyParty_YieldsSafeResult_NoDivideByZero()
+    public void EmptyParty_YieldsNeutralNonMisleadingResult_NoDivideByZero()
     {
         var act = () => Calc([], 0, [(100, 1)]);
         act.Should().NotThrow();
@@ -169,10 +171,10 @@ public class EncounterCalculatorTests
         var result = Calc([], 0, [(100, 1)]);
         result.Pg.Should().Be(0);
         result.R.Should().Be(0m);
-        result.RLabel.Should().Be("MuitoFacil");   // documented sentinel: RLabelFor(0)
+        result.RLabel.Should().BeEmpty();          // no verdict — never "MuitoFacil"
+        result.RealStatMultiplier.Should().Be(1m); // neutral — never 0.60
         result.Oa.Should().Be(0);
-        // RealStatMultiplier = 1 + (0-1) × 0.40 = 0.60
-        result.RealStatMultiplier.Should().Be(0.60m);
+        result.Pe.Should().Be(100);                // real enemy power still visible
     }
 
     // ---- Unknown map keys → neutral (1.0 factor; FCE → 0) ----
@@ -189,6 +191,17 @@ public class EncounterCalculatorTests
         result.Oa.Should().Be(100);          // difficulty 1.0 × duration 1
         result.Fce.Should().Be(0m);          // unknown FCE band → 0
         result.RealStatMultiplier.Should().Be(1.0m); // 1 + (R-1)*0
+    }
+
+    // ---- Negative qty never subtracts from PE (defense-in-depth; service clamps to ≥1) ----
+
+    [Fact]
+    public void NegativeQuantity_DoesNotProduceNegativePe()
+    {
+        // One valid line (base 100) plus a stray negative line that must be floored to 0.
+        var result = Calc([100], 1, [(100, 1), (50, -3)]);
+        result.Pe.Should().Be(100);
+        result.Pe.Should().BeGreaterThanOrEqualTo(0);
     }
 
     // ---- §9.8 vignette: 5 weak goblins vs a typical party → "MuitoFacil" ----
