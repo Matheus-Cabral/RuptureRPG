@@ -42,6 +42,7 @@ builder.Services.AddScoped<IAuthClientService, AuthClientService>();
 builder.Services.AddScoped<IInviteClientService, InviteClientService>();
 builder.Services.AddScoped<ICampaignClientService, CampaignClientService>();
 builder.Services.AddScoped<ICatalogClientService, CatalogClientService>();
+builder.Services.AddScoped<IBestiaryClientService, BestiaryClientService>();
 builder.Services.AddScoped<ICharacterSheetClientService, CharacterSheetClientService>();
 builder.Services.AddScoped<IGuildClientService, GuildClientService>();
 builder.Services.AddScoped<IJournalEntryClientService, JournalEntryClientService>();

@@ -1,0 +1,550 @@
+@page "/gm/bestiary"
+@attribute [Authorize(Roles = "GameMaster")]
+@using Microsoft.Extensions.Localization
+@using Ruptura.Web.Resources
+@using Ruptura.Shared.Bestiary
+@inject IStringLocalizer<AppStrings> L
+@inject IBestiaryClientService BestiaryService
+@inject ToastService Toast
+@inject ConfirmService Confirm
+
+<PageTitle>@L["Gm.Bestiary.Title"] — RUPTURA</PageTitle>
+
+<div class="page-content">
+    <div class="page-heading">
+        <h1>@L["Gm.Bestiary.Title"]</h1>
+    </div>
+
+    <div class="section-header">
+        <span class="section-title">@L["Gm.Bestiary.ListTitle"]</span>
+        <button class="btn btn-primary btn-sm" @onclick="NewCreature">@L["Gm.Bestiary.New"]</button>
+    </div>
+
+    @if (_loading)
+    {
+        <LoadingIndicator Text="@L["Common.Loading"]" />
+    }
+    else
+    {
+        <div class="master-detail">
+            <div class="master-detail-list">
+                @if (_creatures.Count == 0)
+                {
+                    <div class="ledger-empty">
+                        <p>@L["Gm.Bestiary.Empty"]</p>
+                    </div>
+                }
+                else
+                {
+                    <TableSearchBox @bind-Value="_searchTerm" Placeholder="@L["Gm.Bestiary.SearchPlaceholder"]" />
+
+                    @if (FilteredCreatures.Count == 0)
+                    {
+                        <div class="ledger-empty">
+                            <p>@L["Gm.Bestiary.NoResults"]</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="ledger-table-wrap">
+                            <table class="ledger-table stack-mobile">
+                                <thead>
+                                    <tr>
+                                        <th>@L["Gm.Bestiary.Col.Name"]</th>
+                                        <th>@L["Gm.Bestiary.Col.Category"]</th>
+                                        <th>@L["Gm.Bestiary.Col.Np"]</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var creature in FilteredCreatures)
+                                    {
+                                        <tr class="@(_editingId == creature.Id ? "is-selected" : null)"
+                                            tabindex="0" role="button"
+                                            @onclick="() => SelectForEdit(creature)"
+                                            @onkeydown="e => OnRowKey(e, creature)">
+                                            <td data-label="@L["Gm.Bestiary.Col.Name"]">
+                                                @creature.Name
+                                                @if (creature.IsOfficial)
+                                                {
+                                                    <span class="badge-official">@L["Gm.Bestiary.Official"]</span>
+                                                }
+                                            </td>
+                                            <td data-label="@L["Gm.Bestiary.Col.Category"]">@CategoryLabel(creature.Data.Category)</td>
+                                            <td data-label="@L["Gm.Bestiary.Col.Np"]">@creature.DerivedNp</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                }
+            </div>
+
+            <div class="detail-panel">
+                @if (!_editing)
+                {
+                    <p class="detail-panel-empty">@L["Gm.Bestiary.SelectItem"]</p>
+                }
+                else
+                {
+                    <div class="section-header">
+                        <span class="section-title">
+                            @(_editingId is null ? L["Gm.Bestiary.New"] : _formName)
+                        </span>
+                        @if (_readOnly)
+                        {
+                            <span class="badge-official">@L["Gm.Bestiary.Official"]</span>
+                        }
+                    </div>
+
+                    @if (_readOnly)
+                    {
+                        <p class="detail-panel-empty">@L["Gm.Bestiary.ReadOnlyNote"]</p>
+                    }
+
+                    <div class="bestiary-form">
+                        <label class="field-label">@L["Gm.Bestiary.Name"]</label>
+                        <input class="form-control" @bind="_formName" @bind:event="oninput" disabled="@_readOnly" />
+
+                        <label class="field-label">@L["Gm.Bestiary.Type"]</label>
+                        <input class="form-control" @bind="_form.Type" disabled="@_readOnly" />
+
+                        <div class="field-row">
+                            <div>
+                                <label class="field-label">@L["Gm.Bestiary.Function"]</label>
+                                <select class="form-select" @bind="_form.Function" disabled="@_readOnly">
+                                    <option value="">—</option>
+                                    @foreach (var f in BestiaryReference.Functions)
+                                    {
+                                        <option value="@f">@f</option>
+                                    }
+                                </select>
+                            </div>
+                            <div>
+                                <label class="field-label">@L["Gm.Bestiary.Behavior"]</label>
+                                <select class="form-select" @bind="_form.Behavior" disabled="@_readOnly">
+                                    <option value="">—</option>
+                                    @foreach (var b in BestiaryReference.Behaviors)
+                                    {
+                                        <option value="@b">@b</option>
+                                    }
+                                </select>
+                            </div>
+                            <div>
+                                <label class="field-label">@L["Gm.Bestiary.Category"]</label>
+                                <select class="form-select" @bind="_form.Category" disabled="@_readOnly">
+                                    <option value="">—</option>
+                                    @foreach (var c in BestiaryReference.Categories)
+                                    {
+                                        <option value="@c">@CategoryLabel(c)</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+
+                        @* ── Live NP + Category advisory ─────────────────────── *@
+                        <div class="np-advisory">
+                            <span class="np-value">@L["Gm.Bestiary.LiveNp"]: <strong>@LiveNp</strong></span>
+                            @if (SelectedRange is { } range)
+                            {
+                                <span class="np-range">@L["Gm.Bestiary.CategoryRange"]: @RangeText(range)</span>
+                                @if (LiveNp > range.NpMax)
+                                {
+                                    <span class="np-status" style="color:var(--danger)">@L["Gm.Bestiary.NpOver"]</span>
+                                }
+                                else if (LiveNp < range.NpMin)
+                                {
+                                    <span class="np-status" style="color:var(--danger)">@L["Gm.Bestiary.NpUnder"]</span>
+                                }
+                                else
+                                {
+                                    <span class="np-status" style="color:var(--success)">@L["Gm.Bestiary.NpWithin"]</span>
+                                }
+                            }
+                        </div>
+
+                        @* ── Attributes ─────────────────────────────────────── *@
+                        <label class="field-label">@L["Gm.Bestiary.Attributes"]</label>
+                        <div class="attr-grid">
+                            <div class="attr-cell">
+                                <span>@L["Gm.Bestiary.Attr.Corpo"]</span>
+                                <input type="number" class="form-control" min="1" @bind="_form.Attributes.Corpo" @bind:event="oninput" disabled="@_readOnly" />
+                            </div>
+                            <div class="attr-cell">
+                                <span>@L["Gm.Bestiary.Attr.Controle"]</span>
+                                <input type="number" class="form-control" min="1" @bind="_form.Attributes.Controle" @bind:event="oninput" disabled="@_readOnly" />
+                            </div>
+                            <div class="attr-cell">
+                                <span>@L["Gm.Bestiary.Attr.Vigor"]</span>
+                                <input type="number" class="form-control" min="1" @bind="_form.Attributes.Vigor" @bind:event="oninput" disabled="@_readOnly" />
+                            </div>
+                            <div class="attr-cell">
+                                <span>@L["Gm.Bestiary.Attr.Presenca"]</span>
+                                <input type="number" class="form-control" min="1" @bind="_form.Attributes.Presenca" @bind:event="oninput" disabled="@_readOnly" />
+                            </div>
+                            <div class="attr-cell">
+                                <span>@L["Gm.Bestiary.Attr.Intelecto"]</span>
+                                <input type="number" class="form-control" min="1" @bind="_form.Attributes.Intelecto" @bind:event="oninput" disabled="@_readOnly" />
+                            </div>
+                            <div class="attr-cell">
+                                <span>@L["Gm.Bestiary.Attr.Percepcao"]</span>
+                                <input type="number" class="form-control" min="1" @bind="_form.Attributes.Percepcao" @bind:event="oninput" disabled="@_readOnly" />
+                            </div>
+                            <div class="attr-cell">
+                                <span>@L["Gm.Bestiary.Attr.Vontade"]</span>
+                                <input type="number" class="form-control" min="1" @bind="_form.Attributes.Vontade" @bind:event="oninput" disabled="@_readOnly" />
+                            </div>
+                            <div class="attr-cell">
+                                <span>@L["Gm.Bestiary.Attr.Afinidade"]</span>
+                                <input type="number" class="form-control" min="1" @bind="_form.Attributes.Afinidade" @bind:event="oninput" disabled="@_readOnly" />
+                            </div>
+                        </div>
+
+                        @* ── Natural skills ─────────────────────────────────── *@
+                        <div class="list-header">
+                            <label class="field-label">@L["Gm.Bestiary.NaturalSkills"]</label>
+                            @if (!_readOnly)
+                            {
+                                <button class="btn btn-outline-secondary btn-sm" @onclick="() => _form.NaturalSkills.Add(new CreatureNaturalSkill())">@L["Gm.Bestiary.AddRow"]</button>
+                            }
+                        </div>
+                        @foreach (var skill in _form.NaturalSkills)
+                        {
+                            <div class="field-row">
+                                <input class="form-control" placeholder="@L["Gm.Bestiary.Name"]" @bind="skill.Name" disabled="@_readOnly" />
+                                <input type="number" class="form-control" placeholder="@L["Gm.Bestiary.Points"]" @bind="skill.Points" @bind:event="oninput" disabled="@_readOnly" />
+                                @if (!_readOnly)
+                                {
+                                    <button class="btn btn-outline-secondary btn-sm" @onclick="() => _form.NaturalSkills.Remove(skill)">@L["Gm.Bestiary.Remove"]</button>
+                                }
+                            </div>
+                        }
+
+                        @* ── Characteristics ────────────────────────────────── *@
+                        <div class="list-header">
+                            <label class="field-label">@L["Gm.Bestiary.Characteristics"]</label>
+                            @if (!_readOnly)
+                            {
+                                <button class="btn btn-outline-secondary btn-sm" @onclick="() => _form.Characteristics.Add(new CreatureCharacteristic())">@L["Gm.Bestiary.AddRow"]</button>
+                            }
+                        </div>
+                        @foreach (var characteristic in _form.Characteristics)
+                        {
+                            <div class="field-row">
+                                <input class="form-control" placeholder="@L["Gm.Bestiary.Name"]" @bind="characteristic.Name" disabled="@_readOnly" />
+                                <select class="form-select" @bind="characteristic.Weight" disabled="@_readOnly">
+                                    <option value="">—</option>
+                                    @foreach (var w in BestiaryReference.Weights)
+                                    {
+                                        <option value="@w">@w</option>
+                                    }
+                                </select>
+                                @if (!_readOnly)
+                                {
+                                    <button class="btn btn-outline-secondary btn-sm" @onclick="() => _form.Characteristics.Remove(characteristic)">@L["Gm.Bestiary.Remove"]</button>
+                                }
+                            </div>
+                        }
+
+                        @* ── Abilities ──────────────────────────────────────── *@
+                        <div class="list-header">
+                            <label class="field-label">@L["Gm.Bestiary.Abilities"]</label>
+                            @if (!_readOnly)
+                            {
+                                <button class="btn btn-outline-secondary btn-sm" @onclick="() => _form.Abilities.Add(new CreatureAbility())">@L["Gm.Bestiary.AddRow"]</button>
+                            }
+                        </div>
+                        @foreach (var ability in _form.Abilities)
+                        {
+                            <div class="field-row">
+                                <input class="form-control" placeholder="@L["Gm.Bestiary.Name"]" @bind="ability.Name" disabled="@_readOnly" />
+                                <select class="form-select" @bind="ability.Tier" disabled="@_readOnly">
+                                    <option value="">—</option>
+                                    @foreach (var t in BestiaryReference.Tiers)
+                                    {
+                                        <option value="@t">@t</option>
+                                    }
+                                </select>
+                                @if (!_readOnly)
+                                {
+                                    <button class="btn btn-outline-secondary btn-sm" @onclick="() => _form.Abilities.Remove(ability)">@L["Gm.Bestiary.Remove"]</button>
+                                }
+                            </div>
+                        }
+
+                        @* ── Equipment ──────────────────────────────────────── *@
+                        <div class="list-header">
+                            <label class="field-label">@L["Gm.Bestiary.Equipment"]</label>
+                            @if (!_readOnly)
+                            {
+                                <button class="btn btn-outline-secondary btn-sm" @onclick="() => _form.Equipment.Add(new CreatureEquipment())">@L["Gm.Bestiary.AddRow"]</button>
+                            }
+                        </div>
+                        @foreach (var equip in _form.Equipment)
+                        {
+                            <div class="field-row">
+                                <input class="form-control" placeholder="@L["Gm.Bestiary.Name"]" @bind="equip.Name" disabled="@_readOnly" />
+                                <select class="form-select" @bind="equip.Rarity" disabled="@_readOnly">
+                                    <option value="">—</option>
+                                    @foreach (var r in BestiaryReference.Rarities)
+                                    {
+                                        <option value="@r">@r</option>
+                                    }
+                                </select>
+                                @if (!_readOnly)
+                                {
+                                    <button class="btn btn-outline-secondary btn-sm" @onclick="() => _form.Equipment.Remove(equip)">@L["Gm.Bestiary.Remove"]</button>
+                                }
+                            </div>
+                        }
+
+                        @* ── Combat sheet ───────────────────────────────────── *@
+                        <label class="field-label">@L["Gm.Bestiary.Combat"]</label>
+                        <div class="field-row">
+                            <div>
+                                <label class="field-label">@L["Gm.Bestiary.Pv"]</label>
+                                <input type="number" class="form-control" @bind="_form.Pv" disabled="@_readOnly" />
+                            </div>
+                            <div>
+                                <label class="field-label">@L["Gm.Bestiary.DefesaPassiva"]</label>
+                                <input type="number" class="form-control" @bind="_form.DefesaPassiva" disabled="@_readOnly" />
+                            </div>
+                            <div>
+                                <label class="field-label">@L["Gm.Bestiary.Deslocamento"]</label>
+                                <input type="number" class="form-control" @bind="_form.Deslocamento" disabled="@_readOnly" />
+                            </div>
+                        </div>
+                        <label class="field-label">@L["Gm.Bestiary.AtaquePrincipal"]</label>
+                        <input class="form-control" @bind="_form.AtaquePrincipal" disabled="@_readOnly" />
+                        <label class="field-label">@L["Gm.Bestiary.Dano"]</label>
+                        <input class="form-control" @bind="_form.Dano" disabled="@_readOnly" />
+
+                        @* ── Balance & rewards ──────────────────────────────── *@
+                        <label class="field-label">@L["Gm.Bestiary.Fraqueza"] *</label>
+                        <input class="form-control" @bind="_form.Fraqueza" disabled="@_readOnly" />
+
+                        <div class="list-header">
+                            <label class="field-label">@L["Gm.Bestiary.Recompensas"]</label>
+                            @if (!_readOnly)
+                            {
+                                <button class="btn btn-outline-secondary btn-sm" @onclick="() => _form.Recompensas.Add(string.Empty)">@L["Gm.Bestiary.AddRow"]</button>
+                            }
+                        </div>
+                        @for (var i = 0; i < _form.Recompensas.Count; i++)
+                        {
+                            var index = i;
+                            <div class="field-row">
+                                <input class="form-control" @bind="_form.Recompensas[index]" disabled="@_readOnly" />
+                                @if (!_readOnly)
+                                {
+                                    <button class="btn btn-outline-secondary btn-sm" @onclick="() => _form.Recompensas.RemoveAt(index)">@L["Gm.Bestiary.Remove"]</button>
+                                }
+                            </div>
+                        }
+
+                        <label class="field-label">@L["Gm.Bestiary.Notes"]</label>
+                        <textarea class="form-control" rows="3" @bind="_form.Notes" disabled="@_readOnly"></textarea>
+
+                        @* ── Actions ────────────────────────────────────────── *@
+                        <div class="form-actions">
+                            @if (!_readOnly)
+                            {
+                                <button class="btn btn-primary btn-sm" @onclick="SaveAsync" disabled="@(_saving || string.IsNullOrWhiteSpace(_formName))">
+                                    @if (_saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                                    @(_editingId is null ? L["Gm.Bestiary.Create"] : L["Gm.Bestiary.Save"])
+                                </button>
+                                @if (_editingId is not null)
+                                {
+                                    <button class="btn btn-outline-secondary btn-sm" @onclick="() => DeleteAsync(_editingId!.Value, _formName)">@L["Gm.Bestiary.Delete"]</button>
+                                }
+                            }
+                            <button class="btn btn-outline-secondary btn-sm" @onclick="CancelEdit">@L["Gm.Bestiary.Cancel"]</button>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<CreatureResponse> _creatures = [];
+    private bool _loading = true;
+    private bool _saving;
+    private string _searchTerm = string.Empty;
+
+    private bool _editing;
+    private Guid? _editingId;
+    private bool _readOnly;
+    private string _formName = string.Empty;
+    private CreatureData _form = new();
+
+    private List<CreatureResponse> FilteredCreatures =>
+        _creatures.Where(c => TableFilter.Matches(_searchTerm, c.Name, c.Data.Category, c.Data.Type)).ToList();
+
+    private (int NpMin, int NpMax)? SelectedRange =>
+        BestiaryReference.CategoryRanges.TryGetValue(_form.Category, out var r) ? r : null;
+
+    private int LiveNp
+    {
+        get
+        {
+            var a = _form.Attributes;
+            var np = (a.Corpo - 1) + (a.Controle - 1) + (a.Vigor - 1) + (a.Presenca - 1)
+                + (a.Intelecto - 1) + (a.Percepcao - 1) + (a.Vontade - 1) + (a.Afinidade - 1);
+            np += _form.NaturalSkills.Sum(s => SkillGradeBonus(s.Points));
+            np += _form.Characteristics.Sum(c => BestiaryReference.WeightValues.GetValueOrDefault(c.Weight, 0));
+            np += _form.Abilities.Sum(ab => BestiaryReference.TierValues.GetValueOrDefault(ab.Tier, 0));
+            np += _form.Equipment.Sum(e => BestiaryReference.RarityValues.GetValueOrDefault(e.Rarity, 0));
+            return np;
+        }
+    }
+
+    // Mirrors the server NP grade-bonus table (§9.5.5).
+    private static int SkillGradeBonus(int points) => points switch
+    {
+        >= 100 => 4,
+        >= 75 => 3,
+        >= 50 => 2,
+        >= 25 => 1,
+        >= 10 => 0,
+        _ => -2
+    };
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        var result = await BestiaryService.GetCreaturesAsync();
+        _creatures = result?.Data?.ToList() ?? [];
+        _loading = false;
+    }
+
+    private void OnRowKey(KeyboardEventArgs e, CreatureResponse creature)
+    {
+        if (e.Key == "Enter" || e.Key == " ") SelectForEdit(creature);
+    }
+
+    private void NewCreature()
+    {
+        _editing = true;
+        _editingId = null;
+        _readOnly = false;
+        _formName = string.Empty;
+        _form = new CreatureData();
+    }
+
+    private void SelectForEdit(CreatureResponse creature)
+    {
+        _editing = true;
+        _editingId = creature.Id;
+        _readOnly = creature.IsOfficial;
+        _formName = creature.Name;
+        _form = Clone(creature.Data);
+    }
+
+    private void CancelEdit()
+    {
+        _editing = false;
+        _editingId = null;
+        _readOnly = false;
+        _formName = string.Empty;
+        _form = new CreatureData();
+    }
+
+    private async Task SaveAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_formName))
+        {
+            Toast.Error(L["Gm.Bestiary.NameRequired"]);
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(_form.Fraqueza))
+        {
+            Toast.Error(L["Gm.Bestiary.FraquezaRequired"]);
+            return;
+        }
+
+        _saving = true;
+        var wasCreate = _editingId is null;
+
+        var result = wasCreate
+            ? await BestiaryService.CreateCreatureAsync(new CreateCreatureRequest { Name = _formName, Data = _form })
+            : await BestiaryService.UpdateCreatureAsync(_editingId!.Value, new UpdateCreatureRequest { Name = _formName, Data = _form });
+
+        if (result?.Data is not null)
+        {
+            Toast.Success(wasCreate ? L["Gm.Bestiary.CreateSuccess"] : L["Gm.Bestiary.SaveSuccess"]);
+            var savedId = result.Data.Id;
+            await LoadAsync();
+            var saved = _creatures.FirstOrDefault(c => c.Id == savedId);
+            if (saved is not null) SelectForEdit(saved);
+        }
+        else
+        {
+            Toast.Error(L["Common.Error"]);
+        }
+
+        _saving = false;
+    }
+
+    private async Task DeleteAsync(Guid id, string name)
+    {
+        var confirmed = await Confirm.AskAsync(
+            L["Gm.Bestiary.DeleteConfirm.Title"],
+            L["Gm.Bestiary.DeleteConfirm.Message", name],
+            L["Gm.Bestiary.Delete"],
+            L["Gm.Bestiary.Cancel"]);
+        if (!confirmed) return;
+
+        var result = await BestiaryService.DeleteCreatureAsync(id);
+        if (result?.Success == true)
+        {
+            Toast.Success(L["Gm.Bestiary.DeleteSuccess"]);
+            CancelEdit();
+            await LoadAsync();
+        }
+        else
+        {
+            Toast.Error(L["Common.Error"]);
+        }
+    }
+
+    private string CategoryLabel(string category) =>
+        string.IsNullOrEmpty(category) ? "—" : L[$"Gm.Bestiary.Category.{category}"];
+
+    private string RangeText((int NpMin, int NpMax) range) =>
+        range.NpMax == int.MaxValue ? $"{range.NpMin}+" : $"{range.NpMin}–{range.NpMax}";
+
+    private static CreatureData Clone(CreatureData d) => new()
+    {
+        Type = d.Type,
+        Function = d.Function,
+        Behavior = d.Behavior,
+        Category = d.Category,
+        Attributes = new CreatureAttributes
+        {
+            Corpo = d.Attributes.Corpo,
+            Controle = d.Attributes.Controle,
+            Vigor = d.Attributes.Vigor,
+            Presenca = d.Attributes.Presenca,
+            Intelecto = d.Attributes.Intelecto,
+            Percepcao = d.Attributes.Percepcao,
+            Vontade = d.Attributes.Vontade,
+            Afinidade = d.Attributes.Afinidade,
+        },
+        NaturalSkills = d.NaturalSkills.Select(s => new CreatureNaturalSkill { Name = s.Name, Points = s.Points }).ToList(),
+        Characteristics = d.Characteristics.Select(c => new CreatureCharacteristic { Name = c.Name, Weight = c.Weight }).ToList(),
+        Abilities = d.Abilities.Select(a => new CreatureAbility { Name = a.Name, Tier = a.Tier }).ToList(),
+        Equipment = d.Equipment.Select(e => new CreatureEquipment { Name = e.Name, Rarity = e.Rarity }).ToList(),
+        Pv = d.Pv,
+        DefesaPassiva = d.DefesaPassiva,
+        Deslocamento = d.Deslocamento,
+        AtaquePrincipal = d.AtaquePrincipal,
+        Dano = d.Dano,
+        Fraqueza = d.Fraqueza,
+        Recompensas = d.Recompensas.ToList(),
+        Notes = d.Notes,
+    };
+}
