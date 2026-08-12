@@ -1,0 +1,478 @@
+@page "/gm/campaigns/{Id:guid}/encounters"
+@attribute [Authorize(Roles = "GameMaster")]
+@using System.Globalization
+@using Microsoft.Extensions.Localization
+@using Ruptura.Web.Resources
+@using Ruptura.Shared.Bestiary
+@using Ruptura.Shared.Encounters
+@inject IStringLocalizer<AppStrings> L
+@inject IEncounterClientService EncounterService
+@inject IBestiaryClientService BestiaryService
+@inject ICampaignClientService CampaignService
+@inject ToastService Toast
+@inject ConfirmService Confirm
+
+<PageTitle>@L["Gm.Encounters.Title"] — RUPTURA</PageTitle>
+
+<div class="page-content">
+    <Breadcrumbs Items="_breadcrumbs" />
+
+    <div class="page-heading">
+        <h1>@L["Gm.Encounters.Title"]</h1>
+    </div>
+
+    <div class="section-header">
+        <span class="section-title">@L["Gm.Encounters.ListTitle"]</span>
+        <button class="btn btn-primary btn-sm" @onclick="NewEncounter">@L["Gm.Encounters.New"]</button>
+    </div>
+
+    @if (_loading)
+    {
+        <LoadingIndicator Text="@L["Common.Loading"]" />
+    }
+    else
+    {
+        <div class="master-detail">
+            <div class="master-detail-list">
+                @if (_encounters.Count == 0)
+                {
+                    <div class="ledger-empty">
+                        <p>@L["Gm.Encounters.Empty"]</p>
+                    </div>
+                }
+                else
+                {
+                    <TableSearchBox @bind-Value="_searchTerm" Placeholder="@L["Gm.Encounters.SearchPlaceholder"]" />
+
+                    @if (FilteredEncounters.Count == 0)
+                    {
+                        <div class="ledger-empty">
+                            <p>@L["Gm.Encounters.NoResults"]</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="ledger-table-wrap">
+                            <table class="ledger-table stack-mobile">
+                                <thead>
+                                    <tr>
+                                        <th>@L["Gm.Encounters.Col.Name"]</th>
+                                        <th>@L["Gm.Encounters.Col.Difficulty"]</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var enc in FilteredEncounters)
+                                    {
+                                        <tr class="@(_editingId == enc.Id ? "is-selected" : null)"
+                                            tabindex="0" role="button"
+                                            @onclick="() => SelectForEdit(enc)"
+                                            @onkeydown="e => OnRowKey(e, enc)">
+                                            <td data-label="@L["Gm.Encounters.Col.Name"]">@enc.Name</td>
+                                            <td data-label="@L["Gm.Encounters.Col.Difficulty"]">
+                                                @if (enc.PartyResolved && !string.IsNullOrEmpty(enc.RLabel))
+                                                {
+                                                    <span style="color:@RLabelColor(enc.RLabel);font-weight:600">@RLabelText(enc.RLabel)</span>
+                                                }
+                                                else
+                                                {
+                                                    <span style="color:var(--text-muted)">—</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                }
+            </div>
+
+            <div class="detail-panel">
+                @if (!_editing)
+                {
+                    <p class="detail-panel-empty">@L["Gm.Encounters.SelectItem"]</p>
+                }
+                else
+                {
+                    <div class="section-header">
+                        <span class="section-title">
+                            @(_editingId is null ? L["Gm.Encounters.New"] : _formName)
+                        </span>
+                    </div>
+
+                    <div class="bestiary-form">
+                        <label class="field-label">@L["Gm.Encounters.Name"]</label>
+                        <input class="form-control" @bind="_formName" @bind:event="oninput" />
+
+                        @* ── Creatures ─────────────────────────────────────── *@
+                        <div class="list-header">
+                            <label class="field-label">@L["Gm.Encounters.Creatures"]</label>
+                        </div>
+
+                        @if (_form.Creatures.Count == 0)
+                        {
+                            <p class="detail-panel-empty">@L["Gm.Encounters.NoCreatures"]</p>
+                        }
+                        else
+                        {
+                            @foreach (var line in _form.Creatures)
+                            {
+                                <div class="field-row">
+                                    <input class="form-control" value="@CreatureName(line.CreatureId)" disabled />
+                                    <input type="number" class="form-control" min="1" placeholder="@L["Gm.Encounters.Quantity"]"
+                                           @bind="line.Quantity" @bind:event="oninput" />
+                                    <button class="btn btn-outline-secondary btn-sm" @onclick="() => _form.Creatures.Remove(line)">@L["Gm.Encounters.Remove"]</button>
+                                </div>
+                            }
+                        }
+
+                        <div class="field-row">
+                            <select class="form-select" @bind="_creatureToAdd">
+                                <option value="@Guid.Empty">@L["Gm.Encounters.SelectCreature"]</option>
+                                @foreach (var c in _creatures)
+                                {
+                                    <option value="@c.Id">@c.Name (NP @c.DerivedNp)</option>
+                                }
+                            </select>
+                            <button class="btn btn-outline-secondary btn-sm" @onclick="AddCreature"
+                                    disabled="@(_creatureToAdd == Guid.Empty)">@L["Gm.Encounters.AddCreature"]</button>
+                        </div>
+
+                        @* ── Encounter parameters ──────────────────────────── *@
+                        <div class="field-row">
+                            <div>
+                                <label class="field-label">@L["Gm.Encounters.Intelligence"]</label>
+                                <select class="form-select" @bind="_form.Intelligence">
+                                    @foreach (var i in EncounterReference.Intelligences)
+                                    {
+                                        <option value="@i">@IntelligenceText(i)</option>
+                                    }
+                                </select>
+                            </div>
+                            <div>
+                                <label class="field-label">@L["Gm.Encounters.Terrain"]</label>
+                                <select class="form-select" @bind="_form.Terrain">
+                                    @foreach (var t in EncounterReference.Terrains)
+                                    {
+                                        <option value="@t">@TerrainText(t)</option>
+                                    }
+                                </select>
+                            </div>
+                            <div>
+                                <label class="field-label">@L["Gm.Encounters.Objective"]</label>
+                                <select class="form-select" @bind="_form.Objective">
+                                    @foreach (var o in EncounterReference.Objectives)
+                                    {
+                                        <option value="@o">@ObjectiveText(o)</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="field-row">
+                            <div>
+                                <label class="field-label">@L["Gm.Encounters.DesiredDifficulty"]</label>
+                                <select class="form-select" @bind="_form.DesiredDifficulty">
+                                    @foreach (var diff in EncounterReference.Difficulties)
+                                    {
+                                        <option value="@diff">@DifficultyText(diff)</option>
+                                    }
+                                </select>
+                            </div>
+                            <div>
+                                <label class="field-label">@L["Gm.Encounters.Duration"]</label>
+                                <select class="form-select" @bind="_form.Duration">
+                                    @foreach (var dur in EncounterReference.Durations)
+                                    {
+                                        <option value="@dur">@DurationText(dur)</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+
+                        <label class="field-label" style="display:flex;align-items:center;gap:.5rem;cursor:pointer">
+                            <input type="checkbox" @bind="_form.ApplyPressure" />
+                            @L["Gm.Encounters.ApplyPressure"]
+                        </label>
+
+                        @* ── Optional overrides ────────────────────────────── *@
+                        <div class="list-header">
+                            <label class="field-label">@L["Gm.Encounters.Overrides"]</label>
+                        </div>
+                        <div class="field-row">
+                            <div>
+                                <label class="field-label">@L["Gm.Encounters.PartyNpOverride"]</label>
+                                <input type="number" class="form-control" min="0" @bind="_form.PartyNpOverride" @bind:event="oninput" />
+                            </div>
+                            <div>
+                                <label class="field-label">@L["Gm.Encounters.PartySizeOverride"]</label>
+                                <input type="number" class="form-control" min="0" @bind="_form.PartySizeOverride" @bind:event="oninput" />
+                            </div>
+                            <div>
+                                <label class="field-label">@L["Gm.Encounters.Floor"]</label>
+                                <input type="number" class="form-control" min="1" @bind="_form.Floor" @bind:event="oninput" />
+                            </div>
+                        </div>
+
+                        @* ── Actions ───────────────────────────────────────── *@
+                        <div class="form-actions">
+                            <button class="btn btn-primary btn-sm" @onclick="SaveAsync" disabled="@(_saving || string.IsNullOrWhiteSpace(_formName))">
+                                @if (_saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                                @(_editingId is null ? L["Gm.Encounters.Create"] : L["Gm.Encounters.Save"])
+                            </button>
+                            @if (_editingId is not null)
+                            {
+                                <button class="btn btn-outline-secondary btn-sm" @onclick="() => DeleteAsync(_editingId!.Value, _formName)">@L["Gm.Encounters.Delete"]</button>
+                            }
+                            <button class="btn btn-outline-secondary btn-sm" @onclick="CancelEdit">@L["Gm.Encounters.Cancel"]</button>
+                        </div>
+
+                        @* ── Live threat readout (server-authoritative) ────── *@
+                        <div class="section-header" style="margin-top:1.5rem">
+                            <span class="section-title">@L["Gm.Encounters.Readout"]</span>
+                        </div>
+
+                        @if (_result is null)
+                        {
+                            <p class="detail-panel-empty">@L["Gm.Encounters.ReadoutHint"]</p>
+                        }
+                        else
+                        {
+                            @if (!_result.PartyResolved)
+                            {
+                                <div class="dash-alert" role="alert">@L["Gm.Encounters.NoAliveParty"]</div>
+                            }
+
+                            <div class="dash-grid" style="max-width:640px">
+                                <div class="dash-stat"><span class="dash-label">@L["Gm.Encounters.Pg"]</span><strong>@_result.Pg</strong></div>
+                                <div class="dash-stat"><span class="dash-label">@L["Gm.Encounters.Pe"]</span><strong>@_result.Pe</strong></div>
+                                <div class="dash-stat">
+                                    <span class="dash-label">@L["Gm.Encounters.R"]</span>
+                                    <strong>@(_result.PartyResolved ? Format(_result.R) : "—")</strong>
+                                </div>
+                                <div class="dash-stat">
+                                    <span class="dash-label">@L["Gm.Encounters.RLabel"]</span>
+                                    @if (_result.PartyResolved && !string.IsNullOrEmpty(_result.RLabel))
+                                    {
+                                        <strong style="color:@RLabelColor(_result.RLabel)">@RLabelText(_result.RLabel)</strong>
+                                    }
+                                    else
+                                    {
+                                        <strong style="color:var(--text-muted)">—</strong>
+                                    }
+                                </div>
+                                <div class="dash-stat"><span class="dash-label">@L["Gm.Encounters.Oa"]</span><strong>@_result.Oa</strong></div>
+                                <div class="dash-stat"><span class="dash-label">@L["Gm.Encounters.Fce"]</span><strong>@Format(_result.Fce)</strong></div>
+                                <div class="dash-stat"><span class="dash-label">@L["Gm.Encounters.RealStatMultiplier"]</span><strong>@Format(_result.RealStatMultiplier)</strong></div>
+                                @if (_result.PressureApplied)
+                                {
+                                    <div class="dash-stat"><span class="dash-label">@L["Gm.Encounters.PressureApplied"]</span><strong>@_result.PressureValue</strong></div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private List<EncounterResponse> _encounters = [];
+    private List<CreatureResponse> _creatures = [];
+    private List<BreadcrumbItem> _breadcrumbs = [];
+    private bool _loading = true;
+    private bool _saving;
+    private string _searchTerm = string.Empty;
+
+    private bool _editing;
+    private Guid? _editingId;
+    private string _formName = string.Empty;
+    private EncounterData _form = NewData();
+    private EncounterResponse? _result;
+    private Guid _creatureToAdd = Guid.Empty;
+
+    private List<EncounterResponse> FilteredEncounters =>
+        _encounters.Where(e => TableFilter.Matches(_searchTerm,
+            e.Name,
+            RLabelText(e.RLabel),
+            DifficultyText(e.DesiredDifficulty))).ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var campaignsResult = await CampaignService.GetMineAsync();
+        var campaignName = campaignsResult?.Data?.FirstOrDefault(c => c.Id == Id)?.Name;
+        _breadcrumbs =
+        [
+            new BreadcrumbItem(L["Nav.Campaigns"], "/gm/campaigns"),
+            new BreadcrumbItem(campaignName ?? L["Common.UnknownCampaign"], $"/gm/campaigns/{Id}"),
+            new BreadcrumbItem(L["Gm.Encounters.Title"], null)
+        ];
+
+        var creaturesResult = await BestiaryService.GetCreaturesAsync();
+        _creatures = creaturesResult?.Data?.ToList() ?? [];
+
+        await LoadAsync();
+        _loading = false;
+    }
+
+    private async Task LoadAsync()
+    {
+        var result = await EncounterService.GetAllAsync(Id);
+        _encounters = result?.Data?.ToList() ?? [];
+    }
+
+    private void OnRowKey(KeyboardEventArgs e, EncounterResponse enc)
+    {
+        if (e.Key == "Enter" || e.Key == " ") SelectForEdit(enc);
+    }
+
+    private void NewEncounter()
+    {
+        _editing = true;
+        _editingId = null;
+        _formName = string.Empty;
+        _form = NewData();
+        _result = null;
+        _creatureToAdd = Guid.Empty;
+    }
+
+    private void SelectForEdit(EncounterResponse enc)
+    {
+        _editing = true;
+        _editingId = enc.Id;
+        _formName = enc.Name;
+        _form = FromResponse(enc);
+        _result = enc;
+        _creatureToAdd = Guid.Empty;
+    }
+
+    private void CancelEdit()
+    {
+        _editing = false;
+        _editingId = null;
+        _formName = string.Empty;
+        _form = NewData();
+        _result = null;
+        _creatureToAdd = Guid.Empty;
+    }
+
+    private void AddCreature()
+    {
+        if (_creatureToAdd == Guid.Empty) return;
+        _form.Creatures.Add(new EncounterCreature { CreatureId = _creatureToAdd, Quantity = 1 });
+        _creatureToAdd = Guid.Empty;
+    }
+
+    private async Task SaveAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_formName))
+        {
+            Toast.Error(L["Gm.Encounters.NameRequired"]);
+            return;
+        }
+
+        _saving = true;
+        var wasCreate = _editingId is null;
+
+        var result = wasCreate
+            ? await EncounterService.CreateAsync(Id, new CreateEncounterRequest { Name = _formName, Data = _form })
+            : await EncounterService.UpdateAsync(Id, _editingId!.Value, new UpdateEncounterRequest { Name = _formName, Data = _form });
+
+        if (result?.Data is not null)
+        {
+            Toast.Success(wasCreate ? L["Gm.Encounters.CreateSuccess"] : L["Gm.Encounters.SaveSuccess"]);
+            var saved = result.Data;
+            await LoadAsync();
+            SelectForEdit(_encounters.FirstOrDefault(e => e.Id == saved.Id) ?? saved);
+        }
+        else
+        {
+            Toast.Error(L["Common.Error"]);
+        }
+
+        _saving = false;
+    }
+
+    private async Task DeleteAsync(Guid id, string name)
+    {
+        var confirmed = await Confirm.AskAsync(
+            L["Gm.Encounters.DeleteConfirm.Title"],
+            L["Gm.Encounters.DeleteConfirm.Message", name],
+            L["Gm.Encounters.Delete"],
+            L["Gm.Encounters.Cancel"]);
+        if (!confirmed) return;
+
+        var result = await EncounterService.DeleteAsync(Id, id);
+        if (result?.Success == true)
+        {
+            Toast.Success(L["Gm.Encounters.DeleteSuccess"]);
+            CancelEdit();
+            await LoadAsync();
+        }
+        else
+        {
+            Toast.Error(L["Common.Error"]);
+        }
+    }
+
+    private string CreatureName(Guid creatureId)
+    {
+        var fromBestiary = _creatures.FirstOrDefault(c => c.Id == creatureId);
+        if (fromBestiary is not null) return fromBestiary.Name;
+        // Fall back to the server-resolved name (covers creatures outside the loaded list).
+        var resolved = _result?.Creatures.FirstOrDefault(c => c.CreatureId == creatureId);
+        return string.IsNullOrEmpty(resolved?.CreatureName) ? L["Gm.Encounters.UnknownCreature"] : resolved!.CreatureName;
+    }
+
+    private string IntelligenceText(string key) => Lookup("Gm.Encounters.Intelligence", key);
+    private string TerrainText(string key) => Lookup("Gm.Encounters.Terrain", key);
+    private string ObjectiveText(string key) => Lookup("Gm.Encounters.Objective", key);
+    private string DifficultyText(string key) => Lookup("Gm.Encounters.Difficulty", key);
+    private string DurationText(string key) => Lookup("Gm.Encounters.Duration", key);
+    private string RLabelText(string key) => Lookup("Gm.Encounters.RLabel", key);
+
+    private string Lookup(string prefix, string key)
+    {
+        if (string.IsNullOrEmpty(key)) return "—";
+        var localized = L[$"{prefix}.{key}"];
+        return localized.ResourceNotFound ? key : localized.Value;
+    }
+
+    // Reuses the dashboard's three-tier pressure convention: green / accent / danger.
+    private static string RLabelColor(string rLabel) => rLabel switch
+    {
+        "MuitoFacil" or "Facil" or "Equilibrado" => "var(--success)",
+        "Dificil" or "MuitoDificil" => "var(--accent)",
+        "Extremo" or "PossivelMorte" => "var(--danger)",
+        _ => "var(--text-muted)"
+    };
+
+    private static string Format(decimal value) =>
+        value.ToString("0.00", CultureInfo.CurrentCulture);
+
+    private static EncounterData NewData() => new()
+    {
+        Intelligence = "Instinto",
+        Terrain = "Neutro",
+        Objective = "Eliminar",
+        DesiredDifficulty = "Normal",
+        Duration = "Normal",
+    };
+
+    private static EncounterData FromResponse(EncounterResponse r) => new()
+    {
+        Creatures = r.Creatures.Select(c => new EncounterCreature { CreatureId = c.CreatureId, Quantity = c.Quantity }).ToList(),
+        Intelligence = r.Intelligence,
+        Terrain = r.Terrain,
+        Objective = r.Objective,
+        ApplyPressure = r.ApplyPressure,
+        Floor = r.Floor,
+        PartyNpOverride = r.PartyNpOverride,
+        PartySizeOverride = r.PartySizeOverride,
+        DesiredDifficulty = r.DesiredDifficulty,
+        Duration = r.Duration,
+    };
+}
