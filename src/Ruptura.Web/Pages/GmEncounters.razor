@@ -206,7 +206,7 @@
                             </div>
                             <div>
                                 <label class="field-label">@L["Gm.Encounters.PartySizeOverride"]</label>
-                                <input type="number" class="form-control" min="0" @bind="_form.PartySizeOverride" @bind:event="oninput" />
+                                <input type="number" class="form-control" min="1" @bind="_form.PartySizeOverride" @bind:event="oninput" />
                             </div>
                             <div>
                                 <label class="field-label">@L["Gm.Encounters.Floor"]</label>
@@ -238,6 +238,11 @@
                         }
                         else
                         {
+                            @if (IsDirty)
+                            {
+                                <div class="dash-alert" role="alert">@L["Gm.Encounters.StaleReadout"]</div>
+                            }
+
                             @if (!_result.PartyResolved)
                             {
                                 <div class="dash-alert" role="alert">@L["Gm.Encounters.NoAliveParty"]</div>
@@ -293,6 +298,36 @@
     private EncounterData _form = NewData();
     private EncounterResponse? _result;
     private Guid _creatureToAdd = Guid.Empty;
+
+    // True when the editor form no longer matches the saved response backing the readout, so the
+    // displayed R/RLabel/Oa are stale until the GM saves again. Server stays authoritative — this
+    // is only a staleness cue, never a client recompute.
+    private bool IsDirty
+    {
+        get
+        {
+            if (_result is null) return false;
+            if (_formName != _result.Name) return true;
+            if (_form.Intelligence != _result.Intelligence) return true;
+            if (_form.Terrain != _result.Terrain) return true;
+            if (_form.Objective != _result.Objective) return true;
+            if (_form.DesiredDifficulty != _result.DesiredDifficulty) return true;
+            if (_form.Duration != _result.Duration) return true;
+            if (_form.ApplyPressure != _result.ApplyPressure) return true;
+            if (_form.Floor != _result.Floor) return true;
+            if (_form.PartyNpOverride != _result.PartyNpOverride) return true;
+            if (_form.PartySizeOverride != _result.PartySizeOverride) return true;
+
+            var saved = _result.Creatures;
+            if (_form.Creatures.Count != saved.Count) return true;
+            for (var i = 0; i < _form.Creatures.Count; i++)
+            {
+                if (_form.Creatures[i].CreatureId != saved[i].CreatureId) return true;
+                if (_form.Creatures[i].Quantity != saved[i].Quantity) return true;
+            }
+            return false;
+        }
+    }
 
     private List<EncounterResponse> FilteredEncounters =>
         _encounters.Where(e => TableFilter.Matches(_searchTerm,
@@ -362,7 +397,12 @@
     private void AddCreature()
     {
         if (_creatureToAdd == Guid.Empty) return;
-        _form.Creatures.Add(new EncounterCreature { CreatureId = _creatureToAdd, Quantity = 1 });
+        // Merge into an existing line rather than appending a duplicate row for the same creature.
+        var existing = _form.Creatures.FirstOrDefault(c => c.CreatureId == _creatureToAdd);
+        if (existing is not null)
+            existing.Quantity += 1;
+        else
+            _form.Creatures.Add(new EncounterCreature { CreatureId = _creatureToAdd, Quantity = 1 });
         _creatureToAdd = Guid.Empty;
     }
 
