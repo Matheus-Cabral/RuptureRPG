@@ -138,8 +138,13 @@ public class CreatureTests(IntegrationTestFactory factory)
             // Acceptance criterion: server-computed NP lands inside the Category's advisory range (§9.5.6).
             creature.DerivedNp.Should().BeGreaterThanOrEqualTo(creature.CategoryNpMin,
                 $"{creature.Name} NP {creature.DerivedNp} must be >= min {creature.CategoryNpMin}");
-            creature.DerivedNp.Should().BeLessThanOrEqualTo(creature.CategoryNpMax,
-                $"{creature.Name} NP {creature.DerivedNp} must be <= max {creature.CategoryNpMax}");
+            // Open-ended categories (Chefe de Arco, Entidade Superior) have no ceiling → CategoryNpMax
+            // is null; only assert the upper bound for closed categories.
+            if (creature.CategoryNpMax is { } categoryNpMax)
+            {
+                creature.DerivedNp.Should().BeLessThanOrEqualTo(categoryNpMax,
+                    $"{creature.Name} NP {creature.DerivedNp} must be <= max {categoryNpMax}");
+            }
         }
     }
 

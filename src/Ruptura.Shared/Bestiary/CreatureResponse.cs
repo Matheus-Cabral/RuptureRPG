@@ -12,6 +12,14 @@ public class CreatureResponse
 
     // Selected Category's advisory range (§9.5.6) + overflow flag (Regra do Teto).
     public int CategoryNpMin { get; set; }
-    public int CategoryNpMax { get; set; }
+
+    // Open-ended top tiers (Chefe de Arco, Entidade Superior) have NO ceiling: null here means
+    // "no upper bound". The calculator's internal sentinel (int.MaxValue) is deliberately mapped
+    // to null at this response boundary so consumers (GM-2) never do arithmetic on 2147483647.
+    public int? CategoryNpMax { get; set; }
+
+    // Soft advisory only: true when DerivedNp exceeds the category ceiling by MORE than +15%
+    // (§9.5.6 Regra do Teto). It does NOT flag under-NpMin, and is always false for open-ended
+    // categories (CategoryNpMax == null).
     public bool CategoryOverflow { get; set; }
 }

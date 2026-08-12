@@ -121,7 +121,7 @@
                                 </select>
                             </div>
                             <div>
-                                <label class="field-label">@L["Gm.Bestiary.Behavior"]</label>
+                                <label class="field-label">@L["Gm.Bestiary.Behavior"] *</label>
                                 <select class="form-select" @bind="_form.Behavior" disabled="@_readOnly">
                                     <option value="">—</option>
                                     @foreach (var b in BestiaryReference.Behaviors)
@@ -131,7 +131,7 @@
                                 </select>
                             </div>
                             <div>
-                                <label class="field-label">@L["Gm.Bestiary.Category"]</label>
+                                <label class="field-label">@L["Gm.Bestiary.Category"] *</label>
                                 <select class="form-select" @bind="_form.Category" disabled="@_readOnly">
                                     <option value="">—</option>
                                     @foreach (var c in BestiaryReference.Categories)
@@ -148,7 +148,9 @@
                             @if (SelectedRange is { } range)
                             {
                                 <span class="np-range">@L["Gm.Bestiary.CategoryRange"]: @RangeText(range)</span>
-                                @if (LiveNp > range.NpMax)
+                                @* Mirror the server's authoritative overflow (§9.5.6 Regra do Teto): flag
+                                   over-range only past the +15% ceiling, and never for open-ended categories. *@
+                                @if (range.NpMax != int.MaxValue && LiveNp * 100L > range.NpMax * 115L)
                                 {
                                     <span class="np-status" style="color:var(--danger)">@L["Gm.Bestiary.NpOver"]</span>
                                 }
@@ -380,7 +382,7 @@
     private CreatureData _form = new();
 
     private List<CreatureResponse> FilteredCreatures =>
-        _creatures.Where(c => TableFilter.Matches(_searchTerm, c.Name, c.Data.Category, c.Data.Type)).ToList();
+        _creatures.Where(c => TableFilter.Matches(_searchTerm, c.Name, CategoryLabel(c.Data.Category), c.Data.Type)).ToList();
 
     private (int NpMin, int NpMax)? SelectedRange =>
         BestiaryReference.CategoryRanges.TryGetValue(_form.Category, out var r) ? r : null;
@@ -465,6 +467,18 @@
             Toast.Error(L["Gm.Bestiary.FraquezaRequired"]);
             return;
         }
+        // Behavior and Category are the only two server-rejected fixed sets — guard them here so a
+        // missing value surfaces a specific field message instead of a generic 400.
+        if (string.IsNullOrWhiteSpace(_form.Behavior))
+        {
+            Toast.Error(L["Gm.Bestiary.BehaviorRequired"]);
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(_form.Category))
+        {
+            Toast.Error(L["Gm.Bestiary.CategoryRequired"]);
+            return;
+        }
 
         _saving = true;
         var wasCreate = _editingId is null;
@@ -511,8 +525,12 @@
         }
     }
 
-    private string CategoryLabel(string category) =>
-        string.IsNullOrEmpty(category) ? "—" : L[$"Gm.Bestiary.Category.{category}"];
+    private string CategoryLabel(string category)
+    {
+        if (string.IsNullOrEmpty(category)) return "—";
+        var localized = L[$"Gm.Bestiary.Category.{category}"];
+        return localized.ResourceNotFound ? category : localized.Value;
+    }
 
     private string RangeText((int NpMin, int NpMax) range) =>
         range.NpMax == int.MaxValue ? $"{range.NpMin}+" : $"{range.NpMin}–{range.NpMax}";

@@ -663,6 +663,8 @@
   <data name="Gm.Bestiary.Cancel"><value>Cancelar</value></data>
   <data name="Gm.Bestiary.NameRequired"><value>O nome é obrigatório.</value></data>
   <data name="Gm.Bestiary.FraquezaRequired"><value>Uma fraqueza é obrigatória.</value></data>
+  <data name="Gm.Bestiary.BehaviorRequired"><value>Um comportamento é obrigatório.</value></data>
+  <data name="Gm.Bestiary.CategoryRequired"><value>Uma categoria é obrigatória.</value></data>
   <data name="Gm.Bestiary.CreateSuccess"><value>Criatura criada.</value></data>
   <data name="Gm.Bestiary.SaveSuccess"><value>Criatura salva.</value></data>
   <data name="Gm.Bestiary.DeleteSuccess"><value>Criatura excluída.</value></data>

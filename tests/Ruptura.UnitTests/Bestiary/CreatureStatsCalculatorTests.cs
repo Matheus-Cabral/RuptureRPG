@@ -252,6 +252,28 @@ public class CreatureStatsCalculatorTests
     }
 
     [Fact]
+    public void Calculate_NullListElements_DoNotThrow_AndAreSkipped()
+    {
+        // GM-2/GM-4 build CreatureData in-process and call Calculate directly, bypassing the
+        // service's Sanitize — a null element must be skipped, not NRE.
+        var data = BaseCreature();
+        data.Attributes.Corpo = 5;                                                       // +4
+        data.NaturalSkills.Add(null!);
+        data.NaturalSkills.Add(new CreatureNaturalSkill { Name = "S", Points = 50 });     // +2
+        data.Characteristics.Add(null!);
+        data.Characteristics.Add(new CreatureCharacteristic { Name = "C", Weight = "Maior" }); // +5
+        data.Abilities.Add(null!);
+        data.Abilities.Add(new CreatureAbility { Name = "A", Tier = "Avancada" });        // +10
+        data.Equipment.Add(null!);
+        data.Equipment.Add(new CreatureEquipment { Name = "E", Rarity = "Raro" });        // +7
+
+        var act = () => _sut.Calculate(data);
+
+        act.Should().NotThrow();
+        _sut.Calculate(data).Np.Should().Be(4 + 2 + 5 + 10 + 7); // nulls contribute nothing
+    }
+
+    [Fact]
     public void Calculate_UnknownCategory_DoesNotThrow_AndNoOverflow()
     {
         var data = BaseCreature();

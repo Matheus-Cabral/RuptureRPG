@@ -177,7 +177,8 @@ public class CreatureService(
             Data = data,
             DerivedNp = np.Np,
             CategoryNpMin = np.NpMin,
-            CategoryNpMax = np.NpMax,
+            // Map the open-ended sentinel to null at the wire boundary — never leak int.MaxValue.
+            CategoryNpMax = np.NpMax == int.MaxValue ? (int?)null : np.NpMax,
             CategoryOverflow = np.CategoryOverflow
         };
     }

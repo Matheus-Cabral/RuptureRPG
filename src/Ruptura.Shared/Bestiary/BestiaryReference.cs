@@ -6,10 +6,11 @@ namespace Ruptura.Shared.Bestiary;
 // UI pickers. String-only to keep Ruptura.Shared free of project references.
 public static class BestiaryReference
 {
-    // §9.5.2 — the 5 official functions; custom/homebrew values are allowed on write.
+    // §9.5.2 — the official functions; custom/homebrew values are allowed on write. Function is
+    // NOT a validated fixed set (the write-side validator never rejects it).
     public static readonly IReadOnlyList<string> Functions =
     [
-        "Predador", "Guardião", "Soldado", "Parasita", "Evento Vivo"
+        "Predador", "Guardião", "Soldado", "Parasita", "Evento Vivo", "Chefe"
     ];
 
     // §9.5.3 — fixed set; drives the GM-2 encounter intelligence multiplier.

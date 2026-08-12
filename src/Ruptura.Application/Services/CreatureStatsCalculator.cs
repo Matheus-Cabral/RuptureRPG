@@ -10,12 +10,13 @@ public class CreatureStatsCalculator : ICreatureStatsCalculator
 {
     public CreatureNpResult Calculate(CreatureData data)
     {
-        // Defense-in-depth: tolerate null lists (e.g. `{"Abilities":null}` written by a caller
-        // that bypassed the validator) by treating them as empty rather than throwing.
-        var naturalSkills = data.NaturalSkills ?? [];
-        var characteristics = data.Characteristics ?? [];
-        var abilities = data.Abilities ?? [];
-        var equipment = data.Equipment ?? [];
+        // Defense-in-depth: tolerate null lists (e.g. `{"Abilities":null}`) AND null elements within
+        // them (GM-2/GM-4 build CreatureData in-process and call Calculate directly, bypassing the
+        // service's Sanitize) by skipping them rather than throwing.
+        var naturalSkills = (data.NaturalSkills ?? []).Where(x => x is not null);
+        var characteristics = (data.Characteristics ?? []).Where(x => x is not null);
+        var abilities = (data.Abilities ?? []).Where(x => x is not null);
+        var equipment = (data.Equipment ?? []).Where(x => x is not null);
         var attributes = data.Attributes ?? new CreatureAttributes();
 
         // Sum in long so int.MaxValue-scale attribute scores can't overflow mid-calculation;
