@@ -1,0 +1,300 @@
+@page "/gm/npcs"
+@attribute [Authorize(Roles = "GameMaster")]
+@using Microsoft.Extensions.Localization
+@using Ruptura.Web.Resources
+@using Ruptura.Web.Shared
+@using Ruptura.Shared.Bestiary
+@inject IStringLocalizer<AppStrings> L
+@inject IBestiaryClientService BestiaryService
+@inject ToastService Toast
+@inject ConfirmService Confirm
+
+<PageTitle>@L["Gm.Npcs.Title"] — RUPTURA</PageTitle>
+
+<div class="page-content">
+    <div class="page-heading">
+        <h1>@L["Gm.Npcs.Title"]</h1>
+    </div>
+
+    <div class="section-header">
+        <span class="section-title">@L["Gm.Npcs.ListTitle"]</span>
+        <button class="btn btn-primary btn-sm" @onclick="NewNpc">@L["Gm.Npcs.New"]</button>
+    </div>
+
+    @if (_loading)
+    {
+        <LoadingIndicator Text="@L["Common.Loading"]" />
+    }
+    else
+    {
+        <div class="master-detail">
+            <div class="master-detail-list">
+                @if (_npcs.Count == 0)
+                {
+                    <div class="ledger-empty">
+                        <p>@L["Gm.Npcs.Empty"]</p>
+                    </div>
+                }
+                else
+                {
+                    <TableSearchBox @bind-Value="_searchTerm" Placeholder="@L["Gm.Npcs.SearchPlaceholder"]" />
+
+                    @if (FilteredNpcs.Count == 0)
+                    {
+                        <div class="ledger-empty">
+                            <p>@L["Gm.Npcs.NoResults"]</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="ledger-table-wrap">
+                            <table class="ledger-table stack-mobile">
+                                <thead>
+                                    <tr>
+                                        <th>@L["Gm.Npcs.Col.Name"]</th>
+                                        <th>@L["Gm.Npcs.Col.Role"]</th>
+                                        <th>@L["Gm.Npcs.Col.Faction"]</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var npc in FilteredNpcs)
+                                    {
+                                        <tr class="@(_editingId == npc.Id ? "is-selected" : null)"
+                                            tabindex="0" role="button"
+                                            @onclick="() => SelectForEdit(npc)"
+                                            @onkeydown="e => OnRowKey(e, npc)">
+                                            <td data-label="@L["Gm.Npcs.Col.Name"]">
+                                                @npc.Name
+                                                @if (npc.IsOfficial)
+                                                {
+                                                    <span class="badge-official">@L["Gm.Npcs.Official"]</span>
+                                                }
+                                            </td>
+                                            <td data-label="@L["Gm.Npcs.Col.Role"]">@RoleLabel(npc.Data.Role)</td>
+                                            <td data-label="@L["Gm.Npcs.Col.Faction"]">@(string.IsNullOrEmpty(npc.Data.Faction) ? "—" : npc.Data.Faction)</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                }
+            </div>
+
+            <div class="detail-panel">
+                @if (!_editing)
+                {
+                    <p class="detail-panel-empty">@L["Gm.Npcs.SelectItem"]</p>
+                }
+                else
+                {
+                    <div class="section-header">
+                        <span class="section-title">
+                            @(_editingId is null ? L["Gm.Npcs.New"] : _formName)
+                        </span>
+                        @if (_readOnly)
+                        {
+                            <span class="badge-official">@L["Gm.Npcs.Official"]</span>
+                        }
+                    </div>
+
+                    @if (_readOnly)
+                    {
+                        <p class="detail-panel-empty">@L["Gm.Npcs.ReadOnlyNote"]</p>
+                    }
+
+                    <div class="bestiary-form">
+                        <label class="field-label">@L["Gm.Npcs.Name"]</label>
+                        <input class="form-control" @bind="_formName" @bind:event="oninput" disabled="@_readOnly" />
+
+                        <div class="field-row">
+                            <div>
+                                <label class="field-label">@L["Gm.Npcs.Role"]</label>
+                                <select class="form-select" @bind="_form.Role" disabled="@_readOnly">
+                                    <option value="">—</option>
+                                    @foreach (var r in BestiaryReference.Roles)
+                                    {
+                                        <option value="@r">@RoleLabel(r)</option>
+                                    }
+                                </select>
+                            </div>
+                            <div>
+                                <label class="field-label">@L["Gm.Npcs.Disposition"]</label>
+                                <select class="form-select" @bind="_form.Disposition" disabled="@_readOnly">
+                                    <option value="">—</option>
+                                    @foreach (var d in BestiaryReference.Dispositions)
+                                    {
+                                        <option value="@d">@DispositionLabel(d)</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+
+                        <label class="field-label">@L["Gm.Npcs.Faction"]</label>
+                        <input class="form-control" @bind="_form.Faction" disabled="@_readOnly" />
+
+                        <label class="field-label">@L["Gm.Npcs.Location"]</label>
+                        <input class="form-control" @bind="_form.Location" disabled="@_readOnly" />
+
+                        <label class="field-label">@L["Gm.Npcs.Notes"]</label>
+                        <textarea class="form-control" rows="4" @bind="_form.Notes" disabled="@_readOnly"></textarea>
+
+                        <div class="form-actions">
+                            @if (!_readOnly)
+                            {
+                                <button class="btn btn-primary btn-sm" @onclick="SaveAsync" disabled="@(_saving || string.IsNullOrWhiteSpace(_formName))">
+                                    @if (_saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                                    @(_editingId is null ? L["Gm.Npcs.Create"] : L["Gm.Npcs.Save"])
+                                </button>
+                                @if (_editingId is not null)
+                                {
+                                    <button class="btn btn-outline-secondary btn-sm" @onclick="() => DeleteAsync(_editingId!.Value, _formName)">@L["Gm.Npcs.Delete"]</button>
+                                }
+                            }
+                            <button class="btn btn-outline-secondary btn-sm" @onclick="CancelEdit">@L["Gm.Npcs.Cancel"]</button>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<NpcResponse> _npcs = [];
+    private bool _loading = true;
+    private bool _saving;
+    private string _searchTerm = string.Empty;
+
+    private bool _editing;
+    private Guid? _editingId;
+    private bool _readOnly;
+    private string _formName = string.Empty;
+    private NpcData _form = new();
+
+    private List<NpcResponse> FilteredNpcs =>
+        _npcs.Where(n => TableFilter.Matches(_searchTerm,
+            n.Name,
+            RoleLabel(n.Data.Role),
+            n.Data.Faction,
+            DispositionLabel(n.Data.Disposition),
+            n.Data.Location)).ToList();
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        var result = await BestiaryService.GetNpcsAsync();
+        _npcs = result?.Data?.ToList() ?? [];
+        _loading = false;
+    }
+
+    private void OnRowKey(KeyboardEventArgs e, NpcResponse npc)
+    {
+        if (e.Key == "Enter" || e.Key == " ") SelectForEdit(npc);
+    }
+
+    private void NewNpc()
+    {
+        _editing = true;
+        _editingId = null;
+        _readOnly = false;
+        _formName = string.Empty;
+        _form = new NpcData();
+    }
+
+    private void SelectForEdit(NpcResponse npc)
+    {
+        _editing = true;
+        _editingId = npc.Id;
+        _readOnly = npc.IsOfficial;
+        _formName = npc.Name;
+        _form = Clone(npc.Data);
+    }
+
+    private void CancelEdit()
+    {
+        _editing = false;
+        _editingId = null;
+        _readOnly = false;
+        _formName = string.Empty;
+        _form = new NpcData();
+    }
+
+    private async Task SaveAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_formName))
+        {
+            Toast.Error(L["Gm.Npcs.NameRequired"]);
+            return;
+        }
+
+        _saving = true;
+        var wasCreate = _editingId is null;
+
+        var result = wasCreate
+            ? await BestiaryService.CreateNpcAsync(new CreateNpcRequest { Name = _formName, Data = _form })
+            : await BestiaryService.UpdateNpcAsync(_editingId!.Value, new UpdateNpcRequest { Name = _formName, Data = _form });
+
+        if (result?.Data is not null)
+        {
+            Toast.Success(wasCreate ? L["Gm.Npcs.CreateSuccess"] : L["Gm.Npcs.SaveSuccess"]);
+            var savedId = result.Data.Id;
+            await LoadAsync();
+            var saved = _npcs.FirstOrDefault(n => n.Id == savedId);
+            if (saved is not null) SelectForEdit(saved);
+        }
+        else
+        {
+            Toast.Error(L["Common.Error"]);
+        }
+
+        _saving = false;
+    }
+
+    private async Task DeleteAsync(Guid id, string name)
+    {
+        var confirmed = await Confirm.AskAsync(
+            L["Gm.Npcs.DeleteConfirm.Title"],
+            L["Gm.Npcs.DeleteConfirm.Message", name],
+            L["Gm.Npcs.Delete"],
+            L["Gm.Npcs.Cancel"]);
+        if (!confirmed) return;
+
+        var result = await BestiaryService.DeleteNpcAsync(id);
+        if (result?.Success == true)
+        {
+            Toast.Success(L["Gm.Npcs.DeleteSuccess"]);
+            CancelEdit();
+            await LoadAsync();
+        }
+        else
+        {
+            Toast.Error(L["Common.Error"]);
+        }
+    }
+
+    private string RoleLabel(string role)
+    {
+        if (string.IsNullOrEmpty(role)) return "—";
+        var localized = L[$"Gm.Npcs.Role.{role}"];
+        return localized.ResourceNotFound ? role : localized.Value;
+    }
+
+    private string DispositionLabel(string disposition)
+    {
+        if (string.IsNullOrEmpty(disposition)) return "—";
+        var localized = L[$"Gm.Npcs.Disposition.{disposition}"];
+        return localized.ResourceNotFound ? disposition : localized.Value;
+    }
+
+    private static NpcData Clone(NpcData d) => new()
+    {
+        Role = d.Role,
+        Faction = d.Faction,
+        Disposition = d.Disposition,
+        Location = d.Location,
+        Notes = d.Notes,
+    };
+}

@@ -39,4 +39,36 @@ public class BestiaryClientService(IHttpClientFactory factory) : IBestiaryClient
         var response = await Http.DeleteAsync($"api/bestiary/creatures/{id}");
         return await response.Content.ReadFromJsonAsync<ApiResponse>();
     }
+
+    public async Task<ApiResponse<IEnumerable<NpcResponse>>?> GetNpcsAsync()
+    {
+        var response = await Http.GetAsync("api/bestiary/npcs");
+        if (!response.IsSuccessStatusCode) return null;
+        return await response.Content.ReadFromJsonAsync<ApiResponse<IEnumerable<NpcResponse>>>();
+    }
+
+    public async Task<ApiResponse<NpcResponse>?> GetNpcAsync(Guid id)
+    {
+        var response = await Http.GetAsync($"api/bestiary/npcs/{id}");
+        if (!response.IsSuccessStatusCode) return null;
+        return await response.Content.ReadFromJsonAsync<ApiResponse<NpcResponse>>();
+    }
+
+    public async Task<ApiResponse<NpcResponse>?> CreateNpcAsync(CreateNpcRequest request)
+    {
+        var response = await Http.PostAsJsonAsync("api/bestiary/npcs", request);
+        return await response.Content.ReadFromJsonAsync<ApiResponse<NpcResponse>>();
+    }
+
+    public async Task<ApiResponse<NpcResponse>?> UpdateNpcAsync(Guid id, UpdateNpcRequest request)
+    {
+        var response = await Http.PutAsJsonAsync($"api/bestiary/npcs/{id}", request);
+        return await response.Content.ReadFromJsonAsync<ApiResponse<NpcResponse>>();
+    }
+
+    public async Task<ApiResponse?> DeleteNpcAsync(Guid id)
+    {
+        var response = await Http.DeleteAsync($"api/bestiary/npcs/{id}");
+        return await response.Content.ReadFromJsonAsync<ApiResponse>();
+    }
 }
