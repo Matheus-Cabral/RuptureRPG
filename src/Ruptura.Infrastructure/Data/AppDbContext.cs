@@ -24,6 +24,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<Creature> Creatures => Set<Creature>();
     public DbSet<Npc> Npcs => Set<Npc>();
+    public DbSet<Encounter> Encounters => Set<Encounter>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
