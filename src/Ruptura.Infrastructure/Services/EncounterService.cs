@@ -283,7 +283,6 @@ public class EncounterService(
             : context.AlivePartyNps.ToList();
         var partySize = data.PartySizeOverride
             ?? (hasOverride ? 1 : context.AlivePartyNps.Count);
-        var partyResolved = hasOverride || context.AlivePartyNps.Count > 0;
 
         var applyPressure = data.ApplyPressure;
         var pressureMult = applyPressure ? context.PressureMultiplier : 1.0m;
@@ -324,7 +323,9 @@ public class EncounterService(
             RealStatMultiplier = threat.RealStatMultiplier,
             PressureApplied = applyPressure,
             PressureValue = applyPressure ? context.PressureValue : 0,
-            PartyResolved = partyResolved,
+            // Consistent with the calculator contract: a verdict exists only when PG resolved (>0).
+            // A party of all-NP-0 characters, or a PartyNpOverride of 0, yields no verdict.
+            PartyResolved = threat.Pg > 0,
             CreatedAt = encounter.CreatedAt,
             UpdatedAt = encounter.UpdatedAt
         };

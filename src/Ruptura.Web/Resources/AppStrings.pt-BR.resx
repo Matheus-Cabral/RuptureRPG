@@ -756,13 +756,13 @@
   <data name="Gm.Encounters.Readout"><value>Leitura de ameaça</value></data>
   <data name="Gm.Encounters.ReadoutHint"><value>Salve o encontro para ver os valores de ameaça calculados.</value></data>
   <data name="Gm.Encounters.StaleReadout"><value>Os valores de ameaça refletem o último salvamento — salve para atualizar.</value></data>
-  <data name="Gm.Encounters.NoAliveParty"><value>Nenhum grupo vivo e sem ajuste manual — a razão de ameaça não pode ser calculada.</value></data>
+  <data name="Gm.Encounters.NoAliveParty"><value>Nenhum grupo com NP resolvido e sem ajuste manual — a razão de ameaça não pode ser calculada.</value></data>
   <data name="Gm.Encounters.Pg"><value>PG (poder do grupo)</value></data>
   <data name="Gm.Encounters.Pe"><value>PE (poder do encontro)</value></data>
   <data name="Gm.Encounters.R"><value>R (razão de ameaça)</value></data>
   <data name="Gm.Encounters.RLabel"><value>Dificuldade</value></data>
-  <data name="Gm.Encounters.Oa"><value>OA (orçamento de ações)</value></data>
-  <data name="Gm.Encounters.Fce"><value>FCE (fator de escala)</value></data>
+  <data name="Gm.Encounters.Oa"><value>OA (orçamento de ameaça)</value></data>
+  <data name="Gm.Encounters.Fce"><value>FCE (fator de compressão de encontro)</value></data>
   <data name="Gm.Encounters.RealStatMultiplier"><value>Multiplicador de atributos real</value></data>
   <data name="Gm.Encounters.PressureApplied"><value>Pressão aplicada</value></data>
   <data name="Gm.Encounters.Intelligence.Instinto"><value>Instinto</value></data>

@@ -397,12 +397,23 @@
     private void AddCreature()
     {
         if (_creatureToAdd == Guid.Empty) return;
+        // Suggest Intelligence from the first creature's Behavior (decision #4) — only when the
+        // encounter is still empty, so a GM's explicit later pick is never overwritten.
+        var isFirst = _form.Creatures.Count == 0;
         // Merge into an existing line rather than appending a duplicate row for the same creature.
         var existing = _form.Creatures.FirstOrDefault(c => c.CreatureId == _creatureToAdd);
         if (existing is not null)
             existing.Quantity += 1;
         else
             _form.Creatures.Add(new EncounterCreature { CreatureId = _creatureToAdd, Quantity = 1 });
+
+        if (isFirst)
+        {
+            var added = _creatures.FirstOrDefault(c => c.Id == _creatureToAdd);
+            if (added is not null
+                && EncounterReference.BehaviorToIntelligence.TryGetValue(added.Data.Behavior, out var suggested))
+                _form.Intelligence = suggested;
+        }
         _creatureToAdd = Guid.Empty;
     }
 

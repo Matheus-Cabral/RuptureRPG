@@ -14,6 +14,18 @@ public static class EncounterReference
         "Instinto", "Tatico", "Militar", "Genial"
     ];
 
+    // Creature Behavior (BestiaryReference.Behaviors) → suggested Intelligence, per decision #4's
+    // resolution of the §9.5.3 ambiguity. Advisory only: the UI seeds the picker from the first
+    // creature added to an empty encounter; the GM's explicit choice is never overwritten. "Genial"
+    // is the top tier with no Behavior equivalent, so it is GM-only.
+    public static readonly IReadOnlyDictionary<string, string> BehaviorToIntelligence =
+        new Dictionary<string, string>
+        {
+            ["Instintiva"] = "Instinto",
+            ["Inteligente"] = "Tatico",
+            ["Estrategica"] = "Militar",
+        };
+
     public static readonly IReadOnlyList<string> Terrains =
     [
         "Neutro", "LevementeFavoravel", "Favoravel", "Extremo"
