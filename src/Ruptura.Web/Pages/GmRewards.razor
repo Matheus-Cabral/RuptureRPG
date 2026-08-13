@@ -282,6 +282,7 @@
 
     private List<RewardResponse> _rewards = [];
     private List<EncounterResponse> _encounters = [];
+    private bool _encountersLoaded;
     private List<BreadcrumbItem> _breadcrumbs = [];
     private bool _loading = true;
     private bool _saving;
@@ -318,6 +319,7 @@
         ];
 
         var encountersResult = await EncounterService.GetAllAsync(Id);
+        _encountersLoaded = encountersResult?.Data is not null;
         _encounters = encountersResult?.Data?.ToList() ?? [];
 
         await LoadAsync();
@@ -351,7 +353,8 @@
         _form = Clone(reward.Data);
         // Self-heal a dangling tag: if the linked encounter was deleted, drop the stale
         // EncounterId so the picker shows "(none)" and saves don't 400 on EncounterInvalid.
-        if (_form.EncounterId is { } eid && _encounters.All(e => e.Id != eid))
+        // Only when the encounter list actually loaded — a failed load must not clear a valid link.
+        if (_encountersLoaded && _form.EncounterId is { } eid && _encounters.All(e => e.Id != eid))
             _form.EncounterId = null;
     }
 
