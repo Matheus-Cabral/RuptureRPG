@@ -1,0 +1,593 @@
+@page "/gm/campaigns/{Id:guid}/combat"
+@attribute [Authorize(Roles = "GameMaster")]
+@using System.Globalization
+@using Microsoft.Extensions.Localization
+@using Ruptura.Web.Resources
+@using Ruptura.Shared.Combat
+@using Ruptura.Shared.Encounters
+@inject IStringLocalizer<AppStrings> L
+@inject ICombatClientService CombatService
+@inject IEncounterClientService EncounterService
+@inject ICampaignClientService CampaignService
+@inject ToastService Toast
+@inject ConfirmService Confirm
+
+<PageTitle>@L["Gm.Combat.Title"] — RUPTURA</PageTitle>
+
+<div class="page-content">
+    <Breadcrumbs Items="_breadcrumbs" />
+
+    <div class="page-heading">
+        <h1>@L["Gm.Combat.Title"]</h1>
+    </div>
+
+    @if (_loading)
+    {
+        <LoadingIndicator Text="@L["Common.Loading"]" />
+    }
+    else
+    {
+        @* ── Session creation + start-from-encounter toolbar ─────────── *@
+        <div class="section-header">
+            <span class="section-title">@L["Gm.Combat.NewSession"]</span>
+        </div>
+        <div class="field-row">
+            <input class="form-control" placeholder="@L["Gm.Combat.NewSessionName"]"
+                   @bind="_newSessionName" @bind:event="oninput" />
+            <button class="btn btn-primary btn-sm" @onclick="CreateSessionAsync"
+                    disabled="@(_saving || string.IsNullOrWhiteSpace(_newSessionName))">
+                @L["Gm.Combat.Create"]
+            </button>
+        </div>
+
+        <div class="section-header">
+            <span class="section-title">@L["Gm.Combat.StartFromEncounter"]</span>
+        </div>
+        <div class="field-row">
+            <input class="form-control" placeholder="@L["Gm.Combat.StartName"]"
+                   @bind="_startName" @bind:event="oninput" />
+            <select class="form-select" @bind="_encounterToStart">
+                <option value="@Guid.Empty">@L["Gm.Combat.SelectEncounter"]</option>
+                @foreach (var enc in _encounters)
+                {
+                    <option value="@enc.Id">@enc.Name</option>
+                }
+            </select>
+            <button class="btn btn-outline-secondary btn-sm" @onclick="StartFromEncounterAsync"
+                    disabled="@(_saving || _encounterToStart == Guid.Empty || string.IsNullOrWhiteSpace(_startName))">
+                @L["Gm.Combat.Start"]
+            </button>
+        </div>
+
+        <div class="master-detail">
+            <div class="master-detail-list">
+                <div class="section-header">
+                    <span class="section-title">@L["Gm.Combat.ListTitle"]</span>
+                </div>
+
+                @if (_sessions.Count == 0)
+                {
+                    <div class="ledger-empty">
+                        <p>@L["Gm.Combat.Empty"]</p>
+                    </div>
+                }
+                else
+                {
+                    <TableSearchBox @bind-Value="_searchTerm" Placeholder="@L["Gm.Combat.SearchPlaceholder"]" />
+
+                    @if (FilteredSessions.Count == 0)
+                    {
+                        <div class="ledger-empty">
+                            <p>@L["Gm.Combat.NoResults"]</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="ledger-table-wrap">
+                            <table class="ledger-table stack-mobile">
+                                <thead>
+                                    <tr>
+                                        <th>@L["Gm.Combat.Col.Name"]</th>
+                                        <th>@L["Gm.Combat.Col.Status"]</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var s in FilteredSessions)
+                                    {
+                                        <tr class="@(_selectedId == s.Id ? "is-selected" : null)"
+                                            tabindex="0" role="button"
+                                            @onclick="() => SelectSession(s)"
+                                            @onkeydown="e => OnRowKey(e, s)">
+                                            <td data-label="@L["Gm.Combat.Col.Name"]">@s.Name</td>
+                                            <td data-label="@L["Gm.Combat.Col.Status"]">
+                                                @if (s.IsActive)
+                                                {
+                                                    <span class="badge">@L["Gm.Combat.Active"]</span>
+                                                }
+                                                else
+                                                {
+                                                    <span style="color:var(--text-muted)">@L["Gm.Combat.Inactive"]</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                }
+            </div>
+
+            <div class="detail-panel">
+                @if (_selectedId is null)
+                {
+                    <p class="detail-panel-empty">@L["Gm.Combat.SelectItem"]</p>
+                }
+                else
+                {
+                    <div class="section-header">
+                        <span class="section-title">@_name</span>
+                        <div style="display:flex;gap:.5rem">
+                            <button class="btn btn-primary btn-sm" @onclick="() => PersistAsync(true)" disabled="@_saving">
+                                @if (_saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                                @L["Gm.Combat.Save"]
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm" @onclick="() => DeleteAsync(_selectedId!.Value, _name)" disabled="@_saving">
+                                @L["Gm.Combat.Delete"]
+                            </button>
+                        </div>
+                    </div>
+
+                    <label class="field-label" style="display:flex;align-items:center;gap:.5rem;cursor:pointer">
+                        <input type="checkbox" @bind="_isActive" />
+                        @L["Gm.Combat.Active.Toggle"]
+                    </label>
+
+                    @* ── Turn controls ─────────────────────────────────── *@
+                    <div class="field-row" style="align-items:center">
+                        <button class="btn btn-outline-secondary btn-sm" @onclick="PreviousTurnAsync" disabled="@_saving">
+                            @L["Gm.Combat.PreviousTurn"]
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm" @onclick="NextTurnAsync" disabled="@_saving">
+                            @L["Gm.Combat.NextTurn"]
+                        </button>
+                        <span class="dash-label">@L["Gm.Combat.Round"]: <strong>@_state.Round</strong></span>
+                    </div>
+
+                    @* ── Pressão panel ─────────────────────────────────── *@
+                    <div class="section-header" style="margin-top:1.25rem">
+                        <span class="section-title">@L["Gm.Combat.Pressure"]</span>
+                    </div>
+                    <div class="dash-label">
+                        @L["Gm.Combat.Pressure"]: <strong>@_pressure</strong> / 100
+                        — @PressureStateText(_pressureStateKey)
+                    </div>
+                    <div class="pressure-track">
+                        <div class="pressure-fill" style="width:@(_pressure)%;background:@PressureColor(_pressureStateKey)"></div>
+                    </div>
+                    <div class="field-row">
+                        <button class="btn btn-outline-secondary btn-sm" @onclick="() => AddPressureAsync(5)" disabled="@_saving">
+                            @L["Gm.Combat.Pressure.Add5"]
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm" @onclick="() => AddPressureAsync(10)" disabled="@_saving">
+                            @L["Gm.Combat.Pressure.Add10"]
+                        </button>
+                    </div>
+                    <p class="dash-label" style="color:var(--text-muted)">@L["Gm.Combat.Pressure.Hint"]</p>
+
+                    @* ── Combatants ────────────────────────────────────── *@
+                    <div class="section-header" style="margin-top:1.25rem">
+                        <span class="section-title">@L["Gm.Combat.Combatants"]</span>
+                    </div>
+
+                    @if (_state.Combatants.Count == 0)
+                    {
+                        <p class="detail-panel-empty">@L["Gm.Combat.NoCombatants"]</p>
+                    }
+                    else
+                    {
+                        @for (var i = 0; i < _state.Combatants.Count; i++)
+                        {
+                            var c = _state.Combatants[i];
+                            var isCurrent = i == _state.CurrentIndex;
+                            <div class="dash-stat @(isCurrent ? "is-selected" : null)" style="display:block;margin-bottom:.75rem">
+                                <div class="field-row" style="align-items:center">
+                                    @if (isCurrent)
+                                    {
+                                        <span class="badge">@L["Gm.Combat.CurrentTurn"]</span>
+                                    }
+                                    <input class="form-control" @bind="c.Name" @bind:event="oninput" placeholder="@L["Gm.Combat.CombatantName"]" />
+                                    <div>
+                                        <label class="field-label">@L["Gm.Combat.Col.Initiative"]</label>
+                                        <input type="number" class="form-control" @bind="c.Initiative" @bind:event="oninput" />
+                                    </div>
+                                    <button class="btn btn-outline-secondary btn-sm" @onclick="() => RemoveCombatant(c)">@L["Gm.Combat.Remove"]</button>
+                                </div>
+
+                                <div class="field-row" style="align-items:center">
+                                    <span class="dash-label">@L["Gm.Combat.Col.Pv"]: <strong>@c.CurrentPv</strong> / @c.MaxPv</span>
+                                    <input type="number" class="form-control" style="max-width:90px"
+                                           placeholder="@L["Gm.Combat.Amount"]"
+                                           value="@AmountFor(c.Id)" @onchange="e => SetAmount(c.Id, e.Value)" />
+                                    <button class="btn btn-outline-secondary btn-sm" @onclick="() => ApplyDamage(c)">@L["Gm.Combat.Damage"]</button>
+                                    <button class="btn btn-outline-secondary btn-sm" @onclick="() => ApplyHeal(c)">@L["Gm.Combat.Heal"]</button>
+                                    <label class="field-label" style="display:flex;align-items:center;gap:.35rem;cursor:pointer">
+                                        <input type="checkbox" @bind="c.IsDefeated" />
+                                        @L["Gm.Combat.Defeated"]
+                                    </label>
+                                    @if (c.IsDefeated)
+                                    {
+                                        <span class="badge" style="background:var(--danger)">@L["Gm.Combat.Defeated"]</span>
+                                    }
+                                </div>
+
+                                <div class="list-header">
+                                    <label class="field-label">@L["Gm.Combat.Col.Conditions"]</label>
+                                </div>
+                                <div style="display:flex;flex-wrap:wrap;gap:.35rem">
+                                    @foreach (var cond in CombatReference.Conditions)
+                                    {
+                                        var on = c.Conditions.Contains(cond);
+                                        <button class="btn btn-sm @(on ? "btn-primary" : "btn-outline-secondary")"
+                                                @onclick="() => ToggleCondition(c, cond)">
+                                            @ConditionText(cond)
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    }
+
+                    @* ── Add ad-hoc combatant ──────────────────────────── *@
+                    <div class="list-header">
+                        <label class="field-label">@L["Gm.Combat.AddCombatant"]</label>
+                    </div>
+                    <div class="field-row">
+                        <input class="form-control" placeholder="@L["Gm.Combat.CombatantName"]"
+                               @bind="_adhocName" @bind:event="oninput" />
+                        <input type="number" class="form-control" min="1" placeholder="@L["Gm.Combat.MaxPv"]"
+                               @bind="_adhocMaxPv" @bind:event="oninput" />
+                        <button class="btn btn-outline-secondary btn-sm" @onclick="AddCombatant"
+                                disabled="@(string.IsNullOrWhiteSpace(_adhocName))">
+                            @L["Gm.Combat.Add"]
+                        </button>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private List<CombatSessionResponse> _sessions = [];
+    private List<EncounterResponse> _encounters = [];
+    private List<BreadcrumbItem> _breadcrumbs = [];
+    private bool _loading = true;
+    private bool _saving;
+    private string _searchTerm = string.Empty;
+
+    private string _newSessionName = string.Empty;
+    private string _startName = string.Empty;
+    private Guid _encounterToStart = Guid.Empty;
+
+    private Guid? _selectedId;
+    private string _name = string.Empty;
+    private bool _isActive;
+    private CombatState _state = new();
+    private int _pressure;
+    private string _pressureStateKey = string.Empty;
+
+    private string _adhocName = string.Empty;
+    private int _adhocMaxPv = 1;
+
+    // Per-combatant damage/heal amount, keyed by combatant Id.
+    private readonly Dictionary<Guid, int> _pvAmounts = [];
+
+    private List<CombatSessionResponse> FilteredSessions =>
+        _sessions.Where(s => TableFilter.Matches(_searchTerm, s.Name)).ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var campaignsResult = await CampaignService.GetMineAsync();
+        var campaignName = campaignsResult?.Data?.FirstOrDefault(c => c.Id == Id)?.Name;
+        _breadcrumbs =
+        [
+            new BreadcrumbItem(L["Nav.Campaigns"], "/gm/campaigns"),
+            new BreadcrumbItem(campaignName ?? L["Common.UnknownCampaign"], $"/gm/campaigns/{Id}"),
+            new BreadcrumbItem(L["Gm.Combat.Title"], null)
+        ];
+
+        var encountersResult = await EncounterService.GetAllAsync(Id);
+        _encounters = encountersResult?.Data?.ToList() ?? [];
+
+        await LoadAsync();
+        _loading = false;
+    }
+
+    private async Task LoadAsync()
+    {
+        var result = await CombatService.GetAllAsync(Id);
+        _sessions = result?.Data?.ToList() ?? [];
+    }
+
+    private void OnRowKey(KeyboardEventArgs e, CombatSessionResponse s)
+    {
+        if (e.Key == "Enter" || e.Key == " ") SelectSession(s);
+    }
+
+    private void SelectSession(CombatSessionResponse s)
+    {
+        _selectedId = s.Id;
+        _name = s.Name;
+        _isActive = s.IsActive;
+        _state = s.State;
+        _pressure = s.Pressure;
+        _pressureStateKey = s.PressureStateKey;
+        _pvAmounts.Clear();
+        foreach (var c in _state.Combatants) _pvAmounts[c.Id] = 0;
+    }
+
+    private async Task CreateSessionAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_newSessionName))
+        {
+            Toast.Error(L["Gm.Combat.NameRequired"]);
+            return;
+        }
+
+        _saving = true;
+        var result = await CombatService.CreateAsync(Id, new CreateCombatSessionRequest { Name = _newSessionName });
+        if (result?.Data is not null)
+        {
+            Toast.Success(L["Gm.Combat.CreateSuccess"]);
+            _newSessionName = string.Empty;
+            await LoadAsync();
+            var created = _sessions.FirstOrDefault(s => s.Id == result.Data.Id) ?? result.Data;
+            SelectSession(created);
+        }
+        else
+        {
+            Toast.Error(L["Common.Error"]);
+        }
+        _saving = false;
+    }
+
+    private async Task StartFromEncounterAsync()
+    {
+        if (_encounterToStart == Guid.Empty || string.IsNullOrWhiteSpace(_startName)) return;
+
+        // Starting from an encounter REPLACES tracker state server-side. Confirm when the
+        // currently selected tracker already holds combatants.
+        if (_selectedId is not null && _state.Combatants.Count > 0)
+        {
+            var confirmed = await Confirm.AskAsync(
+                L["Gm.Combat.ReplaceConfirm.Title"],
+                L["Gm.Combat.ReplaceConfirm.Message"],
+                L["Gm.Combat.Start"],
+                L["Gm.Combat.Cancel"]);
+            if (!confirmed) return;
+        }
+
+        _saving = true;
+        var result = await CombatService.StartFromEncounterAsync(Id,
+            new StartFromEncounterRequest { Name = _startName, EncounterId = _encounterToStart });
+        if (result?.Data is not null)
+        {
+            Toast.Success(L["Gm.Combat.StartSuccess"]);
+            _startName = string.Empty;
+            _encounterToStart = Guid.Empty;
+            await LoadAsync();
+            var started = _sessions.FirstOrDefault(s => s.Id == result.Data.Id) ?? result.Data;
+            SelectSession(started);
+        }
+        else
+        {
+            Toast.Error(L["Common.Error"]);
+        }
+        _saving = false;
+    }
+
+    // PUTs the whole tracker state. On success, re-selects the server-canonical response
+    // (re-ordered combatants, normalized round/index, server-derived pressure).
+    private async Task PersistAsync(bool showToast)
+    {
+        if (_selectedId is null) return;
+
+        _saving = true;
+        var request = new UpdateCombatStateRequest { Name = _name, IsActive = _isActive, State = _state };
+        var result = await CombatService.UpdateStateAsync(Id, _selectedId.Value, request);
+        if (result?.Data is not null)
+        {
+            if (showToast) Toast.Success(L["Gm.Combat.SaveSuccess"]);
+            // Refresh both the list and the working copy from the canonical response.
+            var saved = result.Data;
+            var idx = _sessions.FindIndex(s => s.Id == saved.Id);
+            if (idx >= 0) _sessions[idx] = saved; else _sessions.Add(saved);
+            SelectSession(saved);
+        }
+        else
+        {
+            Toast.Error(L["Common.Error"]);
+        }
+        _saving = false;
+    }
+
+    private async Task DeleteAsync(Guid id, string name)
+    {
+        var confirmed = await Confirm.AskAsync(
+            L["Gm.Combat.DeleteConfirm.Title"],
+            L["Gm.Combat.DeleteConfirm.Message", name],
+            L["Gm.Combat.Delete"],
+            L["Gm.Combat.Cancel"]);
+        if (!confirmed) return;
+
+        var result = await CombatService.DeleteAsync(Id, id);
+        if (result?.Success == true)
+        {
+            Toast.Success(L["Gm.Combat.DeleteSuccess"]);
+            _selectedId = null;
+            await LoadAsync();
+        }
+        else
+        {
+            Toast.Error(L["Common.Error"]);
+        }
+    }
+
+    // ── Turn cursor (mirrors CombatOrder semantics; server re-normalizes on save) ──────
+    private Task NextTurnAsync()
+    {
+        var count = _state.Combatants.Count;
+        var (round, index) = NextTurn(_state.Round, _state.CurrentIndex, count);
+        _state.Round = round;
+        _state.CurrentIndex = index;
+        return PersistAsync(false);
+    }
+
+    private Task PreviousTurnAsync()
+    {
+        var count = _state.Combatants.Count;
+        var (round, index) = PrevTurn(_state.Round, _state.CurrentIndex, count);
+        _state.Round = round;
+        _state.CurrentIndex = index;
+        return PersistAsync(false);
+    }
+
+    private static (int Round, int Index) NextTurn(int round, int index, int count)
+    {
+        if (count <= 0) return (round, 0);
+        if (index >= count - 1) return (round + 1, 0);
+        return (round, index + 1);
+    }
+
+    private static (int Round, int Index) PrevTurn(int round, int index, int count)
+    {
+        if (count <= 0) return (round, 0);
+        if (index > 0) return (round, index - 1);
+        if (round <= 1) return (1, 0);
+        return (round - 1, count - 1);
+    }
+
+    // ── Combatant editing (local; persisted via Save) ─────────────────────────────────
+    private int AmountFor(Guid id) => _pvAmounts.TryGetValue(id, out var v) ? v : 0;
+
+    private void SetAmount(Guid id, object? value)
+    {
+        _pvAmounts[id] = int.TryParse(value?.ToString(), out var v) ? v : 0;
+    }
+
+    private void ApplyDamage(Combatant c)
+    {
+        var amount = AmountFor(c.Id);
+        c.CurrentPv = Math.Clamp(c.CurrentPv - amount, 0, c.MaxPv);
+    }
+
+    private void ApplyHeal(Combatant c)
+    {
+        var amount = AmountFor(c.Id);
+        c.CurrentPv = Math.Clamp(c.CurrentPv + amount, 0, c.MaxPv);
+    }
+
+    private void ToggleCondition(Combatant c, string condition)
+    {
+        if (!c.Conditions.Remove(condition)) c.Conditions.Add(condition);
+    }
+
+    private void RemoveCombatant(Combatant c)
+    {
+        _state.Combatants.Remove(c);
+        _pvAmounts.Remove(c.Id);
+        if (_state.CurrentIndex >= _state.Combatants.Count)
+            _state.CurrentIndex = Math.Max(0, _state.Combatants.Count - 1);
+    }
+
+    private void AddCombatant()
+    {
+        if (string.IsNullOrWhiteSpace(_adhocName)) return;
+        var max = Math.Max(1, _adhocMaxPv);
+        var combatant = new Combatant
+        {
+            Id = Guid.NewGuid(),
+            Name = _adhocName,
+            Kind = "Adhoc",
+            Initiative = 0,
+            MaxPv = max,
+            CurrentPv = max,
+        };
+        _state.Combatants.Add(combatant);
+        _pvAmounts[combatant.Id] = 0;
+        _adhocName = string.Empty;
+        _adhocMaxPv = 1;
+    }
+
+    // ── Pressão round-trip: reuses the dashboard dungeon PUT so the whole floor state is
+    // preserved. Read current dungeon → add N → PUT → reload the combat session so the
+    // server-derived Pressure/PressureStateKey refresh. ───────────────────────────────
+    private async Task AddPressureAsync(int delta)
+    {
+        if (_selectedId is null) return;
+
+        _saving = true;
+        var dashResult = await CampaignService.GetDashboardAsync(Id);
+        var dash = dashResult?.Data?.Dungeon;
+        if (dash is null)
+        {
+            Toast.Error(L["Common.Error"]);
+            _saving = false;
+            return;
+        }
+
+        var request = new Ruptura.Shared.Campaigns.UpdateDungeonStateRequest
+        {
+            CurrentFloor = dash.CurrentFloor,
+            FloorName = dash.FloorName,
+            FloorState = dash.FloorState,
+            // long arithmetic so a large delta can't overflow before the server clamp.
+            Pressure = (int)Math.Clamp((long)dash.Pressure + delta, 0L, 100L)
+        };
+        var updateResult = await CampaignService.UpdateDungeonAsync(Id, request);
+        if (updateResult?.Success == true)
+        {
+            Toast.Success(L["Gm.Combat.Pressure.UpdateSuccess"]);
+            // Reload the session so the server-derived pressure fields refresh.
+            var refreshed = await CombatService.GetByIdAsync(Id, _selectedId.Value);
+            if (refreshed?.Data is not null)
+            {
+                _pressure = refreshed.Data.Pressure;
+                _pressureStateKey = refreshed.Data.PressureStateKey;
+            }
+        }
+        else
+        {
+            Toast.Error(L["Common.Error"]);
+        }
+        _saving = false;
+    }
+
+    private string ConditionText(string key) => Lookup("Gm.Combat.Condition", key);
+
+    private string PressureStateText(string key)
+    {
+        if (string.IsNullOrEmpty(key)) return "—";
+        var localized = L[$"Dashboard.Pressure.{key}"];
+        return localized.ResourceNotFound ? key : localized.Value;
+    }
+
+    private string Lookup(string prefix, string key)
+    {
+        if (string.IsNullOrEmpty(key)) return "—";
+        var localized = L[$"{prefix}.{key}"];
+        return localized.ResourceNotFound ? key : localized.Value;
+    }
+
+    // Reuses the dashboard's pressure color convention.
+    private static string PressureColor(string stateKey) => stateKey switch
+    {
+        "Colapso" => "var(--danger)",
+        "Critico" => "var(--danger)",
+        "Agravado" => "var(--accent)",
+        _ => "var(--success)"
+    };
+}

@@ -44,6 +44,7 @@ builder.Services.AddScoped<ICampaignClientService, CampaignClientService>();
 builder.Services.AddScoped<ICatalogClientService, CatalogClientService>();
 builder.Services.AddScoped<IBestiaryClientService, BestiaryClientService>();
 builder.Services.AddScoped<IEncounterClientService, EncounterClientService>();
+builder.Services.AddScoped<ICombatClientService, CombatClientService>();
 builder.Services.AddScoped<IRewardClientService, RewardClientService>();
 builder.Services.AddScoped<ICharacterSheetClientService, CharacterSheetClientService>();
 builder.Services.AddScoped<IGuildClientService, GuildClientService>();
