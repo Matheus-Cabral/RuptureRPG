@@ -28,6 +28,7 @@
     else
     {
         @* ── Session creation + start-from-encounter toolbar ─────────── *@
+        <div class="bestiary-form">
         <div class="section-header">
             <span class="section-title">@L["Gm.Combat.NewSession"]</span>
         </div>
@@ -58,6 +59,7 @@
                 @L["Gm.Combat.Start"]
             </button>
         </div>
+        </div>@* /bestiary-form toolbar *@
 
         <div class="master-detail">
             <div class="master-detail-list">
@@ -138,6 +140,7 @@
                         </div>
                     </div>
 
+                    <div class="bestiary-form">
                     <label class="field-label" style="display:flex;align-items:center;gap:.5rem;cursor:pointer">
                         <input type="checkbox" @bind="_isActive" />
                         @L["Gm.Combat.Active.Toggle"]
@@ -190,7 +193,10 @@
                         {
                             var c = _state.Combatants[i];
                             var isCurrent = i == _state.CurrentIndex;
-                            <div class="dash-stat @(isCurrent ? "is-selected" : null)" style="display:block;margin-bottom:.75rem">
+                            var rowStyle = isCurrent
+                                ? "display:block;margin-bottom:.75rem;border-left:3px solid var(--accent);background:var(--surface-2, rgba(127,127,127,0.10))"
+                                : "display:block;margin-bottom:.75rem";
+                            <div class="dash-stat" style="@rowStyle">
                                 <div class="field-row" style="align-items:center">
                                     @if (isCurrent)
                                     {
@@ -211,10 +217,6 @@
                                            value="@AmountFor(c.Id)" @onchange="e => SetAmount(c.Id, e.Value)" />
                                     <button class="btn btn-outline-secondary btn-sm" @onclick="() => ApplyDamage(c)">@L["Gm.Combat.Damage"]</button>
                                     <button class="btn btn-outline-secondary btn-sm" @onclick="() => ApplyHeal(c)">@L["Gm.Combat.Heal"]</button>
-                                    <label class="field-label" style="display:flex;align-items:center;gap:.35rem;cursor:pointer">
-                                        <input type="checkbox" @bind="c.IsDefeated" />
-                                        @L["Gm.Combat.Defeated"]
-                                    </label>
                                     @if (c.IsDefeated)
                                     {
                                         <span class="badge" style="background:var(--danger)">@L["Gm.Combat.Defeated"]</span>
@@ -251,6 +253,7 @@
                                 disabled="@(string.IsNullOrWhiteSpace(_adhocName))">
                             @L["Gm.Combat.Add"]
                         </button>
+                    </div>
                     </div>
                 }
             </div>
