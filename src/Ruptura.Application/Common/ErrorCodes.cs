@@ -110,4 +110,12 @@ public static class ErrorCodes
         public const string DifficultyInvalid = "Encounter.DifficultyInvalid";
         public const string DurationInvalid = "Encounter.DurationInvalid";
     }
+
+    public static class Reward
+    {
+        public const string NotFound = "Reward.NotFound";
+        public const string NameRequired = "Reward.NameRequired";
+        public const string CategoryInvalid = "Reward.CategoryInvalid";
+        public const string EncounterInvalid = "Reward.EncounterInvalid";
+    }
 }

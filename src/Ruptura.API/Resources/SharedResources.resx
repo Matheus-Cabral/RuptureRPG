@@ -136,4 +136,10 @@
   <data name="Encounter.ObjectiveInvalid"><value>The encounter's objective is not valid.</value></data>
   <data name="Encounter.DifficultyInvalid"><value>The encounter's desired difficulty is not valid.</value></data>
   <data name="Encounter.DurationInvalid"><value>The encounter's duration is not valid.</value></data>
+
+  <!-- Reward -->
+  <data name="Reward.NotFound"><value>Reward not found.</value></data>
+  <data name="Reward.NameRequired"><value>A reward must have a name.</value></data>
+  <data name="Reward.CategoryInvalid"><value>The strategic asset's category is not valid.</value></data>
+  <data name="Reward.EncounterInvalid"><value>The linked encounter is not valid.</value></data>
 </root>

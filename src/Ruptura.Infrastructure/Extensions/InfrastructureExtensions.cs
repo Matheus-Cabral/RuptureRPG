@@ -75,6 +75,7 @@ public static class InfrastructureExtensions
         services.AddScoped<INpcService, NpcService>();
         services.AddScoped<IEncounterService, EncounterService>();
         services.AddSingleton<IEncounterCalculator, EncounterCalculator>();  // pure & stateless
+        services.AddScoped<IRewardService, RewardService>();
 
         // Repositories
         services.AddScoped<IInviteCodeRepository, InviteCodeRepository>();
@@ -93,6 +94,7 @@ public static class InfrastructureExtensions
         services.AddScoped<ICreatureRepository, CreatureRepository>();
         services.AddScoped<INpcRepository, NpcRepository>();
         services.AddScoped<IEncounterRepository, EncounterRepository>();
+        services.AddScoped<IRewardRepository, RewardRepository>();
 
         // Validators
         services.AddScoped<IValidator<LoginRequest>, LoginRequestValidator>();
