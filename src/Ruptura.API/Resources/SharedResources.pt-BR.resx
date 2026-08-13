@@ -142,4 +142,10 @@
   <data name="Reward.NameRequired"><value>Uma recompensa deve ter um nome.</value></data>
   <data name="Reward.CategoryInvalid"><value>A categoria do ativo estratégico não é válida.</value></data>
   <data name="Reward.EncounterInvalid"><value>O encontro vinculado não é válido.</value></data>
+
+  <!-- Combat -->
+  <data name="Combat.NotFound"><value>Sessão de combate não encontrada.</value></data>
+  <data name="Combat.NameRequired"><value>Uma sessão de combate deve ter um nome.</value></data>
+  <data name="Combat.ConditionInvalid"><value>Uma condição de combatente não é válida.</value></data>
+  <data name="Combat.EncounterInvalid"><value>O encontro vinculado não é válido.</value></data>
 </root>

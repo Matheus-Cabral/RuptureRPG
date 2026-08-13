@@ -118,4 +118,12 @@ public static class ErrorCodes
         public const string CategoryInvalid = "Reward.CategoryInvalid";
         public const string EncounterInvalid = "Reward.EncounterInvalid";
     }
+
+    public static class Combat
+    {
+        public const string NotFound = "Combat.NotFound";
+        public const string NameRequired = "Combat.NameRequired";
+        public const string ConditionInvalid = "Combat.ConditionInvalid";
+        public const string EncounterInvalid = "Combat.EncounterInvalid";
+    }
 }
