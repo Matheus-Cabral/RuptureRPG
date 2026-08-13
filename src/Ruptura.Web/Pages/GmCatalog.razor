@@ -108,9 +108,62 @@
     <div class="section-header" style="margin-top:2rem">
         <span class="section-title">@(_editingId is null ? L["Gm.Catalog.Create"] : L["Gm.Catalog.Edit"])</span>
     </div>
-    <div style="display:flex;flex-direction:column;gap:.75rem;max-width:480px">
+    <div class="bestiary-form" style="display:flex;flex-direction:column;gap:.75rem;max-width:480px">
         <input class="form-control" placeholder="@L["Gm.Catalog.NamePlaceholder"]" @bind="_formName" @bind:event="oninput" />
-        <textarea class="form-control" rows="4" placeholder="@L["Gm.Catalog.DataJsonPlaceholder"]" @bind="_formDataJson" @bind:event="oninput"></textarea>
+
+        @if (!_advancedMode)
+        {
+            @foreach (var field in CatalogSchema.FieldsFor(FormType))
+            {
+                <div class="field-row">
+                    <label class="field-label">@L[field.LabelKey]</label>
+                    @switch (field.Kind)
+                    {
+                        case CatalogFieldKind.TextArea:
+                            <textarea class="form-control" rows="2"
+                                      value="@_formData.GetString(field.Key)"
+                                      @onchange="e => _formData.SetString(field.Key, e.Value?.ToString())"></textarea>
+                            break;
+                        case CatalogFieldKind.Number:
+                            <input class="form-control" type="number"
+                                   value="@(_formData.GetNumber(field.Key)?.ToString(System.Globalization.CultureInfo.InvariantCulture))"
+                                   @onchange="e => _formData.SetNumber(field.Key, ParseNum(e.Value?.ToString()))" />
+                            break;
+                        case CatalogFieldKind.Bool:
+                            <input class="form-check-input" type="checkbox"
+                                   checked="@_formData.GetBool(field.Key)"
+                                   @onchange="e => _formData.SetBool(field.Key, (bool)(e.Value ?? false))" />
+                            break;
+                        default:
+                            <input class="form-control" type="text"
+                                   value="@_formData.GetString(field.Key)"
+                                   @onchange="e => _formData.SetString(field.Key, e.Value?.ToString())" />
+                            break;
+                    }
+                </div>
+            }
+            @if (CatalogSchema.FieldsFor(FormType).Count == 0)
+            {
+                <p class="dash-help">@L["Gm.Catalog.NoSchemaFields"]</p>
+            }
+        }
+
+        <div class="field-row">
+            <label class="field-label">
+                <input type="checkbox" checked="@_advancedMode" @onchange="ToggleAdvanced" />
+                @L["Gm.Catalog.AdvancedToggle"]
+            </label>
+        </div>
+        @if (_advancedMode)
+        {
+            <p class="dash-help">@L["Gm.Catalog.AdvancedHelp"]</p>
+            <textarea class="form-control" rows="6" @bind="_advancedJson" @bind:event="oninput"></textarea>
+            @if (_advancedInvalid)
+            {
+                <div class="dash-alert" role="alert">@L["Gm.Catalog.AdvancedInvalid"]</div>
+            }
+        }
+
         <div style="display:flex;gap:.5rem">
             <button class="btn btn-primary btn-sm" @onclick="SaveAsync" disabled="@(_saving || string.IsNullOrWhiteSpace(_formName))">
                 @if (_saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
@@ -139,10 +192,19 @@
     private bool _saving;
     private Guid? _editingId;
     private string _formName = string.Empty;
-    private string _formDataJson = "{}";
+    private CatalogEntryData _formData = CatalogEntryData.Parse("{}");
+    private bool _advancedMode;
+    private string _advancedJson = "{}";
+    private bool _advancedInvalid;
     private string? _errorMessage;
     private string _searchTerm = string.Empty;
     private CatalogEntryResponse? _selected;
+
+    // The type whose schema drives the editor form is always the selected type.
+    private string FormType => _selectedType;
+
+    private static double? ParseNum(string? s) =>
+        double.TryParse(s, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var v) ? v : null;
 
     private List<CatalogEntryResponse> FilteredEntries =>
         _entries.Where(e => TableFilter.Matches(_searchTerm, e.Name, e.DataJson)).ToList();
@@ -185,32 +247,68 @@
     {
         _editingId = entry.Id;
         _formName = entry.Name;
-        _formDataJson = entry.DataJson;
+        _formData = CatalogEntryData.Parse(entry.DataJson);
+        _advancedJson = _formData.ToJson(indented: true);
+        _advancedMode = false;
+        _advancedInvalid = false;
     }
 
     private void CancelEdit()
     {
         _editingId = null;
         _formName = string.Empty;
-        _formDataJson = "{}";
+        _formData = CatalogEntryData.Parse("{}");
+        _advancedJson = "{}";
+        _advancedMode = false;
+        _advancedInvalid = false;
+    }
+
+    private void ToggleAdvanced(ChangeEventArgs e)
+    {
+        var on = (bool)(e.Value ?? false);
+        if (on)
+        {
+            // entering advanced: show the full working JSON
+            _advancedJson = _formData.ToJson(indented: true);
+            _advancedInvalid = false;
+        }
+        else
+        {
+            // leaving advanced: adopt edited JSON if valid, else stay in advanced
+            if (CatalogEntryData.TryParse(_advancedJson, out var parsed))
+            {
+                _formData = parsed;
+                _advancedInvalid = false;
+            }
+            else { _advancedInvalid = true; return; } // keep advanced open on invalid
+        }
+        _advancedMode = on;
     }
 
     private async Task SaveAsync()
     {
         if (string.IsNullOrWhiteSpace(_formName)) return;
 
+        if (_advancedMode && !CatalogEntryData.TryParse(_advancedJson, out _formData))
+        {
+            _advancedInvalid = true;
+            Toast.Error(L["Gm.Catalog.AdvancedInvalid"]);
+            return;
+        }
+
         _saving = true;
         _errorMessage = null;
         var wasCreate = _editingId is null;
+        var dataJson = _formData.ToJson();
 
         var result = wasCreate
             ? await CatalogService.CreateAsync(new CreateCatalogEntryRequest
             {
-                CampaignId = CampaignId, Type = _selectedType, Name = _formName, DataJson = _formDataJson
+                CampaignId = CampaignId, Type = _selectedType, Name = _formName, DataJson = dataJson
             })
             : await CatalogService.UpdateAsync(_editingId!.Value, new UpdateCatalogEntryRequest
             {
-                Name = _formName, DataJson = _formDataJson
+                Name = _formName, DataJson = dataJson
             });
 
         if (result?.Data is not null)
