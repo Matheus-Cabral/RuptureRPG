@@ -554,7 +554,9 @@
             FloorName = dash.FloorName,
             FloorState = dash.FloorState,
             // long arithmetic so a large delta can't overflow before the server clamp.
-            Pressure = (int)Math.Clamp((long)dash.Pressure + delta, 0L, 100L)
+            Pressure = (int)Math.Clamp((long)dash.Pressure + delta, 0L, 100L),
+            // Echo the live floor pointer so this whole-state PUT doesn't clear it (D2).
+            CurrentFloorId = dash.CurrentFloorId
         };
         var updateResult = await CampaignService.UpdateDungeonAsync(Id, request);
         if (updateResult?.Success == true)

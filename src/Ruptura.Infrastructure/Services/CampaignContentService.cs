@@ -373,6 +373,12 @@ public class CampaignContentService(
         FloorData? data;
         try { data = JsonSerializer.Deserialize<FloorData>(json, JsonOpts); }
         catch (JsonException) { data = null; }
-        return data ?? new FloorData();
+        data ??= new FloorData();
+        // Coalesce nullable collections: a hand-edited/corrupted DataJson can carry an explicit
+        // "linkedEncounterIds": null that survives deserialization and would NRE in MapFloor.
+        data.LinkedEncounterIds ??= [];
+        data.LinkedRewardIds ??= [];
+        data.SecondaryObjectives ??= [];
+        return data;
     }
 }

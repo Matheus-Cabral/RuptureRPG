@@ -384,4 +384,43 @@ public class CampaignDashboardTests(IntegrationTestFactory factory)
         dashboard.Dungeon.CurrentFloorName.Should().BeNull();
         dashboard.Dungeon.CurrentFloorObjective.Should().BeNull();
     }
+
+    // Locks the C1-class contract: a whole-state dungeon PUT that is not about the floor pointer
+    // (e.g. the combat page's pressure button) must ECHO the live CurrentFloorId, not omit it —
+    // omission is read as null and silently clears the pointer. A well-behaved producer round-trips
+    // the value it just read, so an unrelated subsequent update preserves the floor.
+    [Fact]
+    public async Task PutDungeon_EchoingCurrentFloorId_PreservesPointerAcrossUnrelatedUpdate()
+    {
+        var (client, _, campaign) = await SetupGmWithCampaignAsync();
+        var floorId = await CreateFloorAsync(client, campaign.Id, "Cripta Selada", "Reach the far gate");
+
+        // First point at the floor.
+        await client.PutAsJsonAsync(
+            $"api/campaigns/{campaign.Id}/dashboard/dungeon", new UpdateDungeonStateRequest
+            {
+                CurrentFloor = 2,
+                FloorName = "Segundo Andar",
+                FloorState = "Inexplorado",
+                Pressure = 0,
+                CurrentFloorId = floorId
+            });
+
+        // An unrelated update (bump Pressure) that echoes the SAME CurrentFloorId it read.
+        var bump = await client.PutAsJsonAsync(
+            $"api/campaigns/{campaign.Id}/dashboard/dungeon", new UpdateDungeonStateRequest
+            {
+                CurrentFloor = 2,
+                FloorName = "Segundo Andar",
+                FloorState = "Inexplorado",
+                Pressure = 25,
+                CurrentFloorId = floorId
+            });
+        bump.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var dashboard = await GetDashboardAsync(client, campaign.Id);
+        dashboard.Dungeon.CurrentFloorId.Should().Be(floorId);
+        dashboard.Dungeon.CurrentFloorName.Should().Be("Cripta Selada");
+        dashboard.Dungeon.CurrentFloorObjective.Should().Be("Reach the far gate");
+    }
 }

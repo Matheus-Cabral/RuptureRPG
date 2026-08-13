@@ -392,6 +392,23 @@ public class CampaignContentTests(IntegrationTestFactory factory)
     }
 
     [Fact]
+    public async Task CreateFloor_WithEmptyObjectiveType_Returns400ObjectiveTypeInvalid()
+    {
+        var (client, _, campaign) = await SetupGmWithCampaignAsync();
+        var arcId = await CreateArcAsync(client, campaign.Id);
+        var data = BaseFloorData();
+        data.ObjectiveType = "";
+
+        var response = await client.PostAsJsonAsync(
+            $"api/campaigns/{campaign.Id}/floors",
+            new CreateFloorRequest { ArcId = arcId, Number = 1, Name = "F", Data = data });
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var body = await response.Content.ReadFromJsonAsync<ApiResponse>();
+        body!.Message.Should().Be("Content.ObjectiveTypeInvalid");
+    }
+
+    [Fact]
     public async Task CreateFloor_WithEncounterFromAnotherCampaign_Returns400LinkInvalid()
     {
         var (client, _, campaign) = await SetupGmWithCampaignAsync();

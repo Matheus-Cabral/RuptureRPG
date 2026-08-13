@@ -185,7 +185,6 @@
 
                         <label class="field-label">@L["Gm.Content.ObjectiveType"]</label>
                         <select class="form-select" @bind="_floorData.ObjectiveType">
-                            <option value="">@L["Gm.Content.ObjectiveType.None"]</option>
                             @foreach (var ot in ContentReference.ObjectiveTypes)
                             {
                                 <option value="@ot">@ObjectiveTypeText(ot)</option>
@@ -467,7 +466,7 @@
         _floorName = string.Empty;
         var siblings = FloorsFor(arcId);
         _floorNumber = siblings.Count == 0 ? 1 : siblings.Max(f => f.Number) + 1;
-        _floorData = new FloorData();
+        _floorData = new FloorData { ObjectiveType = ContentReference.ObjectiveTypes[0] };
         _resolvedLinks = [];
     }
 
