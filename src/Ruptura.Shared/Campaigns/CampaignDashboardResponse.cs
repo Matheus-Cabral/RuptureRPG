@@ -20,6 +20,12 @@ public class DungeonStateDto
     public int Pressure { get; set; }
     public string PressureStateKey { get; set; } = string.Empty; // derived
     public decimal PeMultiplier { get; set; }                    // derived
+
+    // GM-5 content tree: soft pointer to the campaign's current Floor entity, resolved to
+    // name/objective at read time. Null when unset or unresolved (Task 4 wires these up).
+    public Guid? CurrentFloorId { get; set; }
+    public string? CurrentFloorName { get; set; }
+    public string? CurrentFloorObjective { get; set; }
 }
 
 public class PartyMemberDto

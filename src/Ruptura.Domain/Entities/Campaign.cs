@@ -11,4 +11,9 @@ public class Campaign
     public string FloorName { get; set; } = string.Empty;
     public string FloorState { get; set; } = "Inexplorado"; // Inexplorado|Explorado|Conquistado|Dominado
     public int Pressure { get; set; }                        // 0..100 (§4.2)
+
+    // Soft pointer to the campaign's current Floor entity (GM-5 content tree). Distinct
+    // from CurrentFloor (the floor NUMBER above). Nullable; no FK constraint — validated
+    // in the service to avoid a Campaign↔Floor cycle.
+    public Guid? CurrentFloorId { get; set; }
 }

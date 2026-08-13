@@ -27,6 +27,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Encounter> Encounters => Set<Encounter>();
     public DbSet<Reward> Rewards => Set<Reward>();
     public DbSet<CombatSession> CombatSessions => Set<CombatSession>();
+    public DbSet<Arc> Arcs => Set<Arc>();
+    public DbSet<Floor> Floors => Set<Floor>();
+    public DbSet<SessionLog> SessionLogs => Set<SessionLog>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
