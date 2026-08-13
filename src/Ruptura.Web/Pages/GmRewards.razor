@@ -1,0 +1,444 @@
+@page "/gm/campaigns/{Id:guid}/rewards"
+@attribute [Authorize(Roles = "GameMaster")]
+@using Microsoft.Extensions.Localization
+@using Ruptura.Web.Resources
+@using Ruptura.Shared.Encounters
+@using Ruptura.Shared.Rewards
+@inject IStringLocalizer<AppStrings> L
+@inject IRewardClientService RewardService
+@inject IEncounterClientService EncounterService
+@inject ICampaignClientService CampaignService
+@inject ToastService Toast
+@inject ConfirmService Confirm
+
+<PageTitle>@L["Gm.Rewards.Title"] — RUPTURA</PageTitle>
+
+<div class="page-content">
+    <Breadcrumbs Items="_breadcrumbs" />
+
+    <div class="page-heading">
+        <h1>@L["Gm.Rewards.Title"]</h1>
+    </div>
+
+    <div class="section-header">
+        <span class="section-title">@L["Gm.Rewards.ListTitle"]</span>
+        <button class="btn btn-primary btn-sm" @onclick="NewReward">@L["Gm.Rewards.New"]</button>
+    </div>
+
+    @if (_loading)
+    {
+        <LoadingIndicator Text="@L["Common.Loading"]" />
+    }
+    else
+    {
+        <div class="master-detail">
+            <div class="master-detail-list">
+                @if (_rewards.Count == 0)
+                {
+                    <div class="ledger-empty">
+                        <p>@L["Gm.Rewards.Empty"]</p>
+                    </div>
+                }
+                else
+                {
+                    <TableSearchBox @bind-Value="_searchTerm" Placeholder="@L["Gm.Rewards.SearchPlaceholder"]" />
+
+                    @if (FilteredRewards.Count == 0)
+                    {
+                        <div class="ledger-empty">
+                            <p>@L["Gm.Rewards.NoResults"]</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="ledger-table-wrap">
+                            <table class="ledger-table stack-mobile">
+                                <thead>
+                                    <tr>
+                                        <th>@L["Gm.Rewards.Col.Name"]</th>
+                                        <th>@L["Gm.Rewards.Col.Granted"]</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var reward in FilteredRewards)
+                                    {
+                                        <tr class="@(_editingId == reward.Id ? "is-selected" : null)"
+                                            tabindex="0" role="button"
+                                            @onclick="() => SelectForEdit(reward)"
+                                            @onkeydown="e => OnRowKey(e, reward)">
+                                            <td data-label="@L["Gm.Rewards.Col.Name"]">@reward.Name</td>
+                                            <td data-label="@L["Gm.Rewards.Col.Granted"]">
+                                                @(reward.Data.IsGranted ? L["Gm.Rewards.GrantedYes"] : L["Gm.Rewards.GrantedNo"])
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                }
+            </div>
+
+            <div class="detail-panel">
+                @if (!_editing)
+                {
+                    <p class="detail-panel-empty">@L["Gm.Rewards.SelectItem"]</p>
+                }
+                else
+                {
+                    <div class="section-header">
+                        <span class="section-title">
+                            @(_editingId is null ? L["Gm.Rewards.New"] : _formName)
+                        </span>
+                    </div>
+
+                    <div class="bestiary-form">
+                        <label class="field-label">@L["Gm.Rewards.Name"]</label>
+                        <input class="form-control" @bind="_formName" @bind:event="oninput" />
+
+                        @* ── Resources ─────────────────────────────────────── *@
+                        <div class="list-header">
+                            <label class="field-label">@L["Gm.Rewards.Resources"]</label>
+                        </div>
+                        <div class="field-row">
+                            <div>
+                                <label class="field-label">@L["Gm.Rewards.Silver"]</label>
+                                <input type="number" class="form-control" min="0" @bind="_form.Silver" @bind:event="oninput" />
+                            </div>
+                            <div>
+                                <label class="field-label">@L["Gm.Rewards.PactCoins"]</label>
+                                <input type="number" class="form-control" min="0" @bind="_form.PactCoins" @bind:event="oninput" />
+                            </div>
+                            <div>
+                                <label class="field-label">@L["Gm.Rewards.Fragments"]</label>
+                                <input type="number" class="form-control" min="0" @bind="_form.Fragments" @bind:event="oninput" />
+                            </div>
+                            <div>
+                                <label class="field-label">@L["Gm.Rewards.Cristais"]</label>
+                                <input type="number" class="form-control" min="0" @bind="_form.Cristais" @bind:event="oninput" />
+                            </div>
+                        </div>
+
+                        @* ── Materials ─────────────────────────────────────── *@
+                        <div class="list-header">
+                            <label class="field-label">@L["Gm.Rewards.Materials"]</label>
+                        </div>
+                        @if (_form.Materials.Count == 0)
+                        {
+                            <p class="detail-panel-empty">@L["Gm.Rewards.NoMaterials"]</p>
+                        }
+                        else
+                        {
+                            @foreach (var mat in _form.Materials)
+                            {
+                                <div class="field-row">
+                                    <input class="form-control" placeholder="@L["Gm.Rewards.MaterialName"]"
+                                           @bind="mat.Name" @bind:event="oninput" />
+                                    <input type="number" class="form-control" min="0" placeholder="@L["Gm.Rewards.Quantity"]"
+                                           @bind="mat.Quantity" @bind:event="oninput" />
+                                    <button class="btn btn-outline-secondary btn-sm" @onclick="() => _form.Materials.Remove(mat)">@L["Gm.Rewards.Remove"]</button>
+                                </div>
+                            }
+                        }
+                        <div class="field-row">
+                            <button class="btn btn-outline-secondary btn-sm" @onclick="AddMaterial">@L["Gm.Rewards.AddMaterial"]</button>
+                        </div>
+
+                        @* ── Strategic assets ──────────────────────────────── *@
+                        <div class="list-header">
+                            <label class="field-label">@L["Gm.Rewards.StrategicAssets"]</label>
+                        </div>
+                        @if (_form.StrategicAssets.Count == 0)
+                        {
+                            <p class="detail-panel-empty">@L["Gm.Rewards.NoAssets"]</p>
+                        }
+                        else
+                        {
+                            @foreach (var asset in _form.StrategicAssets)
+                            {
+                                <div class="field-row">
+                                    <input class="form-control" placeholder="@L["Gm.Rewards.AssetName"]"
+                                           @bind="asset.Name" @bind:event="oninput" />
+                                    <select class="form-select" @bind="asset.Category">
+                                        @foreach (var cat in RewardReference.Categories)
+                                        {
+                                            <option value="@cat">@CategoryText(cat)</option>
+                                        }
+                                    </select>
+                                    <select class="form-select" @bind="asset.Ve">
+                                        @foreach (var ve in VeRange)
+                                        {
+                                            <option value="@ve">@ve</option>
+                                        }
+                                    </select>
+                                    <input class="form-control" placeholder="@L["Gm.Rewards.Notes"]"
+                                           @bind="asset.Notes" @bind:event="oninput" />
+                                    <button class="btn btn-outline-secondary btn-sm" @onclick="() => _form.StrategicAssets.Remove(asset)">@L["Gm.Rewards.Remove"]</button>
+                                </div>
+                            }
+                        }
+                        <div class="field-row">
+                            <button class="btn btn-outline-secondary btn-sm" @onclick="AddAsset">@L["Gm.Rewards.AddAsset"]</button>
+                        </div>
+
+                        @* ── Knowledge ─────────────────────────────────────── *@
+                        <div class="list-header">
+                            <label class="field-label">@L["Gm.Rewards.Knowledge"]</label>
+                        </div>
+                        @if (_form.Knowledge.Count == 0)
+                        {
+                            <p class="detail-panel-empty">@L["Gm.Rewards.NoKnowledge"]</p>
+                        }
+                        else
+                        {
+                            @for (var i = 0; i < _form.Knowledge.Count; i++)
+                            {
+                                var index = i;
+                                <div class="field-row">
+                                    <input class="form-control" placeholder="@L["Gm.Rewards.KnowledgePlaceholder"]"
+                                           value="@_form.Knowledge[index]"
+                                           @oninput="e => _form.Knowledge[index] = e.Value?.ToString() ?? string.Empty" />
+                                    <button class="btn btn-outline-secondary btn-sm" @onclick="() => _form.Knowledge.RemoveAt(index)">@L["Gm.Rewards.Remove"]</button>
+                                </div>
+                            }
+                        }
+                        <div class="field-row">
+                            <button class="btn btn-outline-secondary btn-sm" @onclick="() => _form.Knowledge.Add(string.Empty)">@L["Gm.Rewards.AddKnowledge"]</button>
+                        </div>
+
+                        @* ── Items ─────────────────────────────────────────── *@
+                        <div class="list-header">
+                            <label class="field-label">@L["Gm.Rewards.Items"]</label>
+                        </div>
+                        @if (_form.Items.Count == 0)
+                        {
+                            <p class="detail-panel-empty">@L["Gm.Rewards.NoItems"]</p>
+                        }
+                        else
+                        {
+                            @for (var i = 0; i < _form.Items.Count; i++)
+                            {
+                                var index = i;
+                                <div class="field-row">
+                                    <input class="form-control" placeholder="@L["Gm.Rewards.ItemPlaceholder"]"
+                                           value="@_form.Items[index]"
+                                           @oninput="e => _form.Items[index] = e.Value?.ToString() ?? string.Empty" />
+                                    <button class="btn btn-outline-secondary btn-sm" @onclick="() => _form.Items.RemoveAt(index)">@L["Gm.Rewards.Remove"]</button>
+                                </div>
+                            }
+                        }
+                        <div class="field-row">
+                            <button class="btn btn-outline-secondary btn-sm" @onclick="() => _form.Items.Add(string.Empty)">@L["Gm.Rewards.AddItem"]</button>
+                        </div>
+
+                        @* ── Link + floor ──────────────────────────────────── *@
+                        <div class="field-row">
+                            <div>
+                                <label class="field-label">@L["Gm.Rewards.Link"]</label>
+                                <select class="form-select" @bind="EncounterSelection">
+                                    <option value="@Guid.Empty">@L["Gm.Rewards.NoEncounter"]</option>
+                                    @foreach (var enc in _encounters)
+                                    {
+                                        <option value="@enc.Id">@enc.Name</option>
+                                    }
+                                </select>
+                            </div>
+                            <div>
+                                <label class="field-label">@L["Gm.Rewards.Floor"]</label>
+                                <input type="number" class="form-control" min="1" @bind="_form.Floor" @bind:event="oninput" />
+                            </div>
+                        </div>
+
+                        @* ── Notes ─────────────────────────────────────────── *@
+                        <label class="field-label">@L["Gm.Rewards.Notes"]</label>
+                        <textarea class="form-control" rows="3" @bind="_form.Notes" @bind:event="oninput"></textarea>
+
+                        <label class="field-label" style="display:flex;align-items:center;gap:.5rem;cursor:pointer">
+                            <input type="checkbox" @bind="_form.IsGranted" />
+                            @L["Gm.Rewards.IsGranted"]
+                        </label>
+
+                        @* ── Actions ───────────────────────────────────────── *@
+                        <div class="form-actions">
+                            <button class="btn btn-primary btn-sm" @onclick="SaveAsync" disabled="@(_saving || string.IsNullOrWhiteSpace(_formName))">
+                                @if (_saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                                @(_editingId is null ? L["Gm.Rewards.Create"] : L["Gm.Rewards.Save"])
+                            </button>
+                            @if (_editingId is not null)
+                            {
+                                <button class="btn btn-outline-secondary btn-sm" @onclick="() => DeleteAsync(_editingId!.Value, _formName)">@L["Gm.Rewards.Delete"]</button>
+                            }
+                            <button class="btn btn-outline-secondary btn-sm" @onclick="CancelEdit">@L["Gm.Rewards.Cancel"]</button>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private List<RewardResponse> _rewards = [];
+    private List<EncounterResponse> _encounters = [];
+    private List<BreadcrumbItem> _breadcrumbs = [];
+    private bool _loading = true;
+    private bool _saving;
+    private string _searchTerm = string.Empty;
+
+    private bool _editing;
+    private Guid? _editingId;
+    private string _formName = string.Empty;
+    private RewardData _form = new();
+
+    private static readonly int[] VeRange = [1, 2, 3, 4, 5];
+
+    // Select-friendly view over the nullable EncounterId: Guid.Empty represents "(none)".
+    private Guid EncounterSelection
+    {
+        get => _form.EncounterId ?? Guid.Empty;
+        set => _form.EncounterId = value == Guid.Empty ? null : value;
+    }
+
+    private List<RewardResponse> FilteredRewards =>
+        _rewards.Where(r => TableFilter.Matches(_searchTerm,
+            r.Name,
+            r.EncounterName ?? string.Empty)).ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var campaignsResult = await CampaignService.GetMineAsync();
+        var campaignName = campaignsResult?.Data?.FirstOrDefault(c => c.Id == Id)?.Name;
+        _breadcrumbs =
+        [
+            new BreadcrumbItem(L["Nav.Campaigns"], "/gm/campaigns"),
+            new BreadcrumbItem(campaignName ?? L["Common.UnknownCampaign"], $"/gm/campaigns/{Id}"),
+            new BreadcrumbItem(L["Gm.Rewards.Title"], null)
+        ];
+
+        var encountersResult = await EncounterService.GetAllAsync(Id);
+        _encounters = encountersResult?.Data?.ToList() ?? [];
+
+        await LoadAsync();
+        _loading = false;
+    }
+
+    private async Task LoadAsync()
+    {
+        var result = await RewardService.GetAllAsync(Id);
+        _rewards = result?.Data?.ToList() ?? [];
+    }
+
+    private void OnRowKey(KeyboardEventArgs e, RewardResponse reward)
+    {
+        if (e.Key == "Enter" || e.Key == " ") SelectForEdit(reward);
+    }
+
+    private void NewReward()
+    {
+        _editing = true;
+        _editingId = null;
+        _formName = string.Empty;
+        _form = new RewardData();
+    }
+
+    private void SelectForEdit(RewardResponse reward)
+    {
+        _editing = true;
+        _editingId = reward.Id;
+        _formName = reward.Name;
+        _form = Clone(reward.Data);
+    }
+
+    private void CancelEdit()
+    {
+        _editing = false;
+        _editingId = null;
+        _formName = string.Empty;
+        _form = new RewardData();
+    }
+
+    private void AddMaterial() => _form.Materials.Add(new RewardMaterial());
+
+    private void AddAsset() =>
+        _form.StrategicAssets.Add(new RewardAsset { Category = RewardReference.Categories[0], Ve = 1 });
+
+    private async Task SaveAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_formName))
+        {
+            Toast.Error(L["Gm.Rewards.NameRequired"]);
+            return;
+        }
+
+        _saving = true;
+        var wasCreate = _editingId is null;
+
+        var result = wasCreate
+            ? await RewardService.CreateAsync(Id, new CreateRewardRequest { Name = _formName, Data = _form })
+            : await RewardService.UpdateAsync(Id, _editingId!.Value, new UpdateRewardRequest { Name = _formName, Data = _form });
+
+        if (result?.Data is not null)
+        {
+            Toast.Success(wasCreate ? L["Gm.Rewards.CreateSuccess"] : L["Gm.Rewards.SaveSuccess"]);
+            var saved = result.Data;
+            await LoadAsync();
+            SelectForEdit(_rewards.FirstOrDefault(r => r.Id == saved.Id) ?? saved);
+        }
+        else
+        {
+            Toast.Error(L["Common.Error"]);
+        }
+
+        _saving = false;
+    }
+
+    private async Task DeleteAsync(Guid id, string name)
+    {
+        var confirmed = await Confirm.AskAsync(
+            L["Gm.Rewards.DeleteConfirm.Title"],
+            L["Gm.Rewards.DeleteConfirm.Message", name],
+            L["Gm.Rewards.Delete"],
+            L["Gm.Rewards.Cancel"]);
+        if (!confirmed) return;
+
+        var result = await RewardService.DeleteAsync(Id, id);
+        if (result?.Success == true)
+        {
+            Toast.Success(L["Gm.Rewards.DeleteSuccess"]);
+            CancelEdit();
+            await LoadAsync();
+        }
+        else
+        {
+            Toast.Error(L["Common.Error"]);
+        }
+    }
+
+    private string CategoryText(string key) => Lookup("Gm.Rewards.Category", key);
+
+    private string Lookup(string prefix, string key)
+    {
+        if (string.IsNullOrEmpty(key)) return "—";
+        var localized = L[$"{prefix}.{key}"];
+        return localized.ResourceNotFound ? key : localized.Value;
+    }
+
+    // Deep copy so edits in the form never mutate the cached response backing the list.
+    private static RewardData Clone(RewardData d) => new()
+    {
+        Silver = d.Silver,
+        PactCoins = d.PactCoins,
+        Fragments = d.Fragments,
+        Cristais = d.Cristais,
+        Materials = d.Materials.Select(m => new RewardMaterial { Name = m.Name, Quantity = m.Quantity }).ToList(),
+        StrategicAssets = d.StrategicAssets.Select(a => new RewardAsset { Name = a.Name, Category = a.Category, Ve = a.Ve, Notes = a.Notes }).ToList(),
+        Knowledge = [.. d.Knowledge],
+        Items = [.. d.Items],
+        Notes = d.Notes,
+        EncounterId = d.EncounterId,
+        Floor = d.Floor,
+        IsGranted = d.IsGranted,
+    };
+}
