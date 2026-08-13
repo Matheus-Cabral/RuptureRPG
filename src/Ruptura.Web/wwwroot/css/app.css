@@ -1384,6 +1384,11 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 400; color: var(--te
     text-transform: uppercase;
     color: var(--text-muted);
 }
+
+.dash-help {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
 .dash-stat {
     display: flex;
     flex-direction: column;
