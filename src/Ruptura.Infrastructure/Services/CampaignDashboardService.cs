@@ -1,8 +1,10 @@
+using System.Text.Json;
 using Ruptura.Application.Common;
 using Ruptura.Application.Interfaces;
 using Ruptura.Domain.Entities;
 using Ruptura.Shared.Campaigns;
 using Ruptura.Shared.CharacterSheets;
+using Ruptura.Shared.Content;
 using Ruptura.Shared.Notifications;
 
 namespace Ruptura.Infrastructure.Services;
@@ -12,8 +14,11 @@ public class CampaignDashboardService(
     ICharacterSheetService characterSheetService,
     IGuildSheetRepository guildRepo,
     IGuildSheetService guildService,
-    INotificationService notificationService) : ICampaignDashboardService
+    INotificationService notificationService,
+    IFloorRepository floorRepo) : ICampaignDashboardService
 {
+    private static readonly JsonSerializerOptions JsonOpts = new(JsonSerializerDefaults.Web);
+
     public async Task<Result<CampaignDashboardResponse>> GetAsync(
         Guid gameMasterId, Guid campaignId, CancellationToken ct = default)
     {
@@ -34,6 +39,20 @@ public class CampaignDashboardService(
         if (!DungeonFloorStates.All.Contains(request.FloorState))
             return Result.Failure<CampaignDashboardResponse>(ErrorCodes.Campaign.FloorStateInvalid);
 
+        // Optional current-floor pointer. A null request clears it; a non-null id must reference a
+        // floor in THIS campaign — a foreign/missing floor is rejected (DECISION D2).
+        if (request.CurrentFloorId is { } floorId)
+        {
+            var floor = await floorRepo.GetByIdAsync(floorId, ct);
+            if (floor is null || floor.CampaignId != campaignId)
+                return Result.Failure<CampaignDashboardResponse>(ErrorCodes.Campaign.CurrentFloorInvalid);
+            campaign.CurrentFloorId = floorId;
+        }
+        else
+        {
+            campaign.CurrentFloorId = null;
+        }
+
         campaign.CurrentFloor = Math.Max(1, request.CurrentFloor);
         var floorName = request.FloorName ?? string.Empty;
         campaign.FloorName = floorName.Length > 120 ? floorName[..120] : floorName;
@@ -50,6 +69,22 @@ public class CampaignDashboardService(
         Campaign campaign, Guid gameMasterId, CancellationToken ct)
     {
         var (stateKey, mult) = DungeonPressure.StateFor(campaign.Pressure);
+
+        // Current-floor pointer — resolve-if-present. A since-deleted or foreign floor degrades to
+        // null (all three fields) rather than throwing. One lookup only.
+        Guid? currentFloorId = null;
+        string? currentFloorName = null;
+        string? currentFloorObjective = null;
+        if (campaign.CurrentFloorId is { } floorId)
+        {
+            var floor = await floorRepo.GetByIdAsync(floorId, ct);
+            if (floor is not null && floor.CampaignId == campaign.Id)
+            {
+                currentFloorId = floor.Id;
+                currentFloorName = floor.Name;
+                currentFloorObjective = DeserializeFloor(floor.DataJson).MainObjective;
+            }
+        }
 
         // Party — alive, non-retired.
         var sheetsResult = await characterSheetService.GetByCampaignAsync(gameMasterId, campaign.Id, ct);
@@ -102,11 +137,22 @@ public class CampaignDashboardService(
                 FloorState = campaign.FloorState,
                 Pressure = campaign.Pressure,
                 PressureStateKey = stateKey,
-                PeMultiplier = mult
+                PeMultiplier = mult,
+                CurrentFloorId = currentFloorId,
+                CurrentFloorName = currentFloorName,
+                CurrentFloorObjective = currentFloorObjective
             },
             Party = party,
             Guild = guild,
             PendingNotifications = pending.ToList()
         };
+    }
+
+    private static FloorData DeserializeFloor(string json)
+    {
+        FloorData? data;
+        try { data = JsonSerializer.Deserialize<FloorData>(json, JsonOpts); }
+        catch (JsonException) { data = null; }
+        return data ?? new FloorData();
     }
 }

@@ -40,7 +40,7 @@ public class CampaignDashboardController(
         var gameMasterId = Guid.Parse(User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
         var result = await dashboardService.UpdateDungeonAsync(gameMasterId, campaignId, request, ct);
         if (result.IsFailure)
-            return result.Error == ErrorCodes.Campaign.FloorStateInvalid
+            return result.Error is ErrorCodes.Campaign.FloorStateInvalid or ErrorCodes.Campaign.CurrentFloorInvalid
                 ? BadRequest(ApiResponse.Fail(localizer[result.Error!]))
                 : NotFound(ApiResponse.Fail(localizer[result.Error!]));
 

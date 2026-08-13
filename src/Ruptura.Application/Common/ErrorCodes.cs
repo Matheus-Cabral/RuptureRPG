@@ -25,6 +25,7 @@ public static class ErrorCodes
         public const string PlayerNotInRoster = "Campaign.PlayerNotInRoster";
         public const string AlreadyMember = "Campaign.AlreadyMember";
         public const string FloorStateInvalid = "Campaign.FloorStateInvalid";
+        public const string CurrentFloorInvalid = "Campaign.CurrentFloorInvalid";
     }
 
     public static class Catalog

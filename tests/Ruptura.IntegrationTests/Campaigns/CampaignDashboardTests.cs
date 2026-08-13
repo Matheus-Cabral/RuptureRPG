@@ -7,6 +7,7 @@ using Ruptura.IntegrationTests.Helpers;
 using Ruptura.Shared.Campaigns;
 using Ruptura.Shared.CharacterSheets;
 using Ruptura.Shared.Common;
+using Ruptura.Shared.Content;
 using Ruptura.Shared.Invites;
 
 namespace Ruptura.IntegrationTests.Campaigns;
@@ -51,6 +52,28 @@ public class CampaignDashboardTests(IntegrationTestFactory factory)
         var response = await client.GetAsync($"api/campaigns/{campaignId}/dashboard");
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         return (await response.Content.ReadFromJsonAsync<ApiResponse<CampaignDashboardResponse>>())!.Data!;
+    }
+
+    private static async Task<Guid> CreateFloorAsync(
+        HttpClient client, Guid campaignId, string name, string mainObjective)
+    {
+        var arc = await client.PostAsJsonAsync(
+            $"api/campaigns/{campaignId}/arcs",
+            new CreateArcRequest { Name = "Arc I", Order = 1, Data = new ArcData { Theme = "Descent" } });
+        arc.StatusCode.Should().Be(HttpStatusCode.Created);
+        var arcId = (await arc.Content.ReadFromJsonAsync<ApiResponse<ArcResponse>>())!.Data!.Id;
+
+        var floor = await client.PostAsJsonAsync(
+            $"api/campaigns/{campaignId}/floors",
+            new CreateFloorRequest
+            {
+                ArcId = arcId,
+                Number = 1,
+                Name = name,
+                Data = new FloorData { ObjectiveType = "Exploracao", MainObjective = mainObjective }
+            });
+        floor.StatusCode.Should().Be(HttpStatusCode.Created);
+        return (await floor.Content.ReadFromJsonAsync<ApiResponse<FloorResponse>>())!.Data!.Id;
     }
 
     [Fact]
@@ -277,5 +300,88 @@ public class CampaignDashboardTests(IntegrationTestFactory factory)
         updated.Dungeon.Pressure.Should().Be(0);
         updated.Dungeon.PressureStateKey.Should().Be("Estavel");
         updated.Dungeon.PeMultiplier.Should().Be(1.00m);
+    }
+
+    [Fact]
+    public async Task PutDungeon_WithCampaignFloor_ResolvesFloorSummaryOnGet()
+    {
+        var (client, _, campaign) = await SetupGmWithCampaignAsync();
+        var floorId = await CreateFloorAsync(client, campaign.Id, "Cripta Selada", "Reach the far gate");
+
+        var put = await client.PutAsJsonAsync(
+            $"api/campaigns/{campaign.Id}/dashboard/dungeon", new UpdateDungeonStateRequest
+            {
+                CurrentFloor = 2,
+                FloorName = "Segundo Andar",
+                FloorState = "Inexplorado",
+                Pressure = 0,
+                CurrentFloorId = floorId
+            });
+        put.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var dashboard = await GetDashboardAsync(client, campaign.Id);
+        dashboard.Dungeon.CurrentFloorId.Should().Be(floorId);
+        dashboard.Dungeon.CurrentFloorName.Should().Be("Cripta Selada");
+        dashboard.Dungeon.CurrentFloorObjective.Should().Be("Reach the far gate");
+    }
+
+    [Fact]
+    public async Task PutDungeon_WithForeignFloor_Returns400CurrentFloorInvalid()
+    {
+        var (client, _, campaign) = await SetupGmWithCampaignAsync();
+
+        // A floor belonging to a different campaign (owned by another GM).
+        var (otherClient, _, otherCampaign) = await SetupGmWithCampaignAsync();
+        var foreignFloorId = await CreateFloorAsync(otherClient, otherCampaign.Id, "Foreign", "Nope");
+
+        var response = await client.PutAsJsonAsync(
+            $"api/campaigns/{campaign.Id}/dashboard/dungeon", new UpdateDungeonStateRequest
+            {
+                CurrentFloor = 2,
+                FloorName = "Segundo Andar",
+                FloorState = "Inexplorado",
+                Pressure = 0,
+                CurrentFloorId = foreignFloorId
+            });
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var body = await response.Content.ReadFromJsonAsync<ApiResponse>();
+        body!.Success.Should().BeFalse();
+        body.Message.Should().Be("Campaign.CurrentFloorInvalid");
+    }
+
+    [Fact]
+    public async Task PutDungeon_WithNullCurrentFloorId_ClearsThePointer()
+    {
+        var (client, _, campaign) = await SetupGmWithCampaignAsync();
+        var floorId = await CreateFloorAsync(client, campaign.Id, "Cripta Selada", "Reach the far gate");
+
+        // First point at the floor.
+        await client.PutAsJsonAsync(
+            $"api/campaigns/{campaign.Id}/dashboard/dungeon", new UpdateDungeonStateRequest
+            {
+                CurrentFloor = 2,
+                FloorName = "Segundo Andar",
+                FloorState = "Inexplorado",
+                Pressure = 0,
+                CurrentFloorId = floorId
+            });
+
+        // Then clear it with a null CurrentFloorId.
+        var clear = await client.PutAsJsonAsync(
+            $"api/campaigns/{campaign.Id}/dashboard/dungeon", new UpdateDungeonStateRequest
+            {
+                CurrentFloor = 2,
+                FloorName = "Segundo Andar",
+                FloorState = "Inexplorado",
+                Pressure = 0,
+                CurrentFloorId = null
+            });
+        clear.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var dashboard = await GetDashboardAsync(client, campaign.Id);
+        dashboard.Dungeon.CurrentFloorId.Should().BeNull();
+        dashboard.Dungeon.CurrentFloorName.Should().BeNull();
+        dashboard.Dungeon.CurrentFloorObjective.Should().BeNull();
     }
 }
