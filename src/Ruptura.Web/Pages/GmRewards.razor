@@ -159,16 +159,16 @@
                                 <div class="field-row">
                                     <input class="form-control" placeholder="@L["Gm.Rewards.AssetName"]"
                                            @bind="asset.Name" @bind:event="oninput" />
-                                    <select class="form-select" @bind="asset.Category">
+                                    <select class="form-select" @bind="asset.Category" aria-label="@L["Gm.Rewards.Category"]">
                                         @foreach (var cat in RewardReference.Categories)
                                         {
                                             <option value="@cat">@CategoryText(cat)</option>
                                         }
                                     </select>
-                                    <select class="form-select" @bind="asset.Ve">
+                                    <select class="form-select" @bind="asset.Ve" aria-label="@L["Gm.Rewards.Ve"]" title="@L["Gm.Rewards.Ve"]">
                                         @foreach (var ve in VeRange)
                                         {
-                                            <option value="@ve">@ve</option>
+                                            <option value="@ve">@L["Gm.Rewards.Ve"] @ve</option>
                                         }
                                     </select>
                                     <input class="form-control" placeholder="@L["Gm.Rewards.Notes"]"
@@ -349,6 +349,10 @@
         _editingId = reward.Id;
         _formName = reward.Name;
         _form = Clone(reward.Data);
+        // Self-heal a dangling tag: if the linked encounter was deleted, drop the stale
+        // EncounterId so the picker shows "(none)" and saves don't 400 on EncounterInvalid.
+        if (_form.EncounterId is { } eid && _encounters.All(e => e.Id != eid))
+            _form.EncounterId = null;
     }
 
     private void CancelEdit()
