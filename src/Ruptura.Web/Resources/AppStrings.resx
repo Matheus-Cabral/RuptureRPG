@@ -328,6 +328,7 @@
   <data name="Character.AwaitingGrant"><value>Your Game Master hasn't granted you a character yet.</value></data>
   <data name="Nav.Campaigns.Player"><value>My Campaigns</value></data>
   <data name="Journal.Empty"><value>No journal entries yet.</value></data>
+  <data name="Journal.ImageAlt"><value>Journal entry image</value></data>
   <data name="Journal.NewEntryPlaceholder"><value>What happened today...</value></data>
   <data name="Journal.Add"><value>Add Entry</value></data>
   <data name="Journal.Edit"><value>Edit</value></data>

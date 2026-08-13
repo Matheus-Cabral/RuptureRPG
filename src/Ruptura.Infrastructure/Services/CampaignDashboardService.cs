@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Ruptura.Application.Common;
 using Ruptura.Application.Interfaces;
 using Ruptura.Domain.Entities;
@@ -17,8 +16,6 @@ public class CampaignDashboardService(
     INotificationService notificationService,
     IFloorRepository floorRepo) : ICampaignDashboardService
 {
-    private static readonly JsonSerializerOptions JsonOpts = new(JsonSerializerDefaults.Web);
-
     public async Task<Result<CampaignDashboardResponse>> GetAsync(
         Guid gameMasterId, Guid campaignId, CancellationToken ct = default)
     {
@@ -82,7 +79,7 @@ public class CampaignDashboardService(
             {
                 currentFloorId = floor.Id;
                 currentFloorName = floor.Name;
-                currentFloorObjective = DeserializeFloor(floor.DataJson).MainObjective;
+                currentFloorObjective = FloorDataSerializer.DeserializeFloor(floor.DataJson).MainObjective;
             }
         }
 
@@ -146,13 +143,5 @@ public class CampaignDashboardService(
             Guild = guild,
             PendingNotifications = pending.ToList()
         };
-    }
-
-    private static FloorData DeserializeFloor(string json)
-    {
-        FloorData? data;
-        try { data = JsonSerializer.Deserialize<FloorData>(json, JsonOpts); }
-        catch (JsonException) { data = null; }
-        return data ?? new FloorData();
     }
 }

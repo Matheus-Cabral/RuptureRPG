@@ -335,7 +335,7 @@ public class CampaignContentService(
 
     private static FloorResponse MapFloor(Floor floor, LinkContext links)
     {
-        var data = DeserializeFloor(floor.DataJson);
+        var data = FloorDataSerializer.DeserializeFloor(floor.DataJson);
 
         // Resolve linked ids to names, preserving stored order. Any id that has vanished since it was
         // stored is dropped (writes validated it existed; reads never throw on a stale link).
@@ -366,19 +366,5 @@ public class CampaignContentService(
         try { data = JsonSerializer.Deserialize<ArcData>(json, JsonOpts); }
         catch (JsonException) { data = null; }
         return data ?? new ArcData();
-    }
-
-    private static FloorData DeserializeFloor(string json)
-    {
-        FloorData? data;
-        try { data = JsonSerializer.Deserialize<FloorData>(json, JsonOpts); }
-        catch (JsonException) { data = null; }
-        data ??= new FloorData();
-        // Coalesce nullable collections: a hand-edited/corrupted DataJson can carry an explicit
-        // "linkedEncounterIds": null that survives deserialization and would NRE in MapFloor.
-        data.LinkedEncounterIds ??= [];
-        data.LinkedRewardIds ??= [];
-        data.SecondaryObjectives ??= [];
-        return data;
     }
 }

@@ -137,21 +137,6 @@ public static class EncounterReference
 
     // ---- R → difficulty label bands ----
 
-    // Upper-bound thresholds for the difficulty label, ascending. Every band is
-    // inclusive of its upper bound EXCEPT "Extremo", which is strictly R < 3 so that R
-    // exactly 3.0 falls through to "PossivelMorte" (R ≥ 3). Exposed for the UI scale;
-    // RLabelFor is the authoritative resolver. See design spec §3.
-    public static readonly IReadOnlyList<(decimal UpperBound, string Label)> RLabelBands =
-    [
-        (0.5m, "MuitoFacil"),
-        (0.85m, "Facil"),
-        (1.15m, "Equilibrado"),
-        (1.4m, "Dificil"),
-        (1.75m, "MuitoDificil"),
-        (3.0m, "Extremo"),          // 1.75 < R < 3 → Extremo
-        (decimal.MaxValue, "PossivelMorte"),
-    ];
-
     // Resolve the difficulty label for a computed R value. Authoritative source.
     public static string RLabelFor(decimal r) => r switch
     {

@@ -131,7 +131,7 @@
                         {
                             @foreach (var mat in _form.Materials)
                             {
-                                <div class="field-row">
+                                <div class="field-row" @key="mat">
                                     <input class="form-control" placeholder="@L["Gm.Rewards.MaterialName"]"
                                            @bind="mat.Name" @bind:event="oninput" />
                                     <input type="number" class="form-control" min="0" placeholder="@L["Gm.Rewards.Quantity"]"
@@ -156,7 +156,7 @@
                         {
                             @foreach (var asset in _form.StrategicAssets)
                             {
-                                <div class="field-row">
+                                <div class="field-row" @key="asset">
                                     <input class="form-control" placeholder="@L["Gm.Rewards.AssetName"]"
                                            @bind="asset.Name" @bind:event="oninput" />
                                     <select class="form-select" @bind="asset.Category" aria-label="@L["Gm.Rewards.Category"]">
@@ -194,7 +194,7 @@
                             @for (var i = 0; i < _form.Knowledge.Count; i++)
                             {
                                 var index = i;
-                                <div class="field-row">
+                                <div class="field-row" @key="index">
                                     <input class="form-control" placeholder="@L["Gm.Rewards.KnowledgePlaceholder"]"
                                            value="@_form.Knowledge[index]"
                                            @oninput="e => _form.Knowledge[index] = e.Value?.ToString() ?? string.Empty" />
@@ -219,7 +219,7 @@
                             @for (var i = 0; i < _form.Items.Count; i++)
                             {
                                 var index = i;
-                                <div class="field-row">
+                                <div class="field-row" @key="index">
                                     <input class="form-control" placeholder="@L["Gm.Rewards.ItemPlaceholder"]"
                                            value="@_form.Items[index]"
                                            @oninput="e => _form.Items[index] = e.Value?.ToString() ?? string.Empty" />
@@ -380,25 +380,30 @@
         }
 
         _saving = true;
-        var wasCreate = _editingId is null;
-
-        var result = wasCreate
-            ? await RewardService.CreateAsync(Id, new CreateRewardRequest { Name = _formName, Data = _form })
-            : await RewardService.UpdateAsync(Id, _editingId!.Value, new UpdateRewardRequest { Name = _formName, Data = _form });
-
-        if (result?.Data is not null)
+        try
         {
-            Toast.Success(wasCreate ? L["Gm.Rewards.CreateSuccess"] : L["Gm.Rewards.SaveSuccess"]);
-            var saved = result.Data;
-            await LoadAsync();
-            SelectForEdit(_rewards.FirstOrDefault(r => r.Id == saved.Id) ?? saved);
-        }
-        else
-        {
-            Toast.Error(L["Common.Error"]);
-        }
+            var wasCreate = _editingId is null;
 
-        _saving = false;
+            var result = wasCreate
+                ? await RewardService.CreateAsync(Id, new CreateRewardRequest { Name = _formName, Data = _form })
+                : await RewardService.UpdateAsync(Id, _editingId!.Value, new UpdateRewardRequest { Name = _formName, Data = _form });
+
+            if (result?.Data is not null)
+            {
+                Toast.Success(wasCreate ? L["Gm.Rewards.CreateSuccess"] : L["Gm.Rewards.SaveSuccess"]);
+                var saved = result.Data;
+                await LoadAsync();
+                SelectForEdit(_rewards.FirstOrDefault(r => r.Id == saved.Id) ?? saved);
+            }
+            else
+            {
+                Toast.Error(L["Common.Error"]);
+            }
+        }
+        finally
+        {
+            _saving = false;
+        }
     }
 
     private async Task DeleteAsync(Guid id, string name)

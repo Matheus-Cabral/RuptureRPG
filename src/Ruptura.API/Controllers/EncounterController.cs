@@ -86,13 +86,11 @@ public class EncounterController(
     private Guid CurrentGameMasterId() =>
         Guid.Parse(User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
 
-    // Missing/non-owned campaign or encounter → 404 (existence hidden); Forbidden → 403;
+    // Missing/non-owned campaign or encounter → 404 (existence hidden);
     // every validation failure → 400.
     private IActionResult Failure(string error) => error switch
     {
         ErrorCodes.Encounter.NotFound => NotFound(ApiResponse.Fail(localizer[error])),
-        ErrorCodes.Encounter.Forbidden
-            => StatusCode(StatusCodes.Status403Forbidden, ApiResponse.Fail(localizer[error])),
         _ => BadRequest(ApiResponse.Fail(localizer[error]))
     };
 }

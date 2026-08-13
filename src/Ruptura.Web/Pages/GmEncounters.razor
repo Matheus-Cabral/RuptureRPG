@@ -426,25 +426,30 @@
         }
 
         _saving = true;
-        var wasCreate = _editingId is null;
-
-        var result = wasCreate
-            ? await EncounterService.CreateAsync(Id, new CreateEncounterRequest { Name = _formName, Data = _form })
-            : await EncounterService.UpdateAsync(Id, _editingId!.Value, new UpdateEncounterRequest { Name = _formName, Data = _form });
-
-        if (result?.Data is not null)
+        try
         {
-            Toast.Success(wasCreate ? L["Gm.Encounters.CreateSuccess"] : L["Gm.Encounters.SaveSuccess"]);
-            var saved = result.Data;
-            await LoadAsync();
-            SelectForEdit(_encounters.FirstOrDefault(e => e.Id == saved.Id) ?? saved);
-        }
-        else
-        {
-            Toast.Error(L["Common.Error"]);
-        }
+            var wasCreate = _editingId is null;
 
-        _saving = false;
+            var result = wasCreate
+                ? await EncounterService.CreateAsync(Id, new CreateEncounterRequest { Name = _formName, Data = _form })
+                : await EncounterService.UpdateAsync(Id, _editingId!.Value, new UpdateEncounterRequest { Name = _formName, Data = _form });
+
+            if (result?.Data is not null)
+            {
+                Toast.Success(wasCreate ? L["Gm.Encounters.CreateSuccess"] : L["Gm.Encounters.SaveSuccess"]);
+                var saved = result.Data;
+                await LoadAsync();
+                SelectForEdit(_encounters.FirstOrDefault(e => e.Id == saved.Id) ?? saved);
+            }
+            else
+            {
+                Toast.Error(L["Common.Error"]);
+            }
+        }
+        finally
+        {
+            _saving = false;
+        }
     }
 
     private async Task DeleteAsync(Guid id, string name)

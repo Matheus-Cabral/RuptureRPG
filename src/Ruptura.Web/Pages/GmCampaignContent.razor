@@ -210,7 +210,7 @@
                             @for (var i = 0; i < _floorData.SecondaryObjectives.Count; i++)
                             {
                                 var index = i;
-                                <div class="field-row">
+                                <div class="field-row" @key="index">
                                     <input class="form-control" placeholder="@L["Gm.Content.SecondaryPlaceholder"]"
                                            value="@_floorData.SecondaryObjectives[index]"
                                            @oninput="e => _floorData.SecondaryObjectives[index] = e.Value?.ToString() ?? string.Empty" />
@@ -240,6 +240,7 @@
                                 {
                                     var on = _floorData.LinkedEncounterIds.Contains(enc.Id);
                                     <button class="btn btn-sm @(on ? "btn-primary" : "btn-outline-secondary")"
+                                            @key="enc.Id"
                                             @onclick="() => ToggleEncounter(enc.Id)">@enc.Name</button>
                                 }
                             </div>
@@ -260,6 +261,7 @@
                                 {
                                     var on = _floorData.LinkedRewardIds.Contains(rew.Id);
                                     <button class="btn btn-sm @(on ? "btn-primary" : "btn-outline-secondary")"
+                                            @key="rew.Id"
                                             @onclick="() => ToggleReward(rew.Id)">@rew.Name</button>
                                 }
                             </div>

@@ -48,7 +48,7 @@ else
                             @foreach (var path in _editImagePaths.ToList())
                             {
                                 <div style="position:relative">
-                                    <img src="@GetThumb(path)" style="width:80px;height:80px;object-fit:cover;border-radius:4px;cursor:zoom-in"
+                                    <img src="@GetThumb(path)" alt="@L["Journal.ImageAlt"]" style="width:80px;height:80px;object-fit:cover;border-radius:4px;cursor:zoom-in"
                                          @onclick="() => ExpandAsync(path)" />
                                     <span class="btn btn-outline-secondary btn-sm thumb-remove" style="position:absolute;top:-8px;right:-8px"
                                           @onclick="() => _editImagePaths.Remove(path)">✕</span>
@@ -70,7 +70,7 @@ else
                             <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.5rem">
                                 @foreach (var path in entry.ImagePaths)
                                 {
-                                    <img src="@GetThumb(path)" style="width:80px;height:80px;object-fit:cover;border-radius:4px;cursor:zoom-in"
+                                    <img src="@GetThumb(path)" alt="@L["Journal.ImageAlt"]" style="width:80px;height:80px;object-fit:cover;border-radius:4px;cursor:zoom-in"
                                          @onclick="() => ExpandAsync(path)" />
                                 }
                             </div>

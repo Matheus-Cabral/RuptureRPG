@@ -130,7 +130,6 @@
 
   <!-- Encounter -->
   <data name="Encounter.NotFound"><value>Encontro não encontrado.</value></data>
-  <data name="Encounter.Forbidden"><value>Você não pode acessar este encontro.</value></data>
   <data name="Encounter.NameRequired"><value>Um encontro deve ter um nome.</value></data>
   <data name="Encounter.IntelligenceInvalid"><value>A inteligência do encontro não é válida.</value></data>
   <data name="Encounter.TerrainInvalid"><value>O terreno do encontro não é válido.</value></data>

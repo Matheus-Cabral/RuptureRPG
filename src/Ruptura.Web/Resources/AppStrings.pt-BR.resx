@@ -328,6 +328,7 @@
   <data name="Character.AwaitingGrant"><value>Seu Mestre ainda não concedeu um personagem a você.</value></data>
   <data name="Nav.Campaigns.Player"><value>Minhas Campanhas</value></data>
   <data name="Journal.Empty"><value>Nenhuma entrada no diário ainda.</value></data>
+  <data name="Journal.ImageAlt"><value>Imagem da entrada do diário</value></data>
   <data name="Journal.NewEntryPlaceholder"><value>O que aconteceu hoje...</value></data>
   <data name="Journal.Add"><value>Adicionar Entrada</value></data>
   <data name="Journal.Edit"><value>Editar</value></data>

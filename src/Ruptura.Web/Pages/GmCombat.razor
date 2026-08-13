@@ -196,7 +196,7 @@
                             var rowStyle = isCurrent
                                 ? "display:block;margin-bottom:.75rem;border-left:3px solid var(--accent);background:var(--surface-2, rgba(127,127,127,0.10))"
                                 : "display:block;margin-bottom:.75rem";
-                            <div class="dash-stat" style="@rowStyle">
+                            <div class="dash-stat" style="@rowStyle" @key="c.Id">
                                 <div class="field-row" style="align-items:center">
                                     @if (isCurrent)
                                     {
@@ -341,20 +341,26 @@
         }
 
         _saving = true;
-        var result = await CombatService.CreateAsync(Id, new CreateCombatSessionRequest { Name = _newSessionName });
-        if (result?.Data is not null)
+        try
         {
-            Toast.Success(L["Gm.Combat.CreateSuccess"]);
-            _newSessionName = string.Empty;
-            await LoadAsync();
-            var created = _sessions.FirstOrDefault(s => s.Id == result.Data.Id) ?? result.Data;
-            SelectSession(created);
+            var result = await CombatService.CreateAsync(Id, new CreateCombatSessionRequest { Name = _newSessionName });
+            if (result?.Data is not null)
+            {
+                Toast.Success(L["Gm.Combat.CreateSuccess"]);
+                _newSessionName = string.Empty;
+                await LoadAsync();
+                var created = _sessions.FirstOrDefault(s => s.Id == result.Data.Id) ?? result.Data;
+                SelectSession(created);
+            }
+            else
+            {
+                Toast.Error(L["Common.Error"]);
+            }
         }
-        else
+        finally
         {
-            Toast.Error(L["Common.Error"]);
+            _saving = false;
         }
-        _saving = false;
     }
 
     private async Task StartFromEncounterAsync()
@@ -374,22 +380,28 @@
         }
 
         _saving = true;
-        var result = await CombatService.StartFromEncounterAsync(Id,
-            new StartFromEncounterRequest { Name = _startName, EncounterId = _encounterToStart });
-        if (result?.Data is not null)
+        try
         {
-            Toast.Success(L["Gm.Combat.StartSuccess"]);
-            _startName = string.Empty;
-            _encounterToStart = Guid.Empty;
-            await LoadAsync();
-            var started = _sessions.FirstOrDefault(s => s.Id == result.Data.Id) ?? result.Data;
-            SelectSession(started);
+            var result = await CombatService.StartFromEncounterAsync(Id,
+                new StartFromEncounterRequest { Name = _startName, EncounterId = _encounterToStart });
+            if (result?.Data is not null)
+            {
+                Toast.Success(L["Gm.Combat.StartSuccess"]);
+                _startName = string.Empty;
+                _encounterToStart = Guid.Empty;
+                await LoadAsync();
+                var started = _sessions.FirstOrDefault(s => s.Id == result.Data.Id) ?? result.Data;
+                SelectSession(started);
+            }
+            else
+            {
+                Toast.Error(L["Common.Error"]);
+            }
         }
-        else
+        finally
         {
-            Toast.Error(L["Common.Error"]);
+            _saving = false;
         }
-        _saving = false;
     }
 
     // PUTs the whole tracker state. On success, re-selects the server-canonical response
@@ -399,22 +411,28 @@
         if (_selectedId is null) return;
 
         _saving = true;
-        var request = new UpdateCombatStateRequest { Name = _name, IsActive = _isActive, State = _state };
-        var result = await CombatService.UpdateStateAsync(Id, _selectedId.Value, request);
-        if (result?.Data is not null)
+        try
         {
-            if (showToast) Toast.Success(L["Gm.Combat.SaveSuccess"]);
-            // Refresh both the list and the working copy from the canonical response.
-            var saved = result.Data;
-            var idx = _sessions.FindIndex(s => s.Id == saved.Id);
-            if (idx >= 0) _sessions[idx] = saved; else _sessions.Add(saved);
-            SelectSession(saved);
+            var request = new UpdateCombatStateRequest { Name = _name, IsActive = _isActive, State = _state };
+            var result = await CombatService.UpdateStateAsync(Id, _selectedId.Value, request);
+            if (result?.Data is not null)
+            {
+                if (showToast) Toast.Success(L["Gm.Combat.SaveSuccess"]);
+                // Refresh both the list and the working copy from the canonical response.
+                var saved = result.Data;
+                var idx = _sessions.FindIndex(s => s.Id == saved.Id);
+                if (idx >= 0) _sessions[idx] = saved; else _sessions.Add(saved);
+                SelectSession(saved);
+            }
+            else
+            {
+                Toast.Error(L["Common.Error"]);
+            }
         }
-        else
+        finally
         {
-            Toast.Error(L["Common.Error"]);
+            _saving = false;
         }
-        _saving = false;
     }
 
     private async Task DeleteAsync(Guid id, string name)
@@ -539,42 +557,47 @@
         if (_selectedId is null) return;
 
         _saving = true;
-        var dashResult = await CampaignService.GetDashboardAsync(Id);
-        var dash = dashResult?.Data?.Dungeon;
-        if (dash is null)
+        try
         {
-            Toast.Error(L["Common.Error"]);
-            _saving = false;
-            return;
-        }
-
-        var request = new Ruptura.Shared.Campaigns.UpdateDungeonStateRequest
-        {
-            CurrentFloor = dash.CurrentFloor,
-            FloorName = dash.FloorName,
-            FloorState = dash.FloorState,
-            // long arithmetic so a large delta can't overflow before the server clamp.
-            Pressure = (int)Math.Clamp((long)dash.Pressure + delta, 0L, 100L),
-            // Echo the live floor pointer so this whole-state PUT doesn't clear it (D2).
-            CurrentFloorId = dash.CurrentFloorId
-        };
-        var updateResult = await CampaignService.UpdateDungeonAsync(Id, request);
-        if (updateResult?.Success == true)
-        {
-            Toast.Success(L["Gm.Combat.Pressure.UpdateSuccess"]);
-            // Reload the session so the server-derived pressure fields refresh.
-            var refreshed = await CombatService.GetByIdAsync(Id, _selectedId.Value);
-            if (refreshed?.Data is not null)
+            var dashResult = await CampaignService.GetDashboardAsync(Id);
+            var dash = dashResult?.Data?.Dungeon;
+            if (dash is null)
             {
-                _pressure = refreshed.Data.Pressure;
-                _pressureStateKey = refreshed.Data.PressureStateKey;
+                Toast.Error(L["Common.Error"]);
+                return;
+            }
+
+            var request = new Ruptura.Shared.Campaigns.UpdateDungeonStateRequest
+            {
+                CurrentFloor = dash.CurrentFloor,
+                FloorName = dash.FloorName,
+                FloorState = dash.FloorState,
+                // long arithmetic so a large delta can't overflow before the server clamp.
+                Pressure = (int)Math.Clamp((long)dash.Pressure + delta, 0L, 100L),
+                // Echo the live floor pointer so this whole-state PUT doesn't clear it (D2).
+                CurrentFloorId = dash.CurrentFloorId
+            };
+            var updateResult = await CampaignService.UpdateDungeonAsync(Id, request);
+            if (updateResult?.Success == true)
+            {
+                Toast.Success(L["Gm.Combat.Pressure.UpdateSuccess"]);
+                // Reload the session so the server-derived pressure fields refresh.
+                var refreshed = await CombatService.GetByIdAsync(Id, _selectedId.Value);
+                if (refreshed?.Data is not null)
+                {
+                    _pressure = refreshed.Data.Pressure;
+                    _pressureStateKey = refreshed.Data.PressureStateKey;
+                }
+            }
+            else
+            {
+                Toast.Error(L["Common.Error"]);
             }
         }
-        else
+        finally
         {
-            Toast.Error(L["Common.Error"]);
+            _saving = false;
         }
-        _saving = false;
     }
 
     private string ConditionText(string key) => Lookup("Gm.Combat.Condition", key);
