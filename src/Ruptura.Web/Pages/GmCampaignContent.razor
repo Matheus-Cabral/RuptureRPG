@@ -1,0 +1,602 @@
+@page "/gm/campaigns/{Id:guid}/content"
+@attribute [Authorize(Roles = "GameMaster")]
+@using Microsoft.Extensions.Localization
+@using Ruptura.Web.Resources
+@using Ruptura.Shared.Content
+@using Ruptura.Shared.Encounters
+@using Ruptura.Shared.Rewards
+@inject IStringLocalizer<AppStrings> L
+@inject ICampaignContentClientService ContentService
+@inject IEncounterClientService EncounterService
+@inject IRewardClientService RewardService
+@inject ICampaignClientService CampaignService
+@inject ToastService Toast
+@inject ConfirmService Confirm
+
+<PageTitle>@L["Gm.Content.Title"] — RUPTURA</PageTitle>
+
+<div class="page-content">
+    <Breadcrumbs Items="_breadcrumbs" />
+
+    <div class="page-heading">
+        <h1>@L["Gm.Content.Title"]</h1>
+    </div>
+
+    <div class="section-header">
+        <span class="section-title">@L["Gm.Content.Arcs"]</span>
+        <button class="btn btn-primary btn-sm" @onclick="NewArc">@L["Gm.Content.NewArc"]</button>
+    </div>
+
+    @if (_loading)
+    {
+        <LoadingIndicator Text="@L["Common.Loading"]" />
+    }
+    else
+    {
+        <div class="master-detail">
+            <div class="master-detail-list">
+                @if (_arcs.Count == 0)
+                {
+                    <div class="ledger-empty">
+                        <p>@L["Gm.Content.Empty"]</p>
+                    </div>
+                }
+                else
+                {
+                    <TableSearchBox @bind-Value="_searchTerm" Placeholder="@L["Gm.Content.SearchPlaceholder"]" />
+
+                    @if (FilteredArcs.Count == 0)
+                    {
+                        <div class="ledger-empty">
+                            <p>@L["Gm.Content.NoResults"]</p>
+                        </div>
+                    }
+                    else
+                    {
+                        @foreach (var arc in FilteredArcs)
+                        {
+                            var expanded = _expandedArcs.Contains(arc.Id);
+                            var arcSelected = _mode == EditMode.Arc && _editingArcId == arc.Id;
+                            var toggleLabel = expanded ? "▾" : "▸";
+                            <div style="margin-bottom:.5rem">
+                                <div style="display:flex;align-items:center;gap:.5rem">
+                                    <button class="btn btn-outline-secondary btn-sm" style="min-width:2.2rem"
+                                            @onclick="() => ToggleArc(arc.Id)" aria-label="@L["Gm.Content.Expand"]">@toggleLabel</button>
+                                    <div class="@(arcSelected ? "is-selected" : null)"
+                                         style="flex:1;cursor:pointer;padding:.35rem .5rem;border-radius:4px"
+                                         tabindex="0" role="button"
+                                         @onclick="() => SelectArc(arc)"
+                                         @onkeydown="e => OnArcKey(e, arc)">
+                                        <strong>@arc.Order.</strong> @arc.Name
+                                    </div>
+                                </div>
+
+                                @if (expanded)
+                                {
+                                    var floors = FloorsFor(arc.Id);
+                                    @if (floors.Count == 0)
+                                    {
+                                        <p class="detail-panel-empty" style="margin:.35rem 0 .35rem 2.7rem">@L["Gm.Content.NoFloors"]</p>
+                                    }
+                                    else
+                                    {
+                                        @foreach (var floor in floors)
+                                        {
+                                            var floorSelected = _mode == EditMode.Floor && _editingFloorId == floor.Id;
+                                            <div class="@(floorSelected ? "is-selected" : null)"
+                                                 style="cursor:pointer;padding:.25rem .5rem;margin:.15rem 0 .15rem 2.7rem;border-radius:4px;border-left:2px solid var(--border, rgba(127,127,127,0.3))"
+                                                 tabindex="0" role="button"
+                                                 @onclick="() => SelectFloor(floor)"
+                                                 @onkeydown="e => OnFloorKey(e, floor)">
+                                                <strong>@floor.Number.</strong> @floor.Name
+                                            </div>
+                                        }
+                                    }
+                                    <div style="margin:.35rem 0 .25rem 2.7rem">
+                                        <button class="btn btn-outline-secondary btn-sm" @onclick="() => NewFloor(arc.Id)">@L["Gm.Content.NewFloor"]</button>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    }
+                }
+            </div>
+
+            <div class="detail-panel">
+                @if (_mode == EditMode.None)
+                {
+                    <p class="detail-panel-empty">@L["Gm.Content.SelectItem"]</p>
+                }
+                else if (_mode == EditMode.Arc)
+                {
+                    <div class="section-header">
+                        <span class="section-title">@(_editingArcId is null ? L["Gm.Content.NewArc"] : _arcName)</span>
+                    </div>
+
+                    <div class="bestiary-form">
+                        <div class="field-row">
+                            <div style="flex:3">
+                                <label class="field-label">@L["Gm.Content.ArcName"]</label>
+                                <input class="form-control" @bind="_arcName" @bind:event="oninput" />
+                            </div>
+                            <div style="flex:1">
+                                <label class="field-label">@L["Gm.Content.Order"]</label>
+                                <input type="number" class="form-control" @bind="_arcOrder" @bind:event="oninput" />
+                            </div>
+                        </div>
+
+                        <label class="field-label">@L["Gm.Content.Arc.Theme"]</label>
+                        <textarea class="form-control" rows="2" @bind="_arcData.Theme" @bind:event="oninput"></textarea>
+
+                        <label class="field-label">@L["Gm.Content.Arc.History"]</label>
+                        <textarea class="form-control" rows="3" @bind="_arcData.History" @bind:event="oninput"></textarea>
+
+                        <label class="field-label">@L["Gm.Content.Arc.Conflict"]</label>
+                        <textarea class="form-control" rows="2" @bind="_arcData.Conflict" @bind:event="oninput"></textarea>
+
+                        <label class="field-label">@L["Gm.Content.Arc.FinalObjective"]</label>
+                        <textarea class="form-control" rows="2" @bind="_arcData.FinalObjective" @bind:event="oninput"></textarea>
+
+                        <label class="field-label">@L["Gm.Content.Arc.Ecosystem"]</label>
+                        <textarea class="form-control" rows="2" @bind="_arcData.Ecosystem" @bind:event="oninput"></textarea>
+
+                        <label class="field-label">@L["Gm.Content.Arc.Resources"]</label>
+                        <textarea class="form-control" rows="2" @bind="_arcData.Resources" @bind:event="oninput"></textarea>
+
+                        <label class="field-label">@L["Gm.Content.Arc.Mechanic"]</label>
+                        <textarea class="form-control" rows="2" @bind="_arcData.Mechanic" @bind:event="oninput"></textarea>
+
+                        <label class="field-label">@L["Gm.Content.Arc.Notes"]</label>
+                        <textarea class="form-control" rows="2" @bind="_arcData.Notes" @bind:event="oninput"></textarea>
+
+                        <div class="form-actions">
+                            <button class="btn btn-primary btn-sm" @onclick="SaveArcAsync" disabled="@(_saving || string.IsNullOrWhiteSpace(_arcName))">
+                                @if (_saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                                @(_editingArcId is null ? L["Gm.Content.Create"] : L["Gm.Content.Save"])
+                            </button>
+                            @if (_editingArcId is not null)
+                            {
+                                <button class="btn btn-outline-secondary btn-sm" @onclick="() => DeleteArcAsync(_editingArcId!.Value, _arcName)">@L["Gm.Content.Delete"]</button>
+                            }
+                            <button class="btn btn-outline-secondary btn-sm" @onclick="CancelEdit">@L["Gm.Content.Cancel"]</button>
+                        </div>
+                    </div>
+                }
+                else if (_mode == EditMode.Floor)
+                {
+                    <div class="section-header">
+                        <span class="section-title">@(_editingFloorId is null ? L["Gm.Content.NewFloor"] : _floorName)</span>
+                    </div>
+
+                    <div class="bestiary-form">
+                        <div class="field-row">
+                            <div>
+                                <label class="field-label">@L["Gm.Content.ParentArc"]</label>
+                                <input class="form-control" value="@ParentArcName(_floorArcId)" disabled />
+                            </div>
+                            <div>
+                                <label class="field-label">@L["Gm.Content.Number"]</label>
+                                <input type="number" class="form-control" @bind="_floorNumber" @bind:event="oninput" />
+                            </div>
+                        </div>
+
+                        <label class="field-label">@L["Gm.Content.FloorName"]</label>
+                        <input class="form-control" @bind="_floorName" @bind:event="oninput" />
+
+                        <label class="field-label">@L["Gm.Content.ObjectiveType"]</label>
+                        <select class="form-select" @bind="_floorData.ObjectiveType">
+                            <option value="">@L["Gm.Content.ObjectiveType.None"]</option>
+                            @foreach (var ot in ContentReference.ObjectiveTypes)
+                            {
+                                <option value="@ot">@ObjectiveTypeText(ot)</option>
+                            }
+                        </select>
+
+                        <label class="field-label">@L["Gm.Content.Identity"]</label>
+                        <input class="form-control" @bind="_floorData.Identity" @bind:event="oninput" />
+
+                        <label class="field-label">@L["Gm.Content.MainObjective"]</label>
+                        <textarea class="form-control" rows="2" @bind="_floorData.MainObjective" @bind:event="oninput"></textarea>
+
+                        @* ── Secondary objectives ── *@
+                        <div class="list-header">
+                            <label class="field-label">@L["Gm.Content.SecondaryObjectives"]</label>
+                        </div>
+                        @if (_floorData.SecondaryObjectives.Count == 0)
+                        {
+                            <p class="detail-panel-empty">@L["Gm.Content.NoSecondary"]</p>
+                        }
+                        else
+                        {
+                            @for (var i = 0; i < _floorData.SecondaryObjectives.Count; i++)
+                            {
+                                var index = i;
+                                <div class="field-row">
+                                    <input class="form-control" placeholder="@L["Gm.Content.SecondaryPlaceholder"]"
+                                           value="@_floorData.SecondaryObjectives[index]"
+                                           @oninput="e => _floorData.SecondaryObjectives[index] = e.Value?.ToString() ?? string.Empty" />
+                                    <button class="btn btn-outline-secondary btn-sm" @onclick="() => _floorData.SecondaryObjectives.RemoveAt(index)">@L["Gm.Content.Remove"]</button>
+                                </div>
+                            }
+                        }
+                        <div class="field-row">
+                            <button class="btn btn-outline-secondary btn-sm" @onclick="() => _floorData.SecondaryObjectives.Add(string.Empty)">@L["Gm.Content.AddSecondary"]</button>
+                        </div>
+
+                        <label class="field-label">@L["Gm.Content.FailureCondition"]</label>
+                        <textarea class="form-control" rows="2" @bind="_floorData.FailureCondition" @bind:event="oninput"></textarea>
+
+                        @* ── Linked encounters ── *@
+                        <div class="list-header">
+                            <label class="field-label">@L["Gm.Content.LinkedEncounters"]</label>
+                        </div>
+                        @if (_encounters.Count == 0)
+                        {
+                            <p class="detail-panel-empty">@L["Gm.Content.NoEncountersAvailable"]</p>
+                        }
+                        else
+                        {
+                            <div style="display:flex;flex-wrap:wrap;gap:.35rem">
+                                @foreach (var enc in _encounters)
+                                {
+                                    var on = _floorData.LinkedEncounterIds.Contains(enc.Id);
+                                    <button class="btn btn-sm @(on ? "btn-primary" : "btn-outline-secondary")"
+                                            @onclick="() => ToggleEncounter(enc.Id)">@enc.Name</button>
+                                }
+                            </div>
+                        }
+
+                        @* ── Linked rewards ── *@
+                        <div class="list-header">
+                            <label class="field-label">@L["Gm.Content.LinkedRewards"]</label>
+                        </div>
+                        @if (_rewards.Count == 0)
+                        {
+                            <p class="detail-panel-empty">@L["Gm.Content.NoRewardsAvailable"]</p>
+                        }
+                        else
+                        {
+                            <div style="display:flex;flex-wrap:wrap;gap:.35rem">
+                                @foreach (var rew in _rewards)
+                                {
+                                    var on = _floorData.LinkedRewardIds.Contains(rew.Id);
+                                    <button class="btn btn-sm @(on ? "btn-primary" : "btn-outline-secondary")"
+                                            @onclick="() => ToggleReward(rew.Id)">@rew.Name</button>
+                                }
+                            </div>
+                        }
+
+                        @if (_resolvedLinks.Count > 0)
+                        {
+                            <p class="dash-label" style="color:var(--text-muted);margin-top:.5rem">
+                                @L["Gm.Content.ResolvedLinks"]: @string.Join(", ", _resolvedLinks)
+                            </p>
+                        }
+
+                        <label class="field-label">@L["Gm.Content.Notes"]</label>
+                        <textarea class="form-control" rows="2" @bind="_floorData.Notes" @bind:event="oninput"></textarea>
+
+                        <div class="form-actions">
+                            <button class="btn btn-primary btn-sm" @onclick="SaveFloorAsync" disabled="@(_saving || string.IsNullOrWhiteSpace(_floorName))">
+                                @if (_saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                                @(_editingFloorId is null ? L["Gm.Content.Create"] : L["Gm.Content.Save"])
+                            </button>
+                            @if (_editingFloorId is not null)
+                            {
+                                <button class="btn btn-outline-secondary btn-sm" @onclick="() => DeleteFloorAsync(_editingFloorId!.Value, _floorName)">@L["Gm.Content.Delete"]</button>
+                            }
+                            <button class="btn btn-outline-secondary btn-sm" @onclick="CancelEdit">@L["Gm.Content.Cancel"]</button>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private enum EditMode { None, Arc, Floor }
+
+    private List<ArcResponse> _arcs = [];
+    private List<FloorResponse> _floors = [];
+    private List<EncounterResponse> _encounters = [];
+    private List<RewardResponse> _rewards = [];
+    private bool _encountersLoaded;
+    private bool _rewardsLoaded;
+    private readonly HashSet<Guid> _expandedArcs = [];
+    private List<BreadcrumbItem> _breadcrumbs = [];
+    private bool _loading = true;
+    private bool _saving;
+    private string _searchTerm = string.Empty;
+
+    private EditMode _mode = EditMode.None;
+
+    // Arc editor
+    private Guid? _editingArcId;
+    private string _arcName = string.Empty;
+    private int _arcOrder;
+    private ArcData _arcData = new();
+
+    // Floor editor
+    private Guid? _editingFloorId;
+    private Guid _floorArcId;
+    private string _floorName = string.Empty;
+    private int _floorNumber;
+    private FloorData _floorData = new();
+    private List<string> _resolvedLinks = [];
+
+    private List<ArcResponse> FilteredArcs =>
+        _arcs.Where(a => TableFilter.Matches(_searchTerm, a.Name))
+             .OrderBy(a => a.Order).ToList();
+
+    private List<FloorResponse> FloorsFor(Guid arcId) =>
+        _floors.Where(f => f.ArcId == arcId).OrderBy(f => f.Number).ToList();
+
+    private string ParentArcName(Guid arcId) =>
+        _arcs.FirstOrDefault(a => a.Id == arcId)?.Name ?? L["Common.UnknownCampaign"];
+
+    protected override async Task OnInitializedAsync()
+    {
+        var campaignsResult = await CampaignService.GetMineAsync();
+        var campaignName = campaignsResult?.Data?.FirstOrDefault(c => c.Id == Id)?.Name;
+        _breadcrumbs =
+        [
+            new BreadcrumbItem(L["Nav.Campaigns"], "/gm/campaigns"),
+            new BreadcrumbItem(campaignName ?? L["Common.UnknownCampaign"], $"/gm/campaigns/{Id}"),
+            new BreadcrumbItem(L["Gm.Content.Title"], null)
+        ];
+
+        var encountersResult = await EncounterService.GetAllAsync(Id);
+        _encountersLoaded = encountersResult?.Data is not null;
+        _encounters = encountersResult?.Data?.ToList() ?? [];
+
+        var rewardsResult = await RewardService.GetAllAsync(Id);
+        _rewardsLoaded = rewardsResult?.Data is not null;
+        _rewards = rewardsResult?.Data?.ToList() ?? [];
+
+        await LoadAsync();
+        _loading = false;
+    }
+
+    private async Task LoadAsync()
+    {
+        var arcsResult = await ContentService.GetArcsAsync(Id);
+        _arcs = arcsResult?.Data?.ToList() ?? [];
+
+        var floorsResult = await ContentService.GetFloorsAsync(Id);
+        _floors = floorsResult?.Data?.ToList() ?? [];
+    }
+
+    private void ToggleArc(Guid arcId)
+    {
+        if (!_expandedArcs.Remove(arcId)) _expandedArcs.Add(arcId);
+    }
+
+    private void OnArcKey(KeyboardEventArgs e, ArcResponse arc)
+    {
+        if (e.Key == "Enter" || e.Key == " ") SelectArc(arc);
+    }
+
+    private void OnFloorKey(KeyboardEventArgs e, FloorResponse floor)
+    {
+        if (e.Key == "Enter" || e.Key == " ") SelectFloor(floor);
+    }
+
+    // ── Arc editing ──
+
+    private void NewArc()
+    {
+        _mode = EditMode.Arc;
+        _editingArcId = null;
+        _arcName = string.Empty;
+        _arcOrder = _arcs.Count == 0 ? 1 : _arcs.Max(a => a.Order) + 1;
+        _arcData = new ArcData();
+    }
+
+    private void SelectArc(ArcResponse arc)
+    {
+        _mode = EditMode.Arc;
+        _editingArcId = arc.Id;
+        _arcName = arc.Name;
+        _arcOrder = arc.Order;
+        _arcData = CloneArc(arc.Data);
+    }
+
+    private async Task SaveArcAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_arcName))
+        {
+            Toast.Error(L["Gm.Content.ArcNameRequired"]);
+            return;
+        }
+
+        _saving = true;
+        var wasCreate = _editingArcId is null;
+        var result = wasCreate
+            ? await ContentService.CreateArcAsync(Id, new CreateArcRequest { Name = _arcName, Order = _arcOrder, Data = _arcData })
+            : await ContentService.UpdateArcAsync(Id, _editingArcId!.Value, new UpdateArcRequest { Name = _arcName, Order = _arcOrder, Data = _arcData });
+
+        if (result?.Data is not null)
+        {
+            Toast.Success(wasCreate ? L["Gm.Content.ArcCreateSuccess"] : L["Gm.Content.ArcSaveSuccess"]);
+            var saved = result.Data;
+            await LoadAsync();
+            var refreshed = _arcs.FirstOrDefault(a => a.Id == saved.Id) ?? saved;
+            SelectArc(refreshed);
+        }
+        else
+        {
+            Toast.Error(L["Common.Error"]);
+        }
+
+        _saving = false;
+    }
+
+    private async Task DeleteArcAsync(Guid arcId, string name)
+    {
+        var confirmed = await Confirm.AskAsync(
+            L["Gm.Content.DeleteArcConfirm.Title"],
+            L["Gm.Content.DeleteArcConfirm.Message", name],
+            L["Gm.Content.Delete"],
+            L["Gm.Content.Cancel"]);
+        if (!confirmed) return;
+
+        var result = await ContentService.DeleteArcAsync(Id, arcId);
+        if (result?.Success == true)
+        {
+            Toast.Success(L["Gm.Content.ArcDeleteSuccess"]);
+            _expandedArcs.Remove(arcId);
+            CancelEdit();
+            await LoadAsync();
+        }
+        else
+        {
+            Toast.Error(L["Common.Error"]);
+        }
+    }
+
+    // ── Floor editing ──
+
+    private void NewFloor(Guid arcId)
+    {
+        _mode = EditMode.Floor;
+        _editingFloorId = null;
+        _floorArcId = arcId;
+        _floorName = string.Empty;
+        var siblings = FloorsFor(arcId);
+        _floorNumber = siblings.Count == 0 ? 1 : siblings.Max(f => f.Number) + 1;
+        _floorData = new FloorData();
+        _resolvedLinks = [];
+    }
+
+    private void SelectFloor(FloorResponse floor)
+    {
+        _mode = EditMode.Floor;
+        _editingFloorId = floor.Id;
+        _floorArcId = floor.ArcId;
+        _floorName = floor.Name;
+        _floorNumber = floor.Number;
+        _floorData = CloneFloor(floor.Data);
+
+        // Self-heal dangling links (mirrors GmRewards): drop ids not present in the loaded
+        // lists — but ONLY when that list actually loaded, so a failed load never clears a
+        // valid link.
+        if (_encountersLoaded)
+            _floorData.LinkedEncounterIds.RemoveAll(id => _encounters.All(e => e.Id != id));
+        if (_rewardsLoaded)
+            _floorData.LinkedRewardIds.RemoveAll(id => _rewards.All(r => r.Id != id));
+
+        _resolvedLinks = floor.Encounters.Select(l => l.Name)
+            .Concat(floor.Rewards.Select(l => l.Name))
+            .Where(n => !string.IsNullOrWhiteSpace(n))
+            .ToList();
+    }
+
+    private void ToggleEncounter(Guid id)
+    {
+        if (!_floorData.LinkedEncounterIds.Remove(id)) _floorData.LinkedEncounterIds.Add(id);
+    }
+
+    private void ToggleReward(Guid id)
+    {
+        if (!_floorData.LinkedRewardIds.Remove(id)) _floorData.LinkedRewardIds.Add(id);
+    }
+
+    private async Task SaveFloorAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_floorName))
+        {
+            Toast.Error(L["Gm.Content.FloorNameRequired"]);
+            return;
+        }
+
+        _saving = true;
+        var wasCreate = _editingFloorId is null;
+        var result = wasCreate
+            ? await ContentService.CreateFloorAsync(Id, new CreateFloorRequest { ArcId = _floorArcId, Number = _floorNumber, Name = _floorName, Data = _floorData })
+            : await ContentService.UpdateFloorAsync(Id, _editingFloorId!.Value, new UpdateFloorRequest { ArcId = _floorArcId, Number = _floorNumber, Name = _floorName, Data = _floorData });
+
+        if (result?.Data is not null)
+        {
+            Toast.Success(wasCreate ? L["Gm.Content.FloorCreateSuccess"] : L["Gm.Content.FloorSaveSuccess"]);
+            var saved = result.Data;
+            _expandedArcs.Add(saved.ArcId);
+            await LoadAsync();
+            var refreshed = _floors.FirstOrDefault(f => f.Id == saved.Id) ?? saved;
+            SelectFloor(refreshed);
+        }
+        else
+        {
+            Toast.Error(L["Common.Error"]);
+        }
+
+        _saving = false;
+    }
+
+    private async Task DeleteFloorAsync(Guid floorId, string name)
+    {
+        var confirmed = await Confirm.AskAsync(
+            L["Gm.Content.DeleteFloorConfirm.Title"],
+            L["Gm.Content.DeleteFloorConfirm.Message", name],
+            L["Gm.Content.Delete"],
+            L["Gm.Content.Cancel"]);
+        if (!confirmed) return;
+
+        var result = await ContentService.DeleteFloorAsync(Id, floorId);
+        if (result?.Success == true)
+        {
+            Toast.Success(L["Gm.Content.FloorDeleteSuccess"]);
+            CancelEdit();
+            await LoadAsync();
+        }
+        else
+        {
+            Toast.Error(L["Common.Error"]);
+        }
+    }
+
+    private void CancelEdit()
+    {
+        _mode = EditMode.None;
+        _editingArcId = null;
+        _editingFloorId = null;
+        _arcData = new ArcData();
+        _floorData = new FloorData();
+        _resolvedLinks = [];
+    }
+
+    private string ObjectiveTypeText(string key) => Lookup("Gm.Content.ObjectiveType", key);
+
+    private string Lookup(string prefix, string key)
+    {
+        if (string.IsNullOrEmpty(key)) return "—";
+        var localized = L[$"{prefix}.{key}"];
+        return localized.ResourceNotFound ? key : localized.Value;
+    }
+
+    private static ArcData CloneArc(ArcData d) => new()
+    {
+        Theme = d.Theme,
+        History = d.History,
+        Conflict = d.Conflict,
+        FinalObjective = d.FinalObjective,
+        Ecosystem = d.Ecosystem,
+        Resources = d.Resources,
+        Mechanic = d.Mechanic,
+        Notes = d.Notes,
+    };
+
+    private static FloorData CloneFloor(FloorData d) => new()
+    {
+        ObjectiveType = d.ObjectiveType,
+        Identity = d.Identity,
+        MainObjective = d.MainObjective,
+        SecondaryObjectives = [.. d.SecondaryObjectives],
+        FailureCondition = d.FailureCondition,
+        Notes = d.Notes,
+        LinkedEncounterIds = [.. d.LinkedEncounterIds],
+        LinkedRewardIds = [.. d.LinkedRewardIds],
+    };
+}

@@ -1,0 +1,251 @@
+@page "/gm/campaigns/{Id:guid}/sessions"
+@attribute [Authorize(Roles = "GameMaster")]
+@using Microsoft.Extensions.Localization
+@using Ruptura.Web.Resources
+@using Ruptura.Shared.Content
+@inject IStringLocalizer<AppStrings> L
+@inject ISessionLogClientService SessionService
+@inject ICampaignClientService CampaignService
+@inject ToastService Toast
+@inject ConfirmService Confirm
+
+<PageTitle>@L["Gm.Sessions.Title"] — RUPTURA</PageTitle>
+
+<div class="page-content">
+    <Breadcrumbs Items="_breadcrumbs" />
+
+    <div class="page-heading">
+        <h1>@L["Gm.Sessions.Title"]</h1>
+    </div>
+
+    <div class="section-header">
+        <span class="section-title">@L["Gm.Sessions.ListTitle"]</span>
+        <button class="btn btn-primary btn-sm" @onclick="NewSession">@L["Gm.Sessions.New"]</button>
+    </div>
+
+    @if (_loading)
+    {
+        <LoadingIndicator Text="@L["Common.Loading"]" />
+    }
+    else
+    {
+        <div class="master-detail">
+            <div class="master-detail-list">
+                @if (_sessions.Count == 0)
+                {
+                    <div class="ledger-empty">
+                        <p>@L["Gm.Sessions.Empty"]</p>
+                    </div>
+                }
+                else
+                {
+                    <TableSearchBox @bind-Value="_searchTerm" Placeholder="@L["Gm.Sessions.SearchPlaceholder"]" />
+
+                    @if (FilteredSessions.Count == 0)
+                    {
+                        <div class="ledger-empty">
+                            <p>@L["Gm.Sessions.NoResults"]</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="ledger-table-wrap">
+                            <table class="ledger-table stack-mobile">
+                                <thead>
+                                    <tr>
+                                        <th>@L["Gm.Sessions.Col.Date"]</th>
+                                        <th>@L["Gm.Sessions.Col.Title"]</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var s in FilteredSessions)
+                                    {
+                                        <tr class="@(_editingId == s.Id ? "is-selected" : null)"
+                                            tabindex="0" role="button"
+                                            @onclick="() => SelectForEdit(s)"
+                                            @onkeydown="e => OnRowKey(e, s)">
+                                            <td data-label="@L["Gm.Sessions.Col.Date"]" style="white-space:nowrap">@s.Date.ToLocalTime().ToString("dd/MM/yy")</td>
+                                            <td data-label="@L["Gm.Sessions.Col.Title"]">@s.Title</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                }
+            </div>
+
+            <div class="detail-panel">
+                @if (!_editing)
+                {
+                    <p class="detail-panel-empty">@L["Gm.Sessions.SelectItem"]</p>
+                }
+                else
+                {
+                    <div class="section-header">
+                        <span class="section-title">
+                            @(_editingId is null ? L["Gm.Sessions.New"] : _formTitle)
+                        </span>
+                    </div>
+
+                    <div class="bestiary-form">
+                        <div class="field-row">
+                            <div>
+                                <label class="field-label">@L["Gm.Sessions.Date"]</label>
+                                <input type="date" class="form-control" @bind="_formDate" />
+                            </div>
+                        </div>
+
+                        <label class="field-label">@L["Gm.Sessions.SessionTitle"]</label>
+                        <input class="form-control" @bind="_formTitle" @bind:event="oninput" />
+
+                        <label class="field-label">@L["Gm.Sessions.Recap"]</label>
+                        <textarea class="form-control" rows="4" @bind="_form.Recap" @bind:event="oninput"></textarea>
+
+                        <label class="field-label">@L["Gm.Sessions.Agenda"]</label>
+                        <textarea class="form-control" rows="4" @bind="_form.Agenda" @bind:event="oninput"></textarea>
+
+                        <label class="field-label">@L["Gm.Sessions.Notes"]</label>
+                        <textarea class="form-control" rows="3" @bind="_form.Notes" @bind:event="oninput"></textarea>
+
+                        <div class="form-actions">
+                            <button class="btn btn-primary btn-sm" @onclick="SaveAsync" disabled="@(_saving || string.IsNullOrWhiteSpace(_formTitle))">
+                                @if (_saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                                @(_editingId is null ? L["Gm.Sessions.Create"] : L["Gm.Sessions.Save"])
+                            </button>
+                            @if (_editingId is not null)
+                            {
+                                <button class="btn btn-outline-secondary btn-sm" @onclick="() => DeleteAsync(_editingId!.Value, _formTitle)">@L["Gm.Sessions.Delete"]</button>
+                            }
+                            <button class="btn btn-outline-secondary btn-sm" @onclick="CancelEdit">@L["Gm.Sessions.Cancel"]</button>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private List<SessionLogResponse> _sessions = [];
+    private List<BreadcrumbItem> _breadcrumbs = [];
+    private bool _loading = true;
+    private bool _saving;
+    private string _searchTerm = string.Empty;
+
+    private bool _editing;
+    private Guid? _editingId;
+    private string _formTitle = string.Empty;
+    private DateTime _formDate = DateTime.Today;
+    private SessionLogData _form = new();
+
+    private List<SessionLogResponse> FilteredSessions =>
+        _sessions.Where(s => TableFilter.Matches(_searchTerm, s.Title)).ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var campaignsResult = await CampaignService.GetMineAsync();
+        var campaignName = campaignsResult?.Data?.FirstOrDefault(c => c.Id == Id)?.Name;
+        _breadcrumbs =
+        [
+            new BreadcrumbItem(L["Nav.Campaigns"], "/gm/campaigns"),
+            new BreadcrumbItem(campaignName ?? L["Common.UnknownCampaign"], $"/gm/campaigns/{Id}"),
+            new BreadcrumbItem(L["Gm.Sessions.Title"], null)
+        ];
+
+        await LoadAsync();
+        _loading = false;
+    }
+
+    private async Task LoadAsync()
+    {
+        var result = await SessionService.GetAllAsync(Id);
+        _sessions = result?.Data?.ToList() ?? [];
+    }
+
+    private void OnRowKey(KeyboardEventArgs e, SessionLogResponse s)
+    {
+        if (e.Key == "Enter" || e.Key == " ") SelectForEdit(s);
+    }
+
+    private void NewSession()
+    {
+        _editing = true;
+        _editingId = null;
+        _formTitle = string.Empty;
+        _formDate = DateTime.Today;
+        _form = new SessionLogData();
+    }
+
+    private void SelectForEdit(SessionLogResponse s)
+    {
+        _editing = true;
+        _editingId = s.Id;
+        _formTitle = s.Title;
+        _formDate = s.Date.ToLocalTime().Date;
+        _form = new SessionLogData { Recap = s.Data.Recap, Agenda = s.Data.Agenda, Notes = s.Data.Notes };
+    }
+
+    private void CancelEdit()
+    {
+        _editing = false;
+        _editingId = null;
+        _formTitle = string.Empty;
+        _form = new SessionLogData();
+    }
+
+    private async Task SaveAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_formTitle))
+        {
+            Toast.Error(L["Gm.Sessions.TitleRequired"]);
+            return;
+        }
+
+        _saving = true;
+        var wasCreate = _editingId is null;
+        var date = DateTime.SpecifyKind(_formDate, DateTimeKind.Local).ToUniversalTime();
+
+        var result = wasCreate
+            ? await SessionService.CreateAsync(Id, new CreateSessionLogRequest { Date = date, Title = _formTitle, Data = _form })
+            : await SessionService.UpdateAsync(Id, _editingId!.Value, new UpdateSessionLogRequest { Date = date, Title = _formTitle, Data = _form });
+
+        if (result?.Data is not null)
+        {
+            Toast.Success(wasCreate ? L["Gm.Sessions.CreateSuccess"] : L["Gm.Sessions.SaveSuccess"]);
+            var saved = result.Data;
+            await LoadAsync();
+            SelectForEdit(_sessions.FirstOrDefault(s => s.Id == saved.Id) ?? saved);
+        }
+        else
+        {
+            Toast.Error(L["Common.Error"]);
+        }
+
+        _saving = false;
+    }
+
+    private async Task DeleteAsync(Guid id, string title)
+    {
+        var confirmed = await Confirm.AskAsync(
+            L["Gm.Sessions.DeleteConfirm.Title"],
+            L["Gm.Sessions.DeleteConfirm.Message", title],
+            L["Gm.Sessions.Delete"],
+            L["Gm.Sessions.Cancel"]);
+        if (!confirmed) return;
+
+        var result = await SessionService.DeleteAsync(Id, id);
+        if (result?.Success == true)
+        {
+            Toast.Success(L["Gm.Sessions.DeleteSuccess"]);
+            CancelEdit();
+            await LoadAsync();
+        }
+        else
+        {
+            Toast.Error(L["Common.Error"]);
+        }
+    }
+}

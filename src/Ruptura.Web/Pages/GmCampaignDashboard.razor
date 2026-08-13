@@ -3,8 +3,10 @@
 @using Microsoft.Extensions.Localization
 @using Ruptura.Web.Resources
 @using Ruptura.Shared.Campaigns
+@using Ruptura.Shared.Content
 @inject IStringLocalizer<AppStrings> L
 @inject ICampaignClientService CampaignService
+@inject ICampaignContentClientService ContentService
 @inject ToastService Toast
 
 <PageTitle>@L["Dashboard.Title"] — RUPTURA</PageTitle>
@@ -59,6 +61,24 @@
                 </select>
             </div>
         </div>
+        @* ── Optional linked floor (GM-5 content tree) ── *@
+        <div style="margin-top:.75rem;max-width:640px">
+            <label class="dash-label">@L["Dashboard.LinkedFloor"]</label>
+            <select class="form-select" @bind="FloorSelection" disabled="@_updating">
+                <option value="@Guid.Empty">@L["Dashboard.LinkedFloor.None"]</option>
+                @foreach (var f in _floors)
+                {
+                    <option value="@f.Id">@f.Number. @f.Name</option>
+                }
+            </select>
+            @if (d.CurrentFloorId is not null && (!string.IsNullOrWhiteSpace(d.CurrentFloorName) || !string.IsNullOrWhiteSpace(d.CurrentFloorObjective)))
+            {
+                <p class="dash-label" style="color:var(--text-muted);margin-top:.35rem">
+                    <strong>@d.CurrentFloorName</strong>@(string.IsNullOrWhiteSpace(d.CurrentFloorObjective) ? "" : $" — {d.CurrentFloorObjective}")
+                </p>
+            }
+        </div>
+
         <div style="margin-top:.75rem;max-width:640px">
             <button class="btn btn-primary btn-sm" @onclick="PersistMetaAsync" disabled="@_updating">@L["Dashboard.SaveFloor"]</button>
         </div>
@@ -188,6 +208,16 @@
     private string _floorState = DungeonFloorStates.All[0];
     private int _customEvent = 20;
 
+    private List<FloorResponse> _floors = [];
+    private Guid? _currentFloorId;
+
+    // Select-friendly view over the nullable CurrentFloorId: Guid.Empty represents "(none)".
+    private Guid FloorSelection
+    {
+        get => _currentFloorId ?? Guid.Empty;
+        set => _currentFloorId = value == Guid.Empty ? null : value;
+    }
+
     protected override async Task OnInitializedAsync()
     {
         var result = await CampaignService.GetDashboardAsync(Id);
@@ -201,6 +231,14 @@
         {
             Toast.Error(L["Common.Error"]);
         }
+
+        // Load floors for the picker. On a failed/empty load the picker degrades to "(none)"
+        // only; we never wipe a valid CurrentFloorId — CurrentRequest() still echoes whatever
+        // the server returned (mirrors the GM-3 self-heal-only-on-successful-load lesson).
+        var floorsResult = await ContentService.GetFloorsAsync(Id);
+        _floors = floorsResult?.Data?
+            .OrderBy(f => f.Number)
+            .ToList() ?? [];
 
         _breadcrumbs =
         [
@@ -218,6 +256,7 @@
         _currentFloor = d.CurrentFloor;
         _floorName = d.FloorName;
         _floorState = string.IsNullOrEmpty(d.FloorState) ? DungeonFloorStates.All[0] : d.FloorState;
+        _currentFloorId = d.CurrentFloorId;
     }
 
     private UpdateDungeonStateRequest CurrentRequest() => new()
@@ -225,7 +264,8 @@
         CurrentFloor = _currentFloor,
         FloorName = _floorName ?? string.Empty,
         FloorState = _floorState,
-        Pressure = _dashboard!.Dungeon.Pressure
+        Pressure = _dashboard!.Dungeon.Pressure,
+        CurrentFloorId = _currentFloorId
     };
 
     private async Task PersistAsync(UpdateDungeonStateRequest request)
