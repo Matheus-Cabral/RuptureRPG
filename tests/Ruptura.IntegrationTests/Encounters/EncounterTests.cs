@@ -215,6 +215,49 @@ public class EncounterTests(IntegrationTestFactory factory)
     }
 
     [Fact]
+    public async Task Create_WithQuantityAbove9999_ClampsTo9999OnReadBack()
+    {
+        var (client, _, campaign) = await SetupGmWithCampaignAsync();
+        var (creatureId, _) = await CreateCreatureAsync(client);
+
+        var data = BaseData(creatureId, quantity: 100_000);
+        var create = await client.PostAsJsonAsync(
+            $"api/campaigns/{campaign.Id}/encounters",
+            new CreateEncounterRequest { Name = "Swarm", Data = data });
+        create.StatusCode.Should().Be(HttpStatusCode.Created);
+        var created = (await create.Content.ReadFromJsonAsync<ApiResponse<EncounterResponse>>())!.Data!;
+        created.Creatures.Single().Quantity.Should().Be(9999);
+
+        // Read-back confirms the clamp is persisted, not just applied on the create response.
+        var getResp = await client.GetAsync($"api/campaigns/{campaign.Id}/encounters/{created.Id}");
+        var body = (await getResp.Content.ReadFromJsonAsync<ApiResponse<EncounterResponse>>())!.Data!;
+        body.Creatures.Single().Quantity.Should().Be(9999);
+    }
+
+    [Fact]
+    public async Task Create_WithMoreThan200CreatureLines_PersistsOnly200()
+    {
+        var (client, _, campaign) = await SetupGmWithCampaignAsync();
+
+        // 250 distinct lines (unknown creature IDs are allowed — they resolve to Np 0, still listed).
+        var data = BaseData(Guid.NewGuid());
+        data.Creatures = Enumerable.Range(0, 250)
+            .Select(_ => new EncounterCreature { CreatureId = Guid.NewGuid(), Quantity = 1 })
+            .ToList();
+
+        var create = await client.PostAsJsonAsync(
+            $"api/campaigns/{campaign.Id}/encounters",
+            new CreateEncounterRequest { Name = "Horde", Data = data });
+        create.StatusCode.Should().Be(HttpStatusCode.Created);
+        var created = (await create.Content.ReadFromJsonAsync<ApiResponse<EncounterResponse>>())!.Data!;
+        created.Creatures.Should().HaveCount(200);
+
+        var getResp = await client.GetAsync($"api/campaigns/{campaign.Id}/encounters/{created.Id}");
+        var body = (await getResp.Content.ReadFromJsonAsync<ApiResponse<EncounterResponse>>())!.Data!;
+        body.Creatures.Should().HaveCount(200);
+    }
+
+    [Fact]
     public async Task Get_PartyNpOverride_OverridesAutoPg()
     {
         var (client, gmToken, campaign) = await SetupGmWithCampaignAsync();

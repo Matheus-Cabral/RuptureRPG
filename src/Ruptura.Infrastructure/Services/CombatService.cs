@@ -31,6 +31,11 @@ public class CombatService(
 
     private const int NameMax = 200;
 
+    // Ceiling on the roster StartFromEncounter can generate. A hostile-but-authenticated GM could
+    // author an encounter whose creature quantities multiply into an unbounded combatant list;
+    // expansion stops once this many combatants (creatures + party) have been added.
+    private const int MaxCombatants = 500;
+
     // ── Reads ──────────────────────────────────────────────────────────────────
 
     public async Task<Result<IEnumerable<CombatSessionResponse>>> GetForCampaignAsync(
@@ -115,9 +120,11 @@ public class CombatService(
 
         foreach (var line in encounter.Creatures)
         {
+            if (combatants.Count >= MaxCombatants) break;
             var pv = bestiary.TryGetValue(line.CreatureId, out var creature) ? creature.Data.Pv : 0;
             for (var n = 1; n <= Math.Max(1, line.Quantity); n++)
             {
+                if (combatants.Count >= MaxCombatants) break;
                 combatants.Add(new Combatant
                 {
                     Id = Guid.NewGuid(),
@@ -141,6 +148,7 @@ public class CombatService(
 
         foreach (var sheet in alive)
         {
+            if (combatants.Count >= MaxCombatants) break;
             var maxPv = Math.Max(0, sheet.DerivedStats.MaxHp);
             var currentPv = Math.Clamp(sheet.Data.Combat.CurrentHp, 0, maxPv);
             combatants.Add(new Combatant
@@ -215,11 +223,16 @@ public class CombatService(
             var maxPv = Math.Max(0, c.MaxPv);
             var currentPv = Math.Clamp(c.CurrentPv, 0, maxPv);
 
+            // Normalize Kind against the fixed set. An unknown/blank Kind defaults to "Adhoc"
+            // (a free-form combatant) rather than 400-ing — friendlier and lossless, and Kind is
+            // a display/grouping hint, not a security boundary.
+            var kind = CombatReference.Kinds.Contains(c.Kind) ? c.Kind : "Adhoc";
+
             combatants.Add(new Combatant
             {
                 Id = c.Id == Guid.Empty ? Guid.NewGuid() : c.Id,
                 Name = c.Name,
-                Kind = c.Kind,
+                Kind = kind,
                 SourceId = c.SourceId,
                 Initiative = c.Initiative,
                 Percepcao = c.Percepcao,
@@ -301,11 +314,14 @@ public class CombatService(
         };
     }
 
+    // A single corrupted/hand-edited DB blob must degrade to a default state, never 500 the whole
+    // list endpoint. Besides malformed JSON (JsonException), a type mismatch on a valid JSON shape
+    // can surface as NotSupportedException — catch both.
     private static CombatState Deserialize(string json)
     {
         CombatState? state;
         try { state = JsonSerializer.Deserialize<CombatState>(json, JsonOpts); }
-        catch (JsonException) { state = null; }
+        catch (Exception ex) when (ex is JsonException or NotSupportedException) { state = null; }
         return state ?? new CombatState();
     }
 

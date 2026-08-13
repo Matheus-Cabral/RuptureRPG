@@ -183,13 +183,23 @@ public class EncounterService(
         return null;
     }
 
-    // Defense-in-depth: drop null creature lines and clamp each quantity to ≥1 so a stray 0/negative
-    // can't silently drop a line or subtract from PE. Overrides floored at ≥0.
+    // Upper bound on a single creature line's quantity — high enough for any sane encounter,
+    // low enough that quantity × Np can never overflow the calculator's long math.
+    private const int QuantityMax = 9999;
+
+    // Cap on the number of distinct creature lines persisted in one encounter. Bounds DataJson
+    // size and the calculator's per-line work for an authenticated-but-hostile GM.
+    private const int MaxCreatureLines = 200;
+
+    // Defense-in-depth: drop null creature lines, clamp each quantity to [1, 9999] so a stray
+    // 0/negative can't silently drop a line or subtract from PE and a huge value can't overflow
+    // the calculator, and cap the list to the first 200 lines. Overrides floored at ≥0.
     private static void Sanitize(EncounterData data)
     {
         data.Creatures = (data.Creatures ?? [])
             .Where(c => c is not null)
-            .Select(c => { c.Quantity = Math.Max(1, c.Quantity); return c; })
+            .Take(MaxCreatureLines)
+            .Select(c => { c.Quantity = Math.Clamp(c.Quantity, 1, QuantityMax); return c; })
             .ToList();
 
         if (data.PartyNpOverride is { } np) data.PartyNpOverride = Math.Max(0, np);
@@ -331,11 +341,14 @@ public class EncounterService(
         };
     }
 
+    // A single corrupted/hand-edited DB blob must degrade to a default object, never 500 the
+    // whole list endpoint. Besides malformed JSON (JsonException), a type mismatch on a valid
+    // JSON shape can surface as NotSupportedException — catch both.
     private static EncounterData Deserialize(string json)
     {
         EncounterData? data;
         try { data = JsonSerializer.Deserialize<EncounterData>(json, JsonOpts); }
-        catch (JsonException) { data = null; }
+        catch (Exception ex) when (ex is JsonException or NotSupportedException) { data = null; }
         return data ?? new EncounterData();
     }
 }

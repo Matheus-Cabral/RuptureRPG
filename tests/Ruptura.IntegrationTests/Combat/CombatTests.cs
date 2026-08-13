@@ -177,6 +177,49 @@ public class CombatTests(IntegrationTestFactory factory)
     }
 
     [Fact]
+    public async Task StartFromEncounter_WithHugeCreatureCount_CapsRosterAtCeiling()
+    {
+        var (client, _, campaign) = await SetupGmWithCampaignAsync();
+        var creatureId = await CreateCreatureAsync(client, pv: 20);
+        // Quantity 600 would expand to 600 creature combatants; the 500 ceiling clips it.
+        var encounterId = await CreateEncounterAsync(client, campaign.Id, creatureId, quantity: 600);
+
+        var response = await client.PostAsJsonAsync(
+            $"api/campaigns/{campaign.Id}/combat/start-from-encounter",
+            new StartFromEncounterRequest { Name = "Endless Horde", EncounterId = encounterId });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var body = (await response.Content.ReadFromJsonAsync<ApiResponse<CombatSessionResponse>>())!.Data!;
+        body.State.Combatants.Should().HaveCount(500);
+    }
+
+    [Fact]
+    public async Task UpdateState_WithUnknownKind_DefaultsToAdhocOnReadBack()
+    {
+        var (client, _, campaign) = await SetupGmWithCampaignAsync();
+        var create = await client.PostAsJsonAsync(
+            $"api/campaigns/{campaign.Id}/combat",
+            new CreateCombatSessionRequest { Name = "Session" });
+        var created = (await create.Content.ReadFromJsonAsync<ApiResponse<CombatSessionResponse>>())!.Data!;
+
+        var state = new CombatState
+        {
+            Combatants =
+            [
+                new Combatant { Name = "Mystery", Kind = "Bogus", MaxPv = 10, CurrentPv = 10 }
+            ]
+        };
+
+        var response = await client.PutAsJsonAsync(
+            $"api/campaigns/{campaign.Id}/combat/{created.Id}",
+            new UpdateCombatStateRequest { Name = "Session", State = state });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = (await response.Content.ReadFromJsonAsync<ApiResponse<CombatSessionResponse>>())!.Data!;
+        body.State.Combatants.Single().Kind.Should().Be("Adhoc");
+    }
+
+    [Fact]
     public async Task UpdateState_ClampsPvAndRecomputesDefeated()
     {
         var (client, _, campaign) = await SetupGmWithCampaignAsync();
