@@ -875,8 +875,8 @@
   <data name="Gm.Combat.SelectEncounter"><value>Selecione um encontro</value></data>
   <data name="Gm.Combat.Start"><value>Iniciar</value></data>
   <data name="Gm.Combat.StartSuccess"><value>Combate iniciado a partir do encontro.</value></data>
-  <data name="Gm.Combat.ReplaceConfirm.Title"><value>Substituir rastreador</value></data>
-  <data name="Gm.Combat.ReplaceConfirm.Message"><value>Isto substituirá o estado atual do rastreador. Continuar?</value></data>
+  <data name="Gm.Combat.ReplaceConfirm.Title"><value>Iniciar novo rastreador</value></data>
+  <data name="Gm.Combat.ReplaceConfirm.Message"><value>Iniciar um novo rastreador a partir deste encontro?</value></data>
   <data name="Gm.Combat.Save"><value>Salvar</value></data>
   <data name="Gm.Combat.SaveSuccess"><value>Rastreador salvo.</value></data>
   <data name="Gm.Combat.Delete"><value>Excluir</value></data>

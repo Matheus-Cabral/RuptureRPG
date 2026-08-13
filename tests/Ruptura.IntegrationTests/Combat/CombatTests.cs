@@ -240,6 +240,65 @@ public class CombatTests(IntegrationTestFactory factory)
     }
 
     [Fact]
+    public async Task UpdateState_PersistsInitiativeOrder_AndCursorFollowsCombatantIdentity()
+    {
+        var (client, _, campaign) = await SetupGmWithCampaignAsync();
+        var create = await client.PostAsJsonAsync(
+            $"api/campaigns/{campaign.Id}/combat",
+            new CreateCombatSessionRequest { Name = "Session" });
+        var created = (await create.Content.ReadFromJsonAsync<ApiResponse<CombatSessionResponse>>())!.Data!;
+
+        // Roster is deliberately NOT in initiative order; the cursor points at the low-initiative
+        // combatant ("Slow") which sorts to the end.
+        var slowId = Guid.NewGuid();
+        var midId = Guid.NewGuid();
+        var fastId = Guid.NewGuid();
+        var state = new CombatState
+        {
+            Round = 3,
+            CurrentIndex = 0,
+            Combatants =
+            [
+                new Combatant { Id = slowId, Name = "Slow", Kind = "Adhoc", MaxPv = 10, CurrentPv = 10, Initiative = 1 },
+                new Combatant { Id = midId, Name = "Mid", Kind = "Adhoc", MaxPv = 10, CurrentPv = 10, Initiative = 10 },
+                new Combatant { Id = fastId, Name = "Fast", Kind = "Adhoc", MaxPv = 10, CurrentPv = 10, Initiative = 20 }
+            ]
+        };
+
+        var response = await client.PutAsJsonAsync(
+            $"api/campaigns/{campaign.Id}/combat/{created.Id}",
+            new UpdateCombatStateRequest { Name = "Session", State = state });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = (await response.Content.ReadFromJsonAsync<ApiResponse<CombatSessionResponse>>())!.Data!;
+
+        // Persisted/response roster is initiative-descending: Fast, Mid, Slow.
+        body.State.Combatants.Select(c => c.Name).Should().ContainInOrder("Fast", "Mid", "Slow");
+        // The cursor still points at the same combatant Id it did before the sort ("Slow", now last).
+        body.State.Combatants[body.State.CurrentIndex].Id.Should().Be(slowId);
+        body.State.Round.Should().Be(3);
+    }
+
+    [Fact]
+    public async Task UpdateState_WithNullState_Returns400StateRequired()
+    {
+        var (client, _, campaign) = await SetupGmWithCampaignAsync();
+        var create = await client.PostAsJsonAsync(
+            $"api/campaigns/{campaign.Id}/combat",
+            new CreateCombatSessionRequest { Name = "Session" });
+        var created = (await create.Content.ReadFromJsonAsync<ApiResponse<CombatSessionResponse>>())!.Data!;
+
+        var response = await client.PutAsJsonAsync(
+            $"api/campaigns/{campaign.Id}/combat/{created.Id}",
+            new UpdateCombatStateRequest { Name = "Session", State = null! });
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var body = await response.Content.ReadFromJsonAsync<ApiResponse>();
+        body!.Success.Should().BeFalse();
+        body.Message.Should().Be("Combat.StateRequired");
+    }
+
+    [Fact]
     public async Task GetById_ByADifferentGameMaster_Returns404()
     {
         var (client, _, campaign) = await SetupGmWithCampaignAsync();

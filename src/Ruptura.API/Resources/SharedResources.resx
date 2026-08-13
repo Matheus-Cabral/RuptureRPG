@@ -146,6 +146,7 @@
   <!-- Combat -->
   <data name="Combat.NotFound"><value>Combat session not found.</value></data>
   <data name="Combat.NameRequired"><value>A combat session must have a name.</value></data>
+  <data name="Combat.StateRequired"><value>Combat state is required.</value></data>
   <data name="Combat.ConditionInvalid"><value>A combatant's condition is not valid.</value></data>
   <data name="Combat.EncounterInvalid"><value>The linked encounter is not valid.</value></data>
 </root>

@@ -361,8 +361,8 @@
     {
         if (_encounterToStart == Guid.Empty || string.IsNullOrWhiteSpace(_startName)) return;
 
-        // Starting from an encounter REPLACES tracker state server-side. Confirm when the
-        // currently selected tracker already holds combatants.
+        // Starting from an encounter creates a NEW session (the selected tracker is left intact;
+        // the UI just switches selection). Confirm when a tracker with combatants is selected.
         if (_selectedId is not null && _state.Combatants.Count > 0)
         {
             var confirmed = await Confirm.AskAsync(
@@ -500,8 +500,14 @@
 
     private void RemoveCombatant(Combatant c)
     {
+        var removedIndex = _state.Combatants.IndexOf(c);
         _state.Combatants.Remove(c);
         _pvAmounts.Remove(c.Id);
+        // Removing a row before the cursor shifts every following row down one — decrement the
+        // cursor so the highlight stays on the same combatant rather than sliding onto its
+        // neighbour. Then keep the tail-clamp for a removal at/after the cursor.
+        if (removedIndex >= 0 && removedIndex < _state.CurrentIndex)
+            _state.CurrentIndex--;
         if (_state.CurrentIndex >= _state.Combatants.Count)
             _state.CurrentIndex = Math.Max(0, _state.Combatants.Count - 1);
     }

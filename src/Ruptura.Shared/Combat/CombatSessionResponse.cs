@@ -2,7 +2,8 @@ namespace Ruptura.Shared.Combat;
 
 // Server-authoritative combat tracker read model: echoes the session name/active flag and
 // the live CombatState, plus the server-derived pressure (Pressure and its PressureStateKey
-// are computed from the roster, never trusted from the client).
+// are the campaign's current Pressão — from campaign.Pressure + DungeonPressure.StateFor —
+// never trusted from the client).
 public class CombatSessionResponse
 {
     public Guid Id { get; set; }

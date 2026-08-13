@@ -123,6 +123,7 @@ public static class ErrorCodes
     {
         public const string NotFound = "Combat.NotFound";
         public const string NameRequired = "Combat.NameRequired";
+        public const string StateRequired = "Combat.StateRequired";
         public const string ConditionInvalid = "Combat.ConditionInvalid";
         public const string EncounterInvalid = "Combat.EncounterInvalid";
     }

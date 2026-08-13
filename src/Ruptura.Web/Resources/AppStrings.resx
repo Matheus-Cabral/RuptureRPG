@@ -875,8 +875,8 @@
   <data name="Gm.Combat.SelectEncounter"><value>Select an encounter</value></data>
   <data name="Gm.Combat.Start"><value>Start</value></data>
   <data name="Gm.Combat.StartSuccess"><value>Combat started from encounter.</value></data>
-  <data name="Gm.Combat.ReplaceConfirm.Title"><value>Replace tracker</value></data>
-  <data name="Gm.Combat.ReplaceConfirm.Message"><value>This will replace the current tracker state. Continue?</value></data>
+  <data name="Gm.Combat.ReplaceConfirm.Title"><value>Start new tracker</value></data>
+  <data name="Gm.Combat.ReplaceConfirm.Message"><value>Start a new tracker from this encounter?</value></data>
   <data name="Gm.Combat.Save"><value>Save</value></data>
   <data name="Gm.Combat.SaveSuccess"><value>Tracker saved.</value></data>
   <data name="Gm.Combat.Delete"><value>Delete</value></data>

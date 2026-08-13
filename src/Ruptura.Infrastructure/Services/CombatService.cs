@@ -191,7 +191,11 @@ public class CombatService(
         if (string.IsNullOrWhiteSpace(request.Name))
             return Result.Failure<CombatSessionResponse>(ErrorCodes.Combat.NameRequired);
 
-        var incoming = request.State ?? new CombatState();
+        // Reject a missing State instead of silently persisting an empty roster (data loss).
+        if (request.State is null)
+            return Result.Failure<CombatSessionResponse>(ErrorCodes.Combat.StateRequired);
+
+        var incoming = request.State;
 
         // Structural validation + clamps: drop null combatants, floor MaxPv, clamp CurrentPv into
         // [0, MaxPv], validate every condition, recompute IsDefeated.
@@ -203,6 +207,10 @@ public class CombatService(
             var conditions = (c.Conditions ?? []).ToList();
             if (conditions.Any(cond => !CombatReference.Conditions.Contains(cond)))
                 return Result.Failure<CombatSessionResponse>(ErrorCodes.Combat.ConditionInvalid);
+
+            // De-dupe so a repeated condition (e.g. ["Morto","Morto"]) can't round-trip and
+            // require two toggle clicks to clear.
+            conditions = conditions.Distinct().ToList();
 
             var maxPv = Math.Max(0, c.MaxPv);
             var currentPv = Math.Clamp(c.CurrentPv, 0, maxPv);
@@ -224,11 +232,21 @@ public class CombatService(
         }
 
         var round = Math.Max(1, incoming.Round);
-        var currentIndex = combatants.Count == 0
+        var clampedIndex = combatants.Count == 0
             ? 0
             : Math.Clamp(incoming.CurrentIndex, 0, combatants.Count - 1);
 
-        var state = new CombatState { Round = round, CurrentIndex = currentIndex, Combatants = combatants };
+        // Persist the roster in initiative order and follow the current combatant's identity
+        // across the sort, so the "current turn" cursor never silently jumps when the incoming
+        // list is stale w.r.t. the order (a GM edited an Initiative, added a reinforcement,
+        // etc.). CombatOrder.Order is idempotent, so MapToResponse's re-sort becomes a no-op and
+        // persisted order == response order permanently.
+        var currentId = combatants.ElementAtOrDefault(clampedIndex)?.Id;
+        combatants = combatOrder.Order(combatants).ToList();
+        var newIndex = currentId is null ? 0 : combatants.FindIndex(c => c.Id == currentId.Value);
+        if (newIndex < 0) newIndex = 0;
+
+        var state = new CombatState { Round = round, CurrentIndex = newIndex, Combatants = combatants };
 
         session.Name = TruncName(request.Name);
         session.IsActive = request.IsActive;
