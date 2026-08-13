@@ -127,4 +127,13 @@ public static class ErrorCodes
         public const string ConditionInvalid = "Combat.ConditionInvalid";
         public const string EncounterInvalid = "Combat.EncounterInvalid";
     }
+
+    public static class Content
+    {
+        public const string NotFound = "Content.NotFound";
+        public const string NameRequired = "Content.NameRequired";
+        public const string ObjectiveTypeInvalid = "Content.ObjectiveTypeInvalid";
+        public const string ArcInvalid = "Content.ArcInvalid";
+        public const string LinkInvalid = "Content.LinkInvalid";
+    }
 }

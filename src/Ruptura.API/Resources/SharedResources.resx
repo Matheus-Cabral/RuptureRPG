@@ -149,4 +149,11 @@
   <data name="Combat.StateRequired"><value>Combat state is required.</value></data>
   <data name="Combat.ConditionInvalid"><value>A combatant's condition is not valid.</value></data>
   <data name="Combat.EncounterInvalid"><value>The linked encounter is not valid.</value></data>
+
+  <!-- Content (Arcs / Floors) -->
+  <data name="Content.NotFound"><value>Content not found.</value></data>
+  <data name="Content.NameRequired"><value>A name is required.</value></data>
+  <data name="Content.ObjectiveTypeInvalid"><value>The objective type is not valid.</value></data>
+  <data name="Content.ArcInvalid"><value>The arc is not valid.</value></data>
+  <data name="Content.LinkInvalid"><value>A linked item is not valid.</value></data>
 </root>

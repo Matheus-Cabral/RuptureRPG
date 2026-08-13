@@ -78,6 +78,7 @@ public static class InfrastructureExtensions
         services.AddScoped<IRewardService, RewardService>();
         services.AddScoped<ICombatService, CombatService>();
         services.AddSingleton<CombatOrder>();  // pure & stateless initiative-ordering helper
+        services.AddScoped<ICampaignContentService, CampaignContentService>();
 
         // Repositories
         services.AddScoped<IInviteCodeRepository, InviteCodeRepository>();
@@ -98,6 +99,8 @@ public static class InfrastructureExtensions
         services.AddScoped<IEncounterRepository, EncounterRepository>();
         services.AddScoped<IRewardRepository, RewardRepository>();
         services.AddScoped<ICombatSessionRepository, CombatSessionRepository>();
+        services.AddScoped<IArcRepository, ArcRepository>();
+        services.AddScoped<IFloorRepository, FloorRepository>();
 
         // Validators
         services.AddScoped<IValidator<LoginRequest>, LoginRequestValidator>();
