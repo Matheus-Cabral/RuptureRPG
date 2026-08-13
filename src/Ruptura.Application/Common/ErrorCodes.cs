@@ -136,4 +136,10 @@ public static class ErrorCodes
         public const string ArcInvalid = "Content.ArcInvalid";
         public const string LinkInvalid = "Content.LinkInvalid";
     }
+
+    public static class Session
+    {
+        public const string NotFound = "Session.NotFound";
+        public const string TitleRequired = "Session.TitleRequired";
+    }
 }

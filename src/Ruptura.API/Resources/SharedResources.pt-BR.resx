@@ -156,4 +156,6 @@
   <data name="Content.ObjectiveTypeInvalid"><value>O tipo de objetivo não é válido.</value></data>
   <data name="Content.ArcInvalid"><value>O arco não é válido.</value></data>
   <data name="Content.LinkInvalid"><value>Um item vinculado não é válido.</value></data>
+  <data name="Session.NotFound"><value>Registro de sessão não encontrado.</value></data>
+  <data name="Session.TitleRequired"><value>Um título é obrigatório.</value></data>
 </root>

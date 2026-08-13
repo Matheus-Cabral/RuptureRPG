@@ -156,4 +156,6 @@
   <data name="Content.ObjectiveTypeInvalid"><value>The objective type is not valid.</value></data>
   <data name="Content.ArcInvalid"><value>The arc is not valid.</value></data>
   <data name="Content.LinkInvalid"><value>A linked item is not valid.</value></data>
+  <data name="Session.NotFound"><value>Session log not found.</value></data>
+  <data name="Session.TitleRequired"><value>A title is required.</value></data>
 </root>
