@@ -213,6 +213,56 @@ public class CampaignContentTests(IntegrationTestFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
+    // ── Arc write-path hide-existence auth (a non-owning GM sees 404, not 403) ────
+
+    [Fact]
+    public async Task CreateArc_ByADifferentGameMaster_Returns404()
+    {
+        var (_, _, campaign) = await SetupGmWithCampaignAsync();
+
+        var (otherClient, otherToken, _) = await SetupGmWithCampaignAsync();
+        AuthHelper.SetBearerToken(otherClient, otherToken);
+
+        var response = await otherClient.PostAsJsonAsync(
+            $"api/campaigns/{campaign.Id}/arcs",
+            new CreateArcRequest { Name = "Intruder", Order = 1, Data = new ArcData() });
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task UpdateArc_ByADifferentGameMaster_Returns404()
+    {
+        var (client, _, campaign) = await SetupGmWithCampaignAsync();
+        var arcId = await CreateArcAsync(client, campaign.Id);
+
+        var (otherClient, otherToken, _) = await SetupGmWithCampaignAsync();
+        AuthHelper.SetBearerToken(otherClient, otherToken);
+
+        var response = await otherClient.PutAsJsonAsync(
+            $"api/campaigns/{campaign.Id}/arcs/{arcId}",
+            new UpdateArcRequest { Name = "Hijacked", Order = 9, Data = new ArcData() });
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task DeleteArc_ByADifferentGameMaster_Returns404()
+    {
+        var (client, _, campaign) = await SetupGmWithCampaignAsync();
+        var arcId = await CreateArcAsync(client, campaign.Id);
+
+        var (otherClient, otherToken, _) = await SetupGmWithCampaignAsync();
+        AuthHelper.SetBearerToken(otherClient, otherToken);
+
+        var response = await otherClient.DeleteAsync($"api/campaigns/{campaign.Id}/arcs/{arcId}");
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+
+        // The arc still exists for its real owner.
+        var stillThere = await client.GetAsync($"api/campaigns/{campaign.Id}/arcs/{arcId}");
+        stillThere.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
     // ── Floor CRUD ──────────────────────────────────────────────────────────────
 
     [Fact]
@@ -450,6 +500,57 @@ public class CampaignContentTests(IntegrationTestFactory factory)
         var response = await client.PostAsJsonAsync(
             $"api/campaigns/{campaign.Id}/floors",
             new CreateFloorRequest { ArcId = arcId, Number = 1, Name = "F", Data = data });
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var body = await response.Content.ReadFromJsonAsync<ApiResponse>();
+        body!.Message.Should().Be("Content.LinkInvalid");
+    }
+
+    [Fact]
+    public async Task UpdateFloor_WithForeignArc_Returns400ArcInvalid()
+    {
+        var (client, _, campaign) = await SetupGmWithCampaignAsync();
+        var arcId = await CreateArcAsync(client, campaign.Id);
+        var create = await client.PostAsJsonAsync($"api/campaigns/{campaign.Id}/floors",
+            new CreateFloorRequest { ArcId = arcId, Number = 1, Name = "Floor 1", Data = BaseFloorData() });
+        var created = (await create.Content.ReadFromJsonAsync<ApiResponse<FloorResponse>>())!.Data!;
+
+        var otherCampaignResponse = await client.PostAsJsonAsync(
+            "api/campaigns", new CreateCampaignRequest { Name = "Other Campaign" });
+        var otherCampaign = (await otherCampaignResponse.Content
+            .ReadFromJsonAsync<ApiResponse<CampaignResponse>>())!.Data!;
+        var foreignArcId = await CreateArcAsync(client, otherCampaign.Id);
+
+        var response = await client.PutAsJsonAsync(
+            $"api/campaigns/{campaign.Id}/floors/{created.Id}",
+            new UpdateFloorRequest { ArcId = foreignArcId, Number = 1, Name = "Floor 1", Data = BaseFloorData() });
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var body = await response.Content.ReadFromJsonAsync<ApiResponse>();
+        body!.Message.Should().Be("Content.ArcInvalid");
+    }
+
+    [Fact]
+    public async Task UpdateFloor_WithForeignLink_Returns400LinkInvalid()
+    {
+        var (client, _, campaign) = await SetupGmWithCampaignAsync();
+        var arcId = await CreateArcAsync(client, campaign.Id);
+        var create = await client.PostAsJsonAsync($"api/campaigns/{campaign.Id}/floors",
+            new CreateFloorRequest { ArcId = arcId, Number = 1, Name = "Floor 1", Data = BaseFloorData() });
+        var created = (await create.Content.ReadFromJsonAsync<ApiResponse<FloorResponse>>())!.Data!;
+
+        var otherCampaignResponse = await client.PostAsJsonAsync(
+            "api/campaigns", new CreateCampaignRequest { Name = "Other Campaign" });
+        var otherCampaign = (await otherCampaignResponse.Content
+            .ReadFromJsonAsync<ApiResponse<CampaignResponse>>())!.Data!;
+        var foreignEncounterId = await CreateEncounterAsync(client, otherCampaign.Id);
+
+        var data = BaseFloorData();
+        data.LinkedEncounterIds = [foreignEncounterId];
+
+        var response = await client.PutAsJsonAsync(
+            $"api/campaigns/{campaign.Id}/floors/{created.Id}",
+            new UpdateFloorRequest { ArcId = arcId, Number = 1, Name = "Floor 1", Data = data });
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         var body = await response.Content.ReadFromJsonAsync<ApiResponse>();

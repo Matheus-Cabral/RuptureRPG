@@ -183,6 +183,8 @@ public class SessionLogTests(IntegrationTestFactory factory)
 
         var response = await otherClient.GetAsync($"api/campaigns/{campaign.Id}/sessions/{created.Id}");
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        var body = await response.Content.ReadFromJsonAsync<ApiResponse>();
+        body!.Message.Should().Be("Session.NotFound");
     }
 
     [Fact]
@@ -199,5 +201,32 @@ public class SessionLogTests(IntegrationTestFactory factory)
         // A session id that belongs to a different campaign → 404 (existence hidden).
         var response = await client.GetAsync($"api/campaigns/{otherCampaign.Id}/sessions/{created.Id}");
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        var body = await response.Content.ReadFromJsonAsync<ApiResponse>();
+        body!.Message.Should().Be("Session.NotFound");
+    }
+
+    [Fact]
+    public async Task CreateSession_WithOverlongTitle_TruncatesTo200OnReadBack()
+    {
+        var (client, _, campaign) = await SetupGmWithCampaignAsync();
+
+        var overlong = new string('T', 250);
+        var create = await client.PostAsJsonAsync(
+            $"api/campaigns/{campaign.Id}/sessions",
+            new CreateSessionLogRequest
+            {
+                Date = new DateTime(2026, 5, 5, 0, 0, 0, DateTimeKind.Utc),
+                Title = overlong,
+                Data = new SessionLogData()
+            });
+
+        create.StatusCode.Should().Be(HttpStatusCode.Created);
+        var created = (await create.Content.ReadFromJsonAsync<ApiResponse<SessionLogResponse>>())!.Data!;
+        created.Title.Should().HaveLength(200);
+
+        var get = await client.GetAsync($"api/campaigns/{campaign.Id}/sessions/{created.Id}");
+        get.StatusCode.Should().Be(HttpStatusCode.OK);
+        var read = (await get.Content.ReadFromJsonAsync<ApiResponse<SessionLogResponse>>())!.Data!;
+        read.Title.Should().HaveLength(200);
     }
 }
