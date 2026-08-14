@@ -164,6 +164,12 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 400; color: var(--te
     padding: 0.65rem 1.75rem;
     transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
+/* On-palette focus ring — replaces Bootstrap's default off-palette blue glow. --primary already
+   flips per theme (light/dark/explicit), so color-mix picks it up with no extra theme blocks. */
+.btn:focus, .btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--primary) 35%, transparent);
+}
 .btn-primary {
     background: var(--primary) !important;
     border: 1px solid var(--primary) !important;

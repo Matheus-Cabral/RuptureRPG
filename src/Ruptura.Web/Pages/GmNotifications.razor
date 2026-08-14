@@ -2,6 +2,7 @@
 @attribute [Authorize(Roles = "GameMaster")]
 @using Microsoft.Extensions.Localization
 @using Ruptura.Web.Resources
+@using Ruptura.Web.Shared
 @using Ruptura.Shared.Notifications
 @inject IStringLocalizer<AppStrings> L
 @inject INotificationClientService NotificationService
@@ -27,49 +28,73 @@
     }
     else
     {
-        @foreach (var group in _groups)
+        <TableSearchBox @bind-Value="_searchTerm" Placeholder="@L["Gm.Notifications.SearchPlaceholder"]" />
+
+        @if (FilteredGroups.Count == 0)
         {
-            <div style="margin-bottom:1.5rem">
-                <h2 class="section-title">@group.CampaignName</h2>
-                <div class="ledger-table-wrap">
-                    <table class="ledger-table stack-mobile">
-                        <thead>
-                            <tr>
-                                <th>@L["Gm.Notifications.Col.Character"]</th>
-                                <th>@L["Gm.Notifications.Col.CreatedAt"]</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var notification in group.Notifications)
-                            {
-                                <tr>
-                                    <td data-label="@L["Gm.Notifications.Col.Character"]">@notification.CharacterName</td>
-                                    <td data-label="@L["Gm.Notifications.Col.CreatedAt"]" style="color:var(--text-muted);font-size:var(--text-xs);white-space:nowrap">
-                                        @notification.CreatedAt.ToLocalTime().ToString("dd/MM/yy HH:mm")
-                                    </td>
-                                    <td data-label="" style="display:flex;gap:.5rem">
-                                        <button class="btn btn-primary btn-sm" @onclick="() => PromoteAsync(notification.Id)" disabled="@_busy">
-                                            @L["Gm.Notifications.Promote"]
-                                        </button>
-                                        <button class="btn btn-outline-secondary btn-sm" @onclick="() => DismissAsync(notification.Id, notification.CharacterName ?? string.Empty)" disabled="@_busy">
-                                            @L["Gm.Notifications.Dismiss"]
-                                        </button>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
+            <div class="ledger-empty">
+                <p>@L["Gm.Notifications.NoResults"]</p>
             </div>
+        }
+        else
+        {
+            @foreach (var group in FilteredGroups)
+            {
+                <div style="margin-bottom:1.5rem">
+                    <h2 class="section-title">@group.CampaignName</h2>
+                    <div class="ledger-table-wrap">
+                        <table class="ledger-table stack-mobile">
+                            <thead>
+                                <tr>
+                                    <th>@L["Gm.Notifications.Col.Character"]</th>
+                                    <th>@L["Gm.Notifications.Col.CreatedAt"]</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var notification in group.Notifications)
+                                {
+                                    <tr>
+                                        <td data-label="@L["Gm.Notifications.Col.Character"]">@notification.CharacterName</td>
+                                        <td data-label="@L["Gm.Notifications.Col.CreatedAt"]" style="color:var(--text-muted);font-size:var(--text-xs);white-space:nowrap">
+                                            @notification.CreatedAt.ToLocalTime().ToString("dd/MM/yy HH:mm")
+                                        </td>
+                                        <td data-label="" style="display:flex;gap:.5rem">
+                                            <button class="btn btn-primary btn-sm" @onclick="() => PromoteAsync(notification.Id)" disabled="@_busy">
+                                                @L["Gm.Notifications.Promote"]
+                                            </button>
+                                            <button class="btn btn-outline-secondary btn-sm" @onclick="() => DismissAsync(notification.Id, notification.CharacterName ?? string.Empty)" disabled="@_busy">
+                                                @L["Gm.Notifications.Dismiss"]
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
         }
     }
 </div>
 
 @code {
     private List<NotificationGroupResponse> _groups = [];
+    private string _searchTerm = string.Empty;
     private bool _loading = true;
     private bool _busy;
+
+    private List<NotificationGroupResponse> FilteredGroups => _groups
+        .Select(g => new NotificationGroupResponse
+        {
+            CampaignId = g.CampaignId,
+            CampaignName = g.CampaignName,
+            Notifications = g.Notifications
+                .Where(n => TableFilter.Matches(_searchTerm, n.CharacterName))
+                .ToList()
+        })
+        .Where(g => g.Notifications.Count > 0)
+        .ToList();
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 

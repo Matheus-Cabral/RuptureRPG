@@ -115,6 +115,8 @@
                 {
                     <h3>@selectedBuilding.InstallationName</h3>
                     <dl class="detail-list">
+                        <div class="detail-row"><dt class="detail-key">@L["Guild.Building.Level"]</dt><dd class="detail-value">@selectedBuilding.Level</dd></div>
+                        <div class="detail-row"><dt class="detail-key">@L["Guild.Building.Active"]</dt><dd class="detail-value">@(selectedBuilding.IsActive ? L["Common.Yes"] : L["Common.No"])</dd></div>
                         <div class="detail-row"><dt class="detail-key">@L["Guild.Building.Category"]</dt><dd class="detail-value">@selectedBuilding.Category</dd></div>
                         <div class="detail-row"><dt class="detail-key">@L["Guild.Building.Weight"]</dt><dd class="detail-value">@selectedBuilding.Weight</dd></div>
                         <div class="detail-row"><dt class="detail-key">@L["Guild.Building.LevelCap"]</dt><dd class="detail-value">@selectedBuilding.LevelCap</dd></div>

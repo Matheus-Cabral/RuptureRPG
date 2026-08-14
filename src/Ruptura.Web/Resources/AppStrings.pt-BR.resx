@@ -348,6 +348,8 @@
   <data name="Nav.Notifications"><value>Notificações</value></data>
   <data name="Gm.Notifications.Title"><value>Notificações</value></data>
   <data name="Gm.Notifications.Empty"><value>Nenhuma notificação pendente.</value></data>
+  <data name="Gm.Notifications.SearchPlaceholder"><value>Buscar por personagem…</value></data>
+  <data name="Gm.Notifications.NoResults"><value>Nenhuma notificação corresponde à busca.</value></data>
   <data name="Gm.Notifications.Col.Character"><value>Personagem</value></data>
   <data name="Gm.Notifications.Col.CreatedAt"><value>Desde</value></data>
   <data name="Gm.Notifications.Promote"><value>Promover</value></data>

@@ -3,7 +3,7 @@
 @inject LightboxService Lightbox
 @inject IStringLocalizer<AppStrings> L
 @inject IJSRuntime JS
-@implements IDisposable
+@implements IAsyncDisposable
 
 @if (Lightbox.CurrentImage is { } image)
 {
@@ -47,5 +47,23 @@
         _wasOpen = isOpen;
     }
 
-    public void Dispose() => Lightbox.OnChange -= HandleChange;
+    public async ValueTask DisposeAsync()
+    {
+        Lightbox.OnChange -= HandleChange;
+
+        // Defensive: this component is mounted once in MainLayout and never torn down in normal
+        // SPA navigation, so this path is effectively dead today — but if that ever changes and
+        // disposal happens mid-open, release the focus trap + body scroll lock rather than leak them.
+        if (_wasOpen)
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("ruptura.closeLightbox");
+            }
+            catch (JSDisconnectedException)
+            {
+                // circuit already gone — nothing to clean up client-side
+            }
+        }
+    }
 }

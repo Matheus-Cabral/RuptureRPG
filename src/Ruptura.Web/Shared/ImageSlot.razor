@@ -14,9 +14,8 @@ else if (!string.IsNullOrEmpty(DataUri))
 {
     <div class="image-slot image-slot-loaded" style="width:@(Size)px;height:@(Size)px">
         <button type="button" class="image-slot-preview-btn"
-                @onclick="() => Lightbox.Show(DataUri!, Alt)"
-                aria-label="@(string.IsNullOrEmpty(Alt) ? L["Common.ImagePreview"].Value : Alt)">
-            <img class="image-slot-preview" src="@DataUri" alt="@Alt" />
+                @onclick="() => Lightbox.Show(DataUri!, Alt)">
+            <img class="image-slot-preview" src="@DataUri" alt="@(string.IsNullOrEmpty(Alt) ? L["Common.ImagePreview"].Value : Alt)" />
         </button>
         @if (!Disabled)
         {

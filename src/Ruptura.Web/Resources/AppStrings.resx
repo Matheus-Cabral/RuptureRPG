@@ -348,6 +348,8 @@
   <data name="Nav.Notifications"><value>Notifications</value></data>
   <data name="Gm.Notifications.Title"><value>Notifications</value></data>
   <data name="Gm.Notifications.Empty"><value>No pending notifications.</value></data>
+  <data name="Gm.Notifications.SearchPlaceholder"><value>Search by character…</value></data>
+  <data name="Gm.Notifications.NoResults"><value>No notifications match your search.</value></data>
   <data name="Gm.Notifications.Col.Character"><value>Character</value></data>
   <data name="Gm.Notifications.Col.CreatedAt"><value>Since</value></data>
   <data name="Gm.Notifications.Promote"><value>Promote</value></data>
