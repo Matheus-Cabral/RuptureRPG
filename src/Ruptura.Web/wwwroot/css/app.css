@@ -825,14 +825,29 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 400; color: var(--te
     position: fixed;
     top: 1rem;
     right: 1rem;
-    background: transparent;
+    z-index: 2; /* above the centered image so the corner stays clickable */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    background: rgba(0,0,0,0.55); /* legible over light or dark images */
     border: none;
+    border-radius: 50%;
     color: #fff;
     font-size: var(--text-2xl, 1.5rem);
     cursor: pointer;
     line-height: 1;
-    padding: 0.5rem;
+    padding: 0;
 }
+/* Narrow viewports: reserve a top band so the close button never overlaps the image. */
+@media (max-width: 480px) {
+    .lightbox-overlay { padding: 3.25rem 0.75rem 1rem; }
+    .lightbox-img { max-width: 94vw; max-height: 82vh; }
+    .lightbox-close { top: 0.5rem; right: 0.5rem; }
+}
+/* Body scroll lock while a lightbox is open (toggled by ruptura.openLightbox/closeLightbox). */
+body.lightbox-open { overflow: hidden; }
 
 /* ── Theme Switcher ─────────────────────────────────────────────────────────── */
 .theme-switcher {
@@ -1433,6 +1448,15 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 400; color: var(--te
     justify-content: center;
     border-radius: var(--radius);
     overflow: hidden;
+}
+.image-slot-preview-btn {
+    display: block;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: zoom-in;
 }
 .image-slot-preview {
     width: 100%;

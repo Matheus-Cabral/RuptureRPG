@@ -109,6 +109,7 @@
 
   <!-- Bestiary -->
   <data name="Bestiary.NotFound"><value>Criatura não encontrada.</value></data>
+  <data name="Bestiary.NpcNotFound"><value>NPC não encontrado.</value></data>
   <data name="Bestiary.Forbidden"><value>Criaturas oficiais não podem ser modificadas.</value></data>
   <data name="Bestiary.FraquezaRequired"><value>A criatura deve definir uma fraqueza.</value></data>
   <data name="Bestiary.BehaviorInvalid"><value>O comportamento da criatura não é válido.</value></data>

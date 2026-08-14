@@ -109,6 +109,7 @@
 
   <!-- Bestiary -->
   <data name="Bestiary.NotFound"><value>Creature not found.</value></data>
+  <data name="Bestiary.NpcNotFound"><value>NPC not found.</value></data>
   <data name="Bestiary.Forbidden"><value>Official creatures cannot be modified.</value></data>
   <data name="Bestiary.FraquezaRequired"><value>A creature must define a weakness (Fraqueza).</value></data>
   <data name="Bestiary.BehaviorInvalid"><value>The creature's behavior is not valid.</value></data>

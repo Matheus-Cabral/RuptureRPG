@@ -95,6 +95,36 @@ window.ruptura = {
             document.removeEventListener('keydown', inputElement._rupturaShortcutHandler);
             delete inputElement._rupturaShortcutHandler;
         }
+    },
+
+    // ── Lightbox (modal) ──────────────────────────────────────────────────────
+    // Locks background scroll and traps Tab focus inside the overlay while open.
+    // Only one lightbox exists at a time, so trap state is held module-level and
+    // released without needing the (by-then-detached) element reference.
+
+    openLightbox: function (container) {
+        document.body.classList.add('lightbox-open');
+        window._rupturaLightboxContainer = container;
+        window._rupturaLightboxTrap = function (e) {
+            if (e.key !== 'Tab') return;
+            const focusable = container.querySelectorAll(
+                'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+            if (focusable.length === 0) { e.preventDefault(); return; }
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+            if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+            else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+        };
+        container.addEventListener('keydown', window._rupturaLightboxTrap);
+    },
+
+    closeLightbox: function () {
+        document.body.classList.remove('lightbox-open');
+        if (window._rupturaLightboxContainer && window._rupturaLightboxTrap) {
+            window._rupturaLightboxContainer.removeEventListener('keydown', window._rupturaLightboxTrap);
+        }
+        window._rupturaLightboxContainer = null;
+        window._rupturaLightboxTrap = null;
     }
 };
 

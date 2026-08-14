@@ -137,6 +137,7 @@
   <data name="Common.Error"><value>Algo deu errado. Por favor, tente novamente.</value></data>
   <data name="Common.UnknownCampaign"><value>Campanha desconhecida</value></data>
   <data name="Common.Close"><value>Fechar</value></data>
+  <data name="Common.ImagePreview"><value>Visualização da imagem</value></data>
   <data name="Common.Yes"><value>Sim</value></data>
   <data name="Common.No"><value>Não</value></data>
   <data name="Detail.None"><value>Sem detalhes</value></data>
@@ -492,11 +493,10 @@
   <data name="Guild.Building.Deleted"><value>Instalação removida.</value></data>
   <data name="Guild.Building.DeleteConfirm.Title"><value>Remover instalação</value></data>
   <data name="Guild.Building.DeleteConfirm.Message"><value>Remover esta instalação da guilda?</value></data>
-  <data name="Guild.Buildings.Category"><value>Categoria</value></data>
-  <data name="Guild.Buildings.Weight"><value>Peso</value></data>
-  <data name="Guild.Buildings.LevelCap"><value>Nível Máx.</value></data>
-  <data name="Guild.Buildings.Prerequisites"><value>Pré-requisitos</value></data>
-  <data name="Guild.Buildings.Unlocks"><value>Desbloqueia</value></data>
+  <data name="Guild.Building.Category"><value>Categoria</value></data>
+  <data name="Guild.Building.Weight"><value>Peso</value></data>
+  <data name="Guild.Building.LevelCap"><value>Nível Máx.</value></data>
+  <data name="Guild.Building.Unlocks"><value>Desbloqueia</value></data>
   <data name="Guild.Staff.Kind"><value>Tipo</value></data>
   <data name="Guild.Staff.Kind.Worker"><value>Trabalhador</value></data>
   <data name="Guild.Staff.Kind.Mercenary"><value>Mercenário</value></data>

@@ -30,7 +30,7 @@ public class NpcService(INpcRepository npcRepo) : INpcService
         var npc = await npcRepo.GetByIdAsync(id, ct);
         // Own or official → visible; another GM's homebrew → hide its existence.
         if (npc is null || !IsVisibleTo(npc, gameMasterId))
-            return Result.Failure<NpcResponse>(ErrorCodes.Bestiary.NotFound);
+            return Result.Failure<NpcResponse>(ErrorCodes.Bestiary.NpcNotFound);
 
         return Result.Success(MapToResponse(npc));
     }
@@ -98,9 +98,9 @@ public class NpcService(INpcRepository npcRepo) : INpcService
     // missing OR another GM's homebrew → NotFound (existence hidden). Returns the error code or null.
     private static string? ResolveForWrite(Npc? n, Guid gameMasterId)
     {
-        if (n is null) return ErrorCodes.Bestiary.NotFound;
+        if (n is null) return ErrorCodes.Bestiary.NpcNotFound;
         if (n.GameMasterId is null) return ErrorCodes.Bestiary.Forbidden;
-        if (n.GameMasterId != gameMasterId) return ErrorCodes.Bestiary.NotFound;
+        if (n.GameMasterId != gameMasterId) return ErrorCodes.Bestiary.NpcNotFound;
         return null;
     }
 

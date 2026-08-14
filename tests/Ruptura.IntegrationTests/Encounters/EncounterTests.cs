@@ -180,6 +180,39 @@ public class EncounterTests(IntegrationTestFactory factory)
     }
 
     [Fact]
+    public async Task Get_EchoesCampaignPressure_EvenWhenApplyPressureIsOff()
+    {
+        var (client, _, campaign) = await SetupGmWithCampaignAsync();
+
+        // Put the campaign at a known, non-zero Pressão.
+        var dungeon = await client.PutAsJsonAsync(
+            $"api/campaigns/{campaign.Id}/dashboard/dungeon", new UpdateDungeonStateRequest
+            {
+                CurrentFloor = 1,
+                FloorName = "Entrada",
+                FloorState = "Explorado",
+                Pressure = 30
+            });
+        dungeon.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var (creatureId, _) = await CreateCreatureAsync(client);
+        // BaseData sets ApplyPressure = false.
+        var create = await client.PostAsJsonAsync(
+            $"api/campaigns/{campaign.Id}/encounters",
+            new CreateEncounterRequest { Name = "Calm", Data = BaseData(creatureId) });
+        var created = (await create.Content.ReadFromJsonAsync<ApiResponse<EncounterResponse>>())!.Data!;
+
+        var getResp = await client.GetAsync($"api/campaigns/{campaign.Id}/encounters/{created.Id}");
+        getResp.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = (await getResp.Content.ReadFromJsonAsync<ApiResponse<EncounterResponse>>())!.Data!;
+
+        // Pressure is NOT applied to the math, but the real campaign value is still echoed so the
+        // UI can show "campaign is at Pressão N; toggle to apply".
+        body.PressureApplied.Should().BeFalse();
+        body.PressureValue.Should().Be(30);
+    }
+
+    [Fact]
     public async Task Get_ByADifferentGameMaster_Returns404()
     {
         var (client, _, campaign) = await SetupGmWithCampaignAsync();

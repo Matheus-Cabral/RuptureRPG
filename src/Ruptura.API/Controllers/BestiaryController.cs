@@ -152,7 +152,8 @@ public class BestiaryController(
     // (existence hidden); validation failures → 400.
     private IActionResult BestiaryFailure(string error) => error switch
     {
-        ErrorCodes.Bestiary.NotFound => NotFound(ApiResponse.Fail(localizer[error])),
+        ErrorCodes.Bestiary.NotFound or ErrorCodes.Bestiary.NpcNotFound
+            => NotFound(ApiResponse.Fail(localizer[error])),
         ErrorCodes.Bestiary.Forbidden
             => StatusCode(StatusCodes.Status403Forbidden, ApiResponse.Fail(localizer[error])),
         _ => BadRequest(ApiResponse.Fail(localizer[error]))

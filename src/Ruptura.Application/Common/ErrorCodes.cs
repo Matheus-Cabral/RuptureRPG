@@ -72,6 +72,7 @@ public static class ErrorCodes
     public static class Bestiary
     {
         public const string NotFound = "Bestiary.NotFound";
+        public const string NpcNotFound = "Bestiary.NpcNotFound";
         public const string Forbidden = "Bestiary.Forbidden";
         public const string FraquezaRequired = "Bestiary.FraquezaRequired";
         public const string BehaviorInvalid = "Bestiary.BehaviorInvalid";
