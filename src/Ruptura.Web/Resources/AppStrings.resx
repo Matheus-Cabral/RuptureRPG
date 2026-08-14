@@ -26,6 +26,7 @@
   <data name="Nav.Register"><value>Create Account</value></data>
   <data name="Nav.Logout"><value>Sign Out</value></data>
   <data name="Nav.Dashboard"><value>Dashboard</value></data>
+  <data name="Nav.Manuals"><value>Manuals</value></data>
 
   <!-- Login -->
   <data name="Login.Title"><value>Sign In</value></data>
@@ -1050,5 +1051,8 @@
   <data name="Gm.Content.ObjectiveType.Eliminacao"><value>Elimination</value></data>
 
   <!-- Manuals -->
+  <data name="Manuals.Title"><value>Manuals</value></data>
+  <data name="Manuals.Tab.GameMaster"><value>GM Manual</value></data>
+  <data name="Manuals.Tab.Player"><value>Player Manual</value></data>
   <data name="Manuals.LoadError"><value>Could not load this manual. Please try again later.</value></data>
 </root>

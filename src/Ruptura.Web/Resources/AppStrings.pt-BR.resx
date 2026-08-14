@@ -26,6 +26,7 @@
   <data name="Nav.Register"><value>Criar Conta</value></data>
   <data name="Nav.Logout"><value>Sair</value></data>
   <data name="Nav.Dashboard"><value>Painel</value></data>
+  <data name="Nav.Manuals"><value>Manuais</value></data>
 
   <!-- Login -->
   <data name="Login.Title"><value>Entrar</value></data>
@@ -1050,5 +1051,8 @@
   <data name="Gm.Content.ObjectiveType.Eliminacao"><value>Eliminação</value></data>
 
   <!-- Manuals -->
+  <data name="Manuals.Title"><value>Manuais</value></data>
+  <data name="Manuals.Tab.GameMaster"><value>Manual do Mestre</value></data>
+  <data name="Manuals.Tab.Player"><value>Manual do Jogador</value></data>
   <data name="Manuals.LoadError"><value>Não foi possível carregar este manual. Tente novamente mais tarde.</value></data>
 </root>

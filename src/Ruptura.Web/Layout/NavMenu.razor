@@ -12,6 +12,10 @@
                 <span class="nav-link-mono" aria-hidden="true">@Initial(L["Nav.Dashboard"])</span>
                 <span class="nav-link-text">@L["Nav.Dashboard"]</span>
             </NavLink>
+            <NavLink class="nav-link" href="/manuals" title="@L["Nav.Manuals"]">
+                <span class="nav-link-mono" aria-hidden="true">@Initial(L["Nav.Manuals"])</span>
+                <span class="nav-link-text">@L["Nav.Manuals"]</span>
+            </NavLink>
 
             <AuthorizeView Roles="Player">
                 <Authorized Context="playerCtx">

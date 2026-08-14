@@ -1,0 +1,16 @@
+@page "/manuals"
+@attribute [Authorize]
+@inject IStringLocalizer<AppStrings> L
+
+<PageTitle>@L["Manuals.Title"] — RUPTURA</PageTitle>
+
+<div class="page-content">
+    <div class="page-heading">
+        <h1>@L["Manuals.Title"]</h1>
+    </div>
+
+    <AuthorizeView Roles="GameMaster">
+        <Authorized><GmManuals /></Authorized>
+        <NotAuthorized><PlayerManual /></NotAuthorized>
+    </AuthorizeView>
+</div>

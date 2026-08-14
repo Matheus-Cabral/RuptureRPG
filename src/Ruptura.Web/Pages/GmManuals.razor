@@ -1,0 +1,32 @@
+@inject IStringLocalizer<AppStrings> L
+
+<ul class="nav nav-tabs">
+    <li class="nav-item">
+        <button class="nav-link @(_activeTab == ManualType.GameMaster ? "active" : "")"
+                @onclick="() => _activeTab = ManualType.GameMaster">
+            @L["Manuals.Tab.GameMaster"]
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link @(_activeTab == ManualType.Player ? "active" : "")"
+                @onclick="() => _activeTab = ManualType.Player">
+            @L["Manuals.Tab.Player"]
+        </button>
+    </li>
+</ul>
+
+<div style="padding:1.5rem 0">
+    <div style="display:@(_activeTab == ManualType.GameMaster ? "block" : "none")">
+        <ManualViewer Type="ManualType.GameMaster" />
+    </div>
+    <div style="display:@(_activeTab == ManualType.Player ? "block" : "none")">
+        <ManualViewer Type="ManualType.Player" />
+    </div>
+</div>
+
+@code {
+    // Both ManualViewer instances mount once on page load and stay mounted — switching tabs only
+    // toggles CSS display, so each manual is fetched exactly once per page visit, never re-fetched
+    // when flipping back and forth between tabs.
+    private ManualType _activeTab = ManualType.GameMaster;
+}
