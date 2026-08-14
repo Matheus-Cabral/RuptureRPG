@@ -173,3 +173,9 @@ project's `count(en) == count(pt-BR)` convention):
 - The English manuals (`*.en.md`) are produced by the parallel translation sub-project; this plan
   does not implement or verify their content, only the delivery pipeline for whichever files
   exist at `docs/manuais/*.md` / `*.en.md` at build time.
+- The GM/Player manual split (`AuthorizeView Roles="GameMaster"`) is a UI affordance, not an
+  access-control boundary — the manuals ship as ordinary unauthenticated static assets under
+  `wwwroot/content/manuals/`, fetchable directly without logging in. This is intentional (public
+  rulebook content, same trust level as any other static asset in this app), but if a manual ever
+  needs genuine confidentiality, static delivery must be replaced with an authenticated API
+  endpoint — the Blazor-side role check alone would not enforce it.

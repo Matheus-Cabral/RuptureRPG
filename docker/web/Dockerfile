@@ -7,6 +7,7 @@ RUN dotnet restore "src/Ruptura.Web/Ruptura.Web.csproj"
 
 COPY src/Ruptura.Shared/ src/Ruptura.Shared/
 COPY src/Ruptura.Web/ src/Ruptura.Web/
+COPY docs/manuais/ docs/manuais/
 RUN dotnet publish "src/Ruptura.Web/Ruptura.Web.csproj" -c Release -o /app/publish
 
 FROM nginx:1.27-alpine AS runtime
