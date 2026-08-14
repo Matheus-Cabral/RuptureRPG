@@ -123,8 +123,23 @@ public class CampaignContentService(
         if (arc is null || arc.CampaignId != campaignId)
             return Result.Failure(ErrorCodes.Content.NotFound);
 
+        // Arc-delete cascades its floors at the DB level (DECISION D1). Capture this arc's floor ids
+        // BEFORE the cascade removes them so a dangling CurrentFloorId pointer can be cleared below.
+        var arcFloorIds = (await floorRepo.GetByArcAsync(arcId, ct)).Select(f => f.Id).ToList();
+
         arcRepo.Remove(arc);
         await arcRepo.SaveChangesAsync(ct);
+
+        // Belt-and-suspenders (reads already degrade a missing floor to null in BuildAsync): if the
+        // campaign's current-floor pointer targeted a cascaded floor, null it so the dashboard drops
+        // the dangling reference.
+        if (campaign.CurrentFloorId is { } cf && arcFloorIds.Contains(cf))
+        {
+            campaign.CurrentFloorId = null;
+            campaignRepo.Update(campaign);
+            await campaignRepo.SaveChangesAsync(ct);
+        }
+
         return Result.Success();
     }
 
@@ -246,6 +261,17 @@ public class CampaignContentService(
 
         floorRepo.Remove(floor);
         await floorRepo.SaveChangesAsync(ct);
+
+        // Belt-and-suspenders (reads already degrade a missing floor to null in BuildAsync): if this
+        // was the campaign's current-floor pointer, null it so the dashboard drops the dangling
+        // reference rather than keeping a pointer to a deleted floor.
+        if (campaign.CurrentFloorId == floorId)
+        {
+            campaign.CurrentFloorId = null;
+            campaignRepo.Update(campaign);
+            await campaignRepo.SaveChangesAsync(ct);
+        }
+
         return Result.Success();
     }
 

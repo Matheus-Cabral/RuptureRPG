@@ -14,6 +14,7 @@ public class CreatureService(
 
     // Bound free-text so the DataJson blob can't grow unbounded (Kestrel's request ceiling aside).
     private const int NameMax = 200;
+    private const int NotesMax = 2000;
 
     public async Task<Result<IEnumerable<CreatureResponse>>> GetForGameMasterAsync(
         Guid gameMasterId, CancellationToken ct = default)
@@ -154,12 +155,17 @@ public class CreatureService(
         data.Pv = Math.Max(0, data.Pv);
         data.DefesaPassiva = Math.Max(0, data.DefesaPassiva);
         data.Deslocamento = Math.Max(0, data.Deslocamento);
+
+        // Bound the long free-text description so the blob can't grow unbounded (mirrors Name→200).
+        data.Notes = Trunc(data.Notes, NotesMax);
     }
 
-    private static string TruncName(string? name)
+    private static string TruncName(string? name) => Trunc((name ?? string.Empty).Trim(), NameMax);
+
+    private static string Trunc(string? value, int max)
     {
-        var value = (name ?? string.Empty).Trim();
-        return value.Length > NameMax ? value[..NameMax] : value;
+        var v = value ?? string.Empty;
+        return v.Length > max ? v[..max] : v;
     }
 
     // ── Mapping ────────────────────────────────────────────────────────────────

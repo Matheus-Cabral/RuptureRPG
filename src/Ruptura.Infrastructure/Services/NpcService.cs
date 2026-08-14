@@ -15,6 +15,7 @@ public class NpcService(INpcRepository npcRepo) : INpcService
 
     // Bound free-text so the DataJson blob can't grow unbounded (Kestrel's request ceiling aside).
     private const int NameMax = 200;
+    private const int NotesMax = 2000;
 
     public async Task<Result<IEnumerable<NpcResponse>>> GetForGameMasterAsync(
         Guid gameMasterId, CancellationToken ct = default)
@@ -110,17 +111,20 @@ public class NpcService(INpcRepository npcRepo) : INpcService
     // there is no fixed-set validation and no combat math.
     private static NpcData Sanitize(NpcData data) => new()
     {
-        Role = (data.Role ?? string.Empty).Trim(),
-        Faction = (data.Faction ?? string.Empty).Trim(),
-        Disposition = (data.Disposition ?? string.Empty).Trim(),
-        Location = (data.Location ?? string.Empty).Trim(),
-        Notes = data.Notes ?? string.Empty
+        Role = Trunc((data.Role ?? string.Empty).Trim(), NameMax),
+        Faction = Trunc((data.Faction ?? string.Empty).Trim(), NameMax),
+        Disposition = Trunc((data.Disposition ?? string.Empty).Trim(), NameMax),
+        Location = Trunc((data.Location ?? string.Empty).Trim(), NameMax),
+        // Bound the long free-text description so the blob can't grow unbounded (mirrors Name→200).
+        Notes = Trunc(data.Notes ?? string.Empty, NotesMax)
     };
 
-    private static string TruncName(string? name)
+    private static string TruncName(string? name) => Trunc((name ?? string.Empty).Trim(), NameMax);
+
+    private static string Trunc(string? value, int max)
     {
-        var value = (name ?? string.Empty).Trim();
-        return value.Length > NameMax ? value[..NameMax] : value;
+        var v = value ?? string.Empty;
+        return v.Length > max ? v[..max] : v;
     }
 
     // ── Mapping ────────────────────────────────────────────────────────────────

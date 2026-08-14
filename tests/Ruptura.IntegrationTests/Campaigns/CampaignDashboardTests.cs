@@ -57,6 +57,13 @@ public class CampaignDashboardTests(IntegrationTestFactory factory)
     private static async Task<Guid> CreateFloorAsync(
         HttpClient client, Guid campaignId, string name, string mainObjective)
     {
+        var (_, floorId) = await CreateArcWithFloorAsync(client, campaignId, name, mainObjective);
+        return floorId;
+    }
+
+    private static async Task<(Guid ArcId, Guid FloorId)> CreateArcWithFloorAsync(
+        HttpClient client, Guid campaignId, string name, string mainObjective)
+    {
         var arc = await client.PostAsJsonAsync(
             $"api/campaigns/{campaignId}/arcs",
             new CreateArcRequest { Name = "Arc I", Order = 1, Data = new ArcData { Theme = "Descent" } });
@@ -73,7 +80,8 @@ public class CampaignDashboardTests(IntegrationTestFactory factory)
                 Data = new FloorData { ObjectiveType = "Exploracao", MainObjective = mainObjective }
             });
         floor.StatusCode.Should().Be(HttpStatusCode.Created);
-        return (await floor.Content.ReadFromJsonAsync<ApiResponse<FloorResponse>>())!.Data!.Id;
+        var floorId = (await floor.Content.ReadFromJsonAsync<ApiResponse<FloorResponse>>())!.Data!.Id;
+        return (arcId, floorId);
     }
 
     [Fact]
@@ -422,5 +430,59 @@ public class CampaignDashboardTests(IntegrationTestFactory factory)
         dashboard.Dungeon.CurrentFloorId.Should().Be(floorId);
         dashboard.Dungeon.CurrentFloorName.Should().Be("Cripta Selada");
         dashboard.Dungeon.CurrentFloorObjective.Should().Be("Reach the far gate");
+    }
+
+    // Deleting the floor a campaign points at must null the pointer (no dangling reference): after
+    // DELETE, the dashboard reports CurrentFloorId/Name/Objective all null.
+    [Fact]
+    public async Task DeleteFloor_ThatIsCurrentFloor_NullsThePointerOnGet()
+    {
+        var (client, _, campaign) = await SetupGmWithCampaignAsync();
+        var floorId = await CreateFloorAsync(client, campaign.Id, "Cripta Selada", "Reach the far gate");
+
+        await client.PutAsJsonAsync(
+            $"api/campaigns/{campaign.Id}/dashboard/dungeon", new UpdateDungeonStateRequest
+            {
+                CurrentFloor = 2,
+                FloorName = "Segundo Andar",
+                FloorState = "Inexplorado",
+                Pressure = 0,
+                CurrentFloorId = floorId
+            });
+
+        var delete = await client.DeleteAsync($"api/campaigns/{campaign.Id}/floors/{floorId}");
+        delete.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var dashboard = await GetDashboardAsync(client, campaign.Id);
+        dashboard.Dungeon.CurrentFloorId.Should().BeNull();
+        dashboard.Dungeon.CurrentFloorName.Should().BeNull();
+        dashboard.Dungeon.CurrentFloorObjective.Should().BeNull();
+    }
+
+    // Deleting the arc cascades its floors; the campaign's pointer at one of those cascaded floors
+    // must be nulled too.
+    [Fact]
+    public async Task DeleteArc_CascadingCurrentFloor_NullsThePointerOnGet()
+    {
+        var (client, _, campaign) = await SetupGmWithCampaignAsync();
+        var (arcId, floorId) = await CreateArcWithFloorAsync(client, campaign.Id, "Cripta Selada", "Reach the far gate");
+
+        await client.PutAsJsonAsync(
+            $"api/campaigns/{campaign.Id}/dashboard/dungeon", new UpdateDungeonStateRequest
+            {
+                CurrentFloor = 2,
+                FloorName = "Segundo Andar",
+                FloorState = "Inexplorado",
+                Pressure = 0,
+                CurrentFloorId = floorId
+            });
+
+        var delete = await client.DeleteAsync($"api/campaigns/{campaign.Id}/arcs/{arcId}");
+        delete.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var dashboard = await GetDashboardAsync(client, campaign.Id);
+        dashboard.Dungeon.CurrentFloorId.Should().BeNull();
+        dashboard.Dungeon.CurrentFloorName.Should().BeNull();
+        dashboard.Dungeon.CurrentFloorObjective.Should().BeNull();
     }
 }

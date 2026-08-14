@@ -387,17 +387,19 @@
     private (int NpMin, int NpMax)? SelectedRange =>
         BestiaryReference.CategoryRanges.TryGetValue(_form.Category, out var r) ? r : null;
 
-    private int LiveNp
+    // Accumulate as long: user-entered attribute scores and per-row bonuses are unbounded, so a
+    // hostile/huge sheet could overflow an int mid-sum. Widening keeps the advisory display safe.
+    private long LiveNp
     {
         get
         {
             var a = _form.Attributes;
-            var np = (a.Corpo - 1) + (a.Controle - 1) + (a.Vigor - 1) + (a.Presenca - 1)
+            long np = ((long)a.Corpo - 1) + (a.Controle - 1) + (a.Vigor - 1) + (a.Presenca - 1)
                 + (a.Intelecto - 1) + (a.Percepcao - 1) + (a.Vontade - 1) + (a.Afinidade - 1);
-            np += _form.NaturalSkills.Sum(s => SkillGradeBonus(s.Points));
-            np += _form.Characteristics.Sum(c => BestiaryReference.WeightValues.GetValueOrDefault(c.Weight, 0));
-            np += _form.Abilities.Sum(ab => BestiaryReference.TierValues.GetValueOrDefault(ab.Tier, 0));
-            np += _form.Equipment.Sum(e => BestiaryReference.RarityValues.GetValueOrDefault(e.Rarity, 0));
+            np += _form.NaturalSkills.Sum(s => (long)SkillGradeBonus(s.Points));
+            np += _form.Characteristics.Sum(c => (long)BestiaryReference.WeightValues.GetValueOrDefault(c.Weight, 0));
+            np += _form.Abilities.Sum(ab => (long)BestiaryReference.TierValues.GetValueOrDefault(ab.Tier, 0));
+            np += _form.Equipment.Sum(e => (long)BestiaryReference.RarityValues.GetValueOrDefault(e.Rarity, 0));
             return np;
         }
     }

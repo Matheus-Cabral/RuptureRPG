@@ -244,4 +244,20 @@ public class CreatureTests(IntegrationTestFactory factory)
         var body = await response.Content.ReadFromJsonAsync<ApiResponse<CreatureResponse>>();
         body!.Message.Should().NotBeNullOrWhiteSpace();
     }
+
+    // Free-text length bound: an over-long Notes blob is truncated to the 2000-char cap on save,
+    // so the persisted/read-back value never exceeds it (mirrors the Name→200 cap).
+    [Fact]
+    public async Task Create_WithOverlongNotes_TruncatesTo2000OnReadBack()
+    {
+        var (client, _) = await RegisterGmAsync();
+        var request = ValidRequest("NotesBeast");
+        request.Data.Notes = new string('x', 5000);
+
+        var response = await client.PostAsJsonAsync("api/bestiary/creatures", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var body = (await response.Content.ReadFromJsonAsync<ApiResponse<CreatureResponse>>())!.Data!;
+        body.Data.Notes.Should().HaveLength(2000);
+    }
 }
