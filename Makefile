@@ -24,7 +24,7 @@ help:
 	@echo "  Fix: pin the forwarded port in the Ports tab, then update .env and"
 	@echo "  run 'make restart-api'."
 	@echo ""
-
+ 
 up:
 	@[ -f .env ] || (cp .env.example .env && echo "Created .env from .env.example — review it before continuing." && exit 1)
 	docker compose up -d --build
