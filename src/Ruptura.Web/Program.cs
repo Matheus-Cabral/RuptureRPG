@@ -37,6 +37,10 @@ builder.Services.AddHttpClient("RupturaApi", client =>
     client.BaseAddress = new Uri(appConfig.ApiBaseUrl))
     .AddHttpMessageHandler<JwtAuthorizationHandler>();
 
+// Same-origin static content (manuals, etc.) — no auth handler, not the API.
+builder.Services.AddHttpClient("RupturaSelf", client =>
+    client.BaseAddress = new Uri(builder.HostEnvironment.BaseAddress));
+
 // Application services
 builder.Services.AddScoped<IAuthClientService, AuthClientService>();
 builder.Services.AddScoped<IInviteClientService, InviteClientService>();
@@ -53,6 +57,7 @@ builder.Services.AddScoped<IGuildClientService, GuildClientService>();
 builder.Services.AddScoped<IJournalEntryClientService, JournalEntryClientService>();
 builder.Services.AddScoped<IMediaClientService, MediaClientService>();
 builder.Services.AddScoped<INotificationClientService, NotificationClientService>();
+builder.Services.AddScoped<IManualClientService, ManualClientService>();
 
 var host = builder.Build();
 
