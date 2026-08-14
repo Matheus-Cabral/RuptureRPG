@@ -13,12 +13,22 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="8.0.29" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="8.0.29" PrivateAssets="all" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
+    <PackageReference Include="Markdig" Version="1.3.2" />
     <PackageReference Include="Microsoft.Extensions.Localization" Version="8.0.12" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.3.3" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Ruptura.Shared\Ruptura.Shared.csproj" />
+  </ItemGroup>
+
+  <!-- docs/manuais/*.md (pt-BR originals + .en.md translations) is the single edited source of
+       the in-app manuals (see docs/superpowers/specs/2026-08-14-manuals-page-design.md). This
+       copies whatever exists there into wwwroot/content/manuals/ at build/publish time — no
+       manual duplication, and new language files picked up automatically once translated. -->
+  <ItemGroup>
+    <Content Include="..\..\docs\manuais\*.md" Link="wwwroot\content\manuals\%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
