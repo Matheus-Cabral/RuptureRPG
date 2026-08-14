@@ -1048,4 +1048,7 @@
   <data name="Gm.Content.ObjectiveType.Sobrevivencia"><value>Sobrevivência</value></data>
   <data name="Gm.Content.ObjectiveType.Puzzle"><value>Quebra-cabeça</value></data>
   <data name="Gm.Content.ObjectiveType.Eliminacao"><value>Eliminação</value></data>
+
+  <!-- Manuals -->
+  <data name="Manuals.LoadError"><value>Não foi possível carregar este manual. Tente novamente mais tarde.</value></data>
 </root>

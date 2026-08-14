@@ -1,0 +1,33 @@
+@using Markdig
+@inject IStringLocalizer<AppStrings> L
+@inject IManualClientService ManualService
+
+@if (_loading)
+{
+    <LoadingIndicator Text="@L["Common.Loading"]" />
+}
+else if (_html is null)
+{
+    <div class="alert-danger">@L["Manuals.LoadError"]</div>
+}
+else
+{
+    <div class="manual-content">@((MarkupString)_html)</div>
+}
+
+@code {
+    [Parameter, EditorRequired] public ManualType Type { get; set; }
+
+    private static readonly MarkdownPipeline Pipeline =
+        new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
+
+    private bool _loading = true;
+    private string? _html;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var raw = await ManualService.GetManualAsync(Type);
+        _html = raw is null ? null : Markdown.ToHtml(raw, Pipeline);
+        _loading = false;
+    }
+}

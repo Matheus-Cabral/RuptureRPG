@@ -1048,4 +1048,7 @@
   <data name="Gm.Content.ObjectiveType.Sobrevivencia"><value>Survival</value></data>
   <data name="Gm.Content.ObjectiveType.Puzzle"><value>Puzzle</value></data>
   <data name="Gm.Content.ObjectiveType.Eliminacao"><value>Elimination</value></data>
+
+  <!-- Manuals -->
+  <data name="Manuals.LoadError"><value>Could not load this manual. Please try again later.</value></data>
 </root>

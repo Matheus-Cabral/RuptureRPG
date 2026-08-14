@@ -1581,3 +1581,55 @@ body.lightbox-open { overflow: hidden; }
 .np-advisory .np-range { color: var(--text-muted); }
 .np-advisory .np-status { font-weight: 600; }
 @media (max-width: 640px) { .attr-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* ── Manual content (rendered Markdown) ─────────────────────────────────────── */
+.manual-content {
+    max-width: 68rem;
+    font-family: var(--font-body);
+    font-size: var(--text-base);
+    line-height: 1.65;
+    color: var(--text);
+}
+.manual-content h1, .manual-content h2, .manual-content h3,
+.manual-content h4, .manual-content h5, .manual-content h6 {
+    font-family: var(--font-display);
+    color: var(--text);
+    margin: 1.75rem 0 0.75rem;
+    line-height: 1.3;
+}
+.manual-content h1 { font-size: var(--text-2xl); }
+.manual-content h2 { font-size: var(--text-xl); border-bottom: 1px solid var(--border); padding-bottom: .35rem; }
+.manual-content h3 { font-size: var(--text-lg); }
+.manual-content h4, .manual-content h5, .manual-content h6 { font-size: var(--text-base); }
+.manual-content p { margin: 0 0 1rem; }
+.manual-content ul, .manual-content ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+.manual-content li { margin-bottom: .35rem; }
+.manual-content strong { color: var(--text); }
+.manual-content a { color: var(--link); }
+.manual-content a:hover { color: var(--link-hover); }
+.manual-content blockquote {
+    margin: 0 0 1rem; padding: .5rem 1rem;
+    border-left: 3px solid var(--accent);
+    background: var(--bg-surface);
+    color: var(--text-muted);
+}
+.manual-content code {
+    font-family: var(--font-mono); font-size: var(--text-sm);
+    background: var(--bg-surface); padding: .1rem .3rem; border-radius: var(--radius);
+}
+.manual-content pre {
+    background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1rem; overflow-x: auto; margin: 0 0 1rem;
+}
+.manual-content pre code { background: none; padding: 0; }
+.manual-content hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+.manual-content table {
+    width: 100%; border-collapse: collapse; margin: 0 0 1.5rem; font-size: var(--text-sm);
+}
+.manual-content th, .manual-content td {
+    border: 1px solid var(--border); padding: .5rem .75rem; text-align: left; vertical-align: top;
+}
+.manual-content th { background: var(--bg-surface); font-family: var(--font-display); font-weight: 600; }
+@media (max-width: 640px) {
+    .manual-content table { display: block; overflow-x: auto; white-space: nowrap; }
+}
