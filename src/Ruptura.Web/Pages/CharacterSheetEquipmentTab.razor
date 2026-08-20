@@ -33,6 +33,7 @@ else
                 <thead>
                     <tr>
                         <th>@L["Gm.CampaignDetail.Col.Name"]</th>
+                        <th>@L["Sheet.Equipment.Category"]</th>
                         <th>@L["Sheet.Equipment.Quantity"]</th>
                         <th>@L["Sheet.Equipment.Durability"]</th>
                         <th>@L["Sheet.Equipment.Equipped"]</th>
@@ -48,6 +49,7 @@ else
                             @onclick="() => _selectedRefId = item.CatalogEntryId"
                             @onkeydown="e => OnRowKey(e, item.CatalogEntryId)">
                             <td data-label="@L["Gm.CampaignDetail.Col.Name"]">@NameOf(item.CatalogEntryId)</td>
+                            <td data-label="@L["Sheet.Equipment.Category"]">@CategoryLabelOf(item.CatalogEntryId)</td>
                             <td data-label="@L["Sheet.Equipment.Quantity"]" style="width:80px" @onclick:stopPropagation="true">
                                 <input class="form-control form-control-sm" type="number" min="1"
                                        value="@item.Quantity" @onchange="e => item.Quantity = ParseInt(e.Value, 1)" />
@@ -131,6 +133,23 @@ else
 
     private string NameOf(Guid id) => _allItems.FirstOrDefault(e => e.Id == id)?.Name ?? id.ToString();
     private string SkillNameOf(Guid id) => _skillCatalog.FirstOrDefault(e => e.Id == id)?.Name ?? id.ToString();
+
+    // Same case/whitespace-insensitive matching as CharacterStatsCalculator.CategoryIs, so the
+    // label shown here always agrees with what actually counted in the combat math below. An
+    // unrecognized value (legacy data saved before the catalog form had a Category dropdown) is
+    // shown as-is rather than hidden, so a GM can spot and fix it instead of it silently vanishing.
+    private string CategoryLabelOf(Guid id)
+    {
+        var raw = CatalogEntryData.Parse(_allItems.FirstOrDefault(e => e.Id == id)?.DataJson).GetString("Category").Trim();
+        return raw.ToLowerInvariant() switch
+        {
+            "arma" => L["Gm.Catalog.EquipmentCategory.Weapon"].Value,
+            "armadura" => L["Gm.Catalog.EquipmentCategory.Armor"].Value,
+            "escudo" => L["Gm.Catalog.EquipmentCategory.Shield"].Value,
+            "item" => L["Gm.Catalog.EquipmentCategory.Item"].Value,
+            _ => raw
+        };
+    }
 
     private void OnRowKey(KeyboardEventArgs e, Guid refId)
     {

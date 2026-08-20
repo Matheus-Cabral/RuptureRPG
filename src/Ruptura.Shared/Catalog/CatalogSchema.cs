@@ -1,8 +1,13 @@
 namespace Ruptura.Shared.Catalog;
 
-public enum CatalogFieldKind { Text, TextArea, Number, Bool }
+public enum CatalogFieldKind { Text, TextArea, Number, Bool, Select }
 
-public record CatalogField(string Key, string LabelKey, CatalogFieldKind Kind);
+// Value: the raw string stored in DataJson (what the consumer class's property must equal).
+// LabelKey: resolves to a Web resx string for the <option> shown in the dropdown.
+public record CatalogFieldOption(string Value, string LabelKey);
+
+// Options is only populated (and only meaningful) for Kind == Select.
+public record CatalogField(string Key, string LabelKey, CatalogFieldKind Kind, IReadOnlyList<CatalogFieldOption>? Options = null);
 
 // Per-type field schema — Keys are the exact JSON property names from CatalogSeedData.*
 // (the consumer contract). LabelKey resolves to a Web resx string.
@@ -10,6 +15,20 @@ public static class CatalogSchema
 {
     private static CatalogField F(string key, CatalogFieldKind kind) =>
         new(key, $"Gm.Catalog.Field.{key}", kind);
+
+    private static CatalogField F(string key, CatalogFieldKind kind, IReadOnlyList<CatalogFieldOption> options) =>
+        new(key, $"Gm.Catalog.Field.{key}", kind, options);
+
+    // The 4 valid EquipmentItemCatalogData.Category values (§4.2.1) — a constrained Select
+    // instead of free Text closes the GM-typo gap documented on CharacterStatsCalculator.CategoryIs
+    // (e.g. a GM typing "Arma" instead of "arma" used to silently drop the item from combat math).
+    private static readonly CatalogFieldOption[] EquipmentCategoryOptions =
+    [
+        new("arma", "Gm.Catalog.EquipmentCategory.Weapon"),
+        new("armadura", "Gm.Catalog.EquipmentCategory.Armor"),
+        new("escudo", "Gm.Catalog.EquipmentCategory.Shield"),
+        new("item", "Gm.Catalog.EquipmentCategory.Item")
+    ];
 
     private static readonly IReadOnlyDictionary<string, IReadOnlyList<CatalogField>> ByType =
         new Dictionary<string, IReadOnlyList<CatalogField>>
@@ -32,7 +51,7 @@ public static class CatalogSchema
             // ArmorDamageReduction (→ 0 damage reduction), and no AttackBonus/DamageBonus
             // (→ equipment never added to weapon attack/damage). Fixed by aligning field-for-field.
             ["EquipmentItem"] = [
-                F("Category", CatalogFieldKind.Text), F("Rarity", CatalogFieldKind.Text),
+                F("Category", CatalogFieldKind.Select, EquipmentCategoryOptions), F("Rarity", CatalogFieldKind.Text),
                 F("AttackBonus", CatalogFieldKind.Number), F("DamageBonus", CatalogFieldKind.Number),
                 F("DefenseBonus", CatalogFieldKind.Number), F("WeaponDiceCategory", CatalogFieldKind.Text),
                 F("ArmorDamageReduction", CatalogFieldKind.Number), F("Weight", CatalogFieldKind.Number)

@@ -28,4 +28,18 @@ public class CatalogSchemaConsistencyTests
                      $"property name {dataType.Name} deserializes into, or the GM form silently produces " +
                      "data the mechanical consumer can never read");
     }
+
+    // EquipmentItemCatalogData.Category is read via case/whitespace-insensitive comparison
+    // against exactly these 4 lowercase values (CharacterStatsCalculator.CategoryIs) — the
+    // Select's raw Values must keep matching them, or a GM picking a dropdown option would
+    // silently produce an item the combat math never recognizes.
+    [Fact]
+    public void EquipmentItemCategoryField_IsASelect_WithExactlyTheFourValuesCombatMathRecognizes()
+    {
+        var field = CatalogSchema.FieldsFor("EquipmentItem").Single(f => f.Key == "Category");
+
+        field.Kind.Should().Be(CatalogFieldKind.Select);
+        field.Options.Should().NotBeNull();
+        field.Options!.Select(o => o.Value).Should().BeEquivalentTo(["arma", "armadura", "escudo", "item"]);
+    }
 }

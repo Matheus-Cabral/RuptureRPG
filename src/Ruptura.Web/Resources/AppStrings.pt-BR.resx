@@ -249,6 +249,10 @@
   <data name="Gm.Catalog.Field.DefenseBonus"><value>Bônus de defesa</value></data>
   <data name="Gm.Catalog.Field.WeaponDiceCategory"><value>Categoria de dado da arma</value></data>
   <data name="Gm.Catalog.Field.ArmorDamageReduction"><value>Redução de dano da armadura</value></data>
+  <data name="Gm.Catalog.EquipmentCategory.Weapon"><value>Arma</value></data>
+  <data name="Gm.Catalog.EquipmentCategory.Armor"><value>Armadura</value></data>
+  <data name="Gm.Catalog.EquipmentCategory.Shield"><value>Escudo</value></data>
+  <data name="Gm.Catalog.EquipmentCategory.Item"><value>Item</value></data>
 
   <!-- Editor de Ficha de Personagem -->
   <data name="Sheet.Loading"><value>Carregando ficha…</value></data>
@@ -320,6 +324,7 @@
   <data name="Sheet.RefList.Remove"><value>Remover</value></data>
   <data name="Sheet.Equipment.CarryCapacity"><value>Capacidade de Carga</value></data>
   <data name="Sheet.Equipment.CurrentWeight"><value>Peso Atual</value></data>
+  <data name="Sheet.Equipment.Category"><value>Categoria</value></data>
   <data name="Sheet.Equipment.Silver"><value>Prata</value></data>
   <data name="Sheet.Equipment.PactCoins"><value>Moedas de Pacto</value></data>
   <data name="Sheet.Equipment.Quantity"><value>Qtd.</value></data>

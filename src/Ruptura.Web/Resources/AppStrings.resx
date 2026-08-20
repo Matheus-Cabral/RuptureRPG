@@ -249,6 +249,10 @@
   <data name="Gm.Catalog.Field.DefenseBonus"><value>Defense bonus</value></data>
   <data name="Gm.Catalog.Field.WeaponDiceCategory"><value>Weapon dice category</value></data>
   <data name="Gm.Catalog.Field.ArmorDamageReduction"><value>Armor damage reduction</value></data>
+  <data name="Gm.Catalog.EquipmentCategory.Weapon"><value>Weapon</value></data>
+  <data name="Gm.Catalog.EquipmentCategory.Armor"><value>Armor</value></data>
+  <data name="Gm.Catalog.EquipmentCategory.Shield"><value>Shield</value></data>
+  <data name="Gm.Catalog.EquipmentCategory.Item"><value>Item</value></data>
 
   <!-- Character Sheet Editor -->
   <data name="Sheet.Loading"><value>Loading character sheet…</value></data>
@@ -320,6 +324,7 @@
   <data name="Sheet.RefList.Remove"><value>Remove</value></data>
   <data name="Sheet.Equipment.CarryCapacity"><value>Carry Capacity</value></data>
   <data name="Sheet.Equipment.CurrentWeight"><value>Current Weight</value></data>
+  <data name="Sheet.Equipment.Category"><value>Category</value></data>
   <data name="Sheet.Equipment.Silver"><value>Silver</value></data>
   <data name="Sheet.Equipment.PactCoins"><value>Pact Coins</value></data>
   <data name="Sheet.Equipment.Quantity"><value>Qty.</value></data>
