@@ -84,15 +84,26 @@ public class CatalogEntryService(
         if (entry is null)
             return Result.Failure<CatalogEntryResponse>(ErrorCodes.Catalog.NotFound);
 
-        if (entry.CampaignId is null)
+        // Global entries are normally immutable (they're one shared row used by every campaign
+        // in the system, not owned by any single GM). Spell and Technique are the sole exception,
+        // by explicit request: any authenticated GM may edit the official spell/technique library
+        // directly (e.g. to fill in Damage) — accepting that the edit is visible to every campaign,
+        // not just theirs. Every other global type (Origin, Skill, EquipmentItem, ...) stays
+        // fully protected. There's no per-campaign ownership check for this path since global
+        // entries have none — [Authorize(Roles = "GameMaster")] on the controller is the only gate.
+        var isEditableGlobalType = entry.Type is CatalogEntryType.Spell or CatalogEntryType.Technique;
+        if (entry.CampaignId is null && !isEditableGlobalType)
             return Result.Failure<CatalogEntryResponse>(ErrorCodes.Catalog.CannotModifyGlobalEntry);
 
         if (entry.IsArchived)
             return Result.Failure<CatalogEntryResponse>(ErrorCodes.Catalog.AlreadyArchived);
 
-        var campaign = await campaignRepo.GetByIdAsync(entry.CampaignId.Value, ct);
-        if (campaign is null || campaign.GameMasterId != gameMasterId)
-            return Result.Failure<CatalogEntryResponse>(ErrorCodes.Catalog.NotFound);
+        if (entry.CampaignId is { } campaignId)
+        {
+            var campaign = await campaignRepo.GetByIdAsync(campaignId, ct);
+            if (campaign is null || campaign.GameMasterId != gameMasterId)
+                return Result.Failure<CatalogEntryResponse>(ErrorCodes.Catalog.NotFound);
+        }
 
         if (!string.Equals(entry.Name, request.Name, StringComparison.Ordinal)
             && (await catalogRepo.ExistsAsync(entry.Type, entry.CampaignId, request.Name, ct)
@@ -101,7 +112,10 @@ public class CatalogEntryService(
 
         entry.Name = request.Name;
         entry.DataJson = request.DataJson;
-        entry.IsPublic = request.IsPublic;
+        // A global entry stays public no matter what the form sends — it's shared by every
+        // campaign, so "private" would have to mean "invisible to every player everywhere",
+        // which isn't a state this app has a use for (see CatalogEntry.IsPublic).
+        entry.IsPublic = entry.CampaignId is null || request.IsPublic;
         entry.UpdatedAt = DateTime.UtcNow;
         catalogRepo.Update(entry);
         await catalogRepo.SaveChangesAsync(ct);

@@ -201,6 +201,7 @@
   <data name="Gm.Catalog.Private"><value>Privado</value></data>
   <data name="Gm.Catalog.PublicToggle"><value>Visível para jogadores</value></data>
   <data name="Gm.Catalog.PublicToggleHelp"><value>Só entradas marcadas como visíveis aparecem pros jogadores — na ficha de personagem e na de guilda — pra ver e adicionar. Desmarcada, a entrada fica só com o Mestre, por exemplo enquanto ainda está em rascunho.</value></data>
+  <data name="Gm.Catalog.EditingGlobalWarning"><value>Esta é uma entrada oficial, compartilhada por todas as campanhas do sistema — salvar aqui muda ela em todo lugar, não só nesta campanha.</value></data>
   <data name="Gm.Catalog.SearchPlaceholder"><value>Buscar catálogo…</value></data>
   <data name="Gm.Catalog.NoResults"><value>Nenhuma entrada corresponde à busca.</value></data>
   <data name="Gm.Catalog.DeleteConfirm.Title"><value>Excluir entrada?</value></data>

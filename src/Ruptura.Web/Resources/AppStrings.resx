@@ -201,6 +201,7 @@
   <data name="Gm.Catalog.Private"><value>Private</value></data>
   <data name="Gm.Catalog.PublicToggle"><value>Visible to players</value></data>
   <data name="Gm.Catalog.PublicToggleHelp"><value>Only entries marked visible show up for players — in the character sheet and the guild sheet — to view and add. Unchecked entries stay GM-only, e.g. while drafting.</value></data>
+  <data name="Gm.Catalog.EditingGlobalWarning"><value>This is an official entry, shared by every campaign in the system — saving here changes it everywhere, not just in this campaign.</value></data>
   <data name="Gm.Catalog.SearchPlaceholder"><value>Search catalog…</value></data>
   <data name="Gm.Catalog.NoResults"><value>No entries match your search.</value></data>
   <data name="Gm.Catalog.DeleteConfirm.Title"><value>Delete entry?</value></data>

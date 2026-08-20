@@ -84,6 +84,13 @@
                                                 <button class="btn btn-outline-secondary btn-sm" @onclick="() => StartEdit(entry)">@L["Gm.Catalog.Edit"]</button>
                                                 <button class="btn btn-outline-secondary btn-sm" @onclick="() => DeleteAsync(entry.Id, entry.Name)">@L["Gm.Catalog.Delete"]</button>
                                             }
+                                            else if (entry.Type is "Spell" or "Technique")
+                                            {
+                                                @* Official Spells/Techniques are the one global-entry exception that's
+                                                   editable — see CatalogEntryService.UpdateAsync. No Delete: removing
+                                                   shared content is a bigger blast radius than editing it. *@
+                                                <button class="btn btn-outline-secondary btn-sm" @onclick="() => StartEdit(entry)">@L["Gm.Catalog.Edit"]</button>
+                                            }
                                         </td>
                                     </tr>
                                 }
@@ -111,15 +118,22 @@
         <span class="section-title">@(_editingId is null ? L["Gm.Catalog.Create"] : L["Gm.Catalog.Edit"])</span>
     </div>
     <div class="bestiary-form" style="display:flex;flex-direction:column;gap:.75rem;max-width:480px">
+        @if (_editingIsGlobal)
+        {
+            <div class="dash-alert" role="alert">@L["Gm.Catalog.EditingGlobalWarning"]</div>
+        }
         <input class="form-control" placeholder="@L["Gm.Catalog.NamePlaceholder"]" @bind="_formName" @bind:event="oninput" />
 
-        <div class="field-row">
-            <label class="field-label">
-                <input type="checkbox" checked="@_formIsPublic" @onchange="e => _formIsPublic = (bool)(e.Value ?? false)" />
-                @L["Gm.Catalog.PublicToggle"]
-            </label>
-            <p class="dash-help">@L["Gm.Catalog.PublicToggleHelp"]</p>
-        </div>
+        @if (!_editingIsGlobal)
+        {
+            <div class="field-row">
+                <label class="field-label">
+                    <input type="checkbox" checked="@_formIsPublic" @onchange="e => _formIsPublic = (bool)(e.Value ?? false)" />
+                    @L["Gm.Catalog.PublicToggle"]
+                </label>
+                <p class="dash-help">@L["Gm.Catalog.PublicToggleHelp"]</p>
+            </div>
+        }
 
         @if (!_advancedMode)
         {
@@ -201,6 +215,7 @@
     private bool _loading = true;
     private bool _saving;
     private Guid? _editingId;
+    private bool _editingIsGlobal;
     private string _formName = string.Empty;
     private bool _formIsPublic = true;
     private CatalogEntryData _formData = CatalogEntryData.Parse("{}");
@@ -257,6 +272,7 @@
     private void StartEdit(CatalogEntryResponse entry)
     {
         _editingId = entry.Id;
+        _editingIsGlobal = entry.IsGlobal;
         _formName = entry.Name;
         _formIsPublic = entry.IsPublic;
         _formData = CatalogEntryData.Parse(entry.DataJson);
@@ -268,6 +284,7 @@
     private void CancelEdit()
     {
         _editingId = null;
+        _editingIsGlobal = false;
         _formName = string.Empty;
         _formIsPublic = true;
         _formData = CatalogEntryData.Parse("{}");

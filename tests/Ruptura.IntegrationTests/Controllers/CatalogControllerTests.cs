@@ -243,6 +243,46 @@ public class CatalogControllerTests(IntegrationTestFactory factory)
     }
 
     [Fact]
+    public async Task UpdateGlobalSpell_ByAnyGameMaster_SucceedsAndIsVisibleToOtherCampaigns()
+    {
+        var (client, campaignA) = await SetupGameMasterWithCampaignAsync();
+        var listResponse = await client.GetAsync($"api/catalog?type=Spell&campaignId={campaignA}");
+        var globalSpell = (await listResponse.Content
+            .ReadFromJsonAsync<ApiResponse<IEnumerable<CatalogEntryResponse>>>())!.Data!.First();
+
+        // A DIFFERENT GM, with no relation to campaignA, edits the same shared global entry —
+        // by design (see CatalogEntryService.UpdateAsync), any authenticated GM may.
+        var (otherGmClient, campaignB) = await SetupGameMasterWithCampaignAsync();
+        var updateResponse = await otherGmClient.PutAsJsonAsync($"api/catalog/{globalSpell.Id}", new UpdateCatalogEntryRequest
+        {
+            Name = globalSpell.Name, DataJson = "{\"Damage\":\"5d6\"}"
+        });
+        updateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // Campaign A (the original GM's, uninvolved in the edit) sees the updated shared row.
+        var afterResponse = await client.GetAsync($"api/catalog?type=Spell&campaignId={campaignA}");
+        var afterList = (await afterResponse.Content
+            .ReadFromJsonAsync<ApiResponse<IEnumerable<CatalogEntryResponse>>>())!.Data!;
+        afterList.Should().Contain(e => e.Id == globalSpell.Id && e.DataJson == "{\"Damage\":\"5d6\"}");
+    }
+
+    [Fact]
+    public async Task UpdateGlobalOrigin_StillReturns400()
+    {
+        var (client, campaignId) = await SetupGameMasterWithCampaignAsync();
+        var listResponse = await client.GetAsync($"api/catalog?type=Origin&campaignId={campaignId}");
+        var globalOrigin = (await listResponse.Content
+            .ReadFromJsonAsync<ApiResponse<IEnumerable<CatalogEntryResponse>>>())!.Data!.First();
+
+        var response = await client.PutAsJsonAsync($"api/catalog/{globalOrigin.Id}", new UpdateCatalogEntryRequest
+        {
+            Name = "Tentativa de Edição", DataJson = "{}"
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
     public async Task GetByType_AsPlayer_HidesPrivateHomebrewEntry_ButGmStillSeesIt()
     {
         var (gmClient, campaignId) = await SetupGameMasterWithCampaignAsync();

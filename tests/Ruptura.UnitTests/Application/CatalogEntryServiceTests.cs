@@ -306,6 +306,62 @@ public class CatalogEntryServiceTests
         result.Error.Should().Be(ErrorCodes.Catalog.CannotModifyGlobalEntry);
     }
 
+    [Theory]
+    [InlineData(CatalogEntryType.Spell)]
+    [InlineData(CatalogEntryType.Technique)]
+    public async Task UpdateAsync_OnGlobalSpellOrTechnique_IsAllowed(CatalogEntryType type)
+    {
+        var entry = new CatalogEntry { Id = Guid.NewGuid(), Type = type, CampaignId = null, Name = "Bola de Fogo" };
+        _catalogRepoMock.Setup(r => r.GetByIdAsync(entry.Id, It.IsAny<CancellationToken>())).ReturnsAsync(entry);
+        _catalogRepoMock.Setup(r => r.ExistsAsync(type, null, "Bola de Fogo", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+        _catalogRepoMock.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+
+        // Any authenticated GM, not just one tied to a specific campaign — global entries have
+        // no owning campaign to check against.
+        var result = await _sut.UpdateAsync(Guid.NewGuid(), entry.Id, new UpdateCatalogEntryRequest
+        {
+            Name = "Bola de Fogo", DataJson = "{\"Damage\":\"3d6\"}"
+        });
+
+        result.IsSuccess.Should().BeTrue();
+        entry.DataJson.Should().Be("{\"Damage\":\"3d6\"}");
+    }
+
+    [Theory]
+    [InlineData(CatalogEntryType.Spell)]
+    [InlineData(CatalogEntryType.Technique)]
+    public async Task UpdateAsync_OnGlobalSpellOrTechnique_IgnoresIsPublicFromRequest(CatalogEntryType type)
+    {
+        var entry = new CatalogEntry
+        {
+            Id = Guid.NewGuid(), Type = type, CampaignId = null, Name = "X", IsPublic = true
+        };
+        _catalogRepoMock.Setup(r => r.GetByIdAsync(entry.Id, It.IsAny<CancellationToken>())).ReturnsAsync(entry);
+        _catalogRepoMock.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+
+        var result = await _sut.UpdateAsync(Guid.NewGuid(), entry.Id, new UpdateCatalogEntryRequest
+        {
+            Name = "X", DataJson = "{}", IsPublic = false
+        });
+
+        result.IsSuccess.Should().BeTrue();
+        entry.IsPublic.Should().BeTrue(); // a global entry going private would hide it from every campaign — not supported
+    }
+
+    [Fact]
+    public async Task DeleteAsync_OnGlobalSpell_StillReturnsCannotModifyGlobalEntry()
+    {
+        // Editable-globals only relaxes UpdateAsync — removing shared content stays blocked.
+        var entry = new CatalogEntry { Id = Guid.NewGuid(), Type = CatalogEntryType.Spell, CampaignId = null, Name = "Bola de Fogo" };
+        _catalogRepoMock.Setup(r => r.GetByIdAsync(entry.Id, It.IsAny<CancellationToken>())).ReturnsAsync(entry);
+
+        var result = await _sut.DeleteAsync(Guid.NewGuid(), entry.Id);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(ErrorCodes.Catalog.CannotModifyGlobalEntry);
+    }
+
     [Fact]
     public async Task UpdateAsync_WhenCallerDoesNotOwnCampaign_ReturnsNotFound()
     {
