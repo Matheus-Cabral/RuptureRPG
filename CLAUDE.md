@@ -98,7 +98,12 @@ Domain ← Application ← Infrastructure ← API
 - Never throw business exceptions across layer boundaries
 
 **Settings binding:**
-- `JwtSettings` is bound via `configuration.GetSection(nameof(JwtSettings))` → key in `appsettings.json` must be `"JwtSettings"` (not `"Jwt"`)
+- `JwtSettings` is bound via `configuration.GetSection(nameof(JwtSettings))` → key in `appsettings.json` must be `"JwtSettings"` (not `"Jwt"`) — and any env var override in `docker-compose.yml` must use the matching `JwtSettings__*` prefix (not `Jwt__*`), or ASP.NET Core's config binder silently never sees it and falls back to the `appsettings.json` default. This exact mismatch shipped once (`Jwt__AccessTokenExpirationMinutes` in `docker-compose.yml` vs. the `JwtSettings` section the code reads), so `.env`'s `JWT_ACCESS_EXPIRY_MINUTES` was ignored and every access token used the 15-minute default regardless of what `.env` said. Fixed in `docker-compose.yml`; if a JWT-related env var is ever added, double-check its prefix against the section name.
+
+**Autosave and concurrency (character sheets vs. guild sheets):**
+- Both `CharacterSheetEditor.razor` and `GuildSheet.razor` autosave ~1.5s after the last edit via `AutosaveWatcher` (`Services/`), independent of the manual Save button.
+- `GuildSheet` has an optimistic-concurrency version/xmin token (`UpdateGuildSheetRequest.Version`) — a save conflict shows a non-destructive banner instead of overwriting the user's edit.
+- `CharacterSheet` has **no concurrency token at all**. A GM can fully edit a player's whole sheet (`GmCharacterSheet.razor` passes `CanEditStatus="true"` to the same `CharacterSheetEditor`, not just the dead/retired toggles) — so a GM and the owning player editing the same sheet at the same time is a real last-write-wins collision, silently, with autosave making it far more likely to actually happen than it was with manual-only saves. Known, accepted gap — fixing it properly means giving `CharacterSheet` the same version-token mechanism `GuildSheet` already has, which hasn't been built.
 
 **Design system (`src/Ruptura.Web/wwwroot/css/app.css`):**
 - CSS custom-property tokens drive the whole visual language — colors, spacing, the type scale (`--text-2xs` through `--text-3xl`). `--text-2xs` (11px) is the floor; never introduce a smaller font size.
