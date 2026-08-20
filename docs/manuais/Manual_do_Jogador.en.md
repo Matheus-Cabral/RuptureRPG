@@ -324,7 +324,7 @@ Using these spells/techniques still costs PA normally — the rule only frees up
 
 ### 4.1 Movement
 
-- **Small combats** (few combatants per side) → **Grid/Hex**, measured in squares. Your Movement is `4 + Mod(Vigor)` squares per PA spent Moving.
+- **Small combats** (few combatants per side) → **Grid/Hex**, measured in squares. Your Movement is `4 + Mod(Control)` squares per PA spent Moving.
 - **Large-scale combats** (hordes, battles) → **Zones** (Contact/Short/Medium/Long), 1 PA per adjacent zone.
 
 | Zone | Grid/Hex (squares) | Range penalty |
@@ -349,7 +349,21 @@ By default, your **Passive Defense** already protects you at no PA cost:
 ```
 Passive Defense = 10 + Mod(Control) + Equipment Bonus (armor) + Equipment Bonus (shield)
 ```
-If you want to defend actively, spend 1 PA (the Defend action) or your Reaction — the attack becomes a real Opposed Test, where you roll against the attacker.
+If you want to defend actively, spend 1 PA (the Defend action) or your Reaction — the attack becomes a real Opposed Test. Upon activating it, choose between **Dodge** or **Block**.
+
+**Dodge (Control)** — reflex and agility:
+```
+Roll = 2d10 + Attribute Grade Bonus (Control) + Dodge Grade Bonus
+```
+Success avoids the attack entirely (zero damage); failure reduces nothing. Requires no equipment. Doesn't work against Large Area attacks, or if you're Immobilized.
+
+**Block (Vigor)** — physical resistance:
+```
+Roll = 2d10 + Attribute Grade Bonus (Vigor) + Block Grade Bonus
+```
+Success reduces damage by `Grade Bonus × 2` (adds to the armor's Damage Reduction). Great Success (margin ≥5) zeroes the damage. Extraordinary Success (margin ≥10) zeroes the damage and unlocks an immediate counter-attack, if you still have your Reaction. Requires a weapon or shield equipped — but works even against Large Area, since you don't need to move.
+
+Neither is "better" — Dodge bets everything (avoids everything or nothing), Block is more predictable. Choose based on your build: high Control favors Dodge, high Vigor favors Block.
 
 ### 4.5 Attack and Damage
 ```

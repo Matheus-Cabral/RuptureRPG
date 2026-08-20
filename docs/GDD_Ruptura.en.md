@@ -800,7 +800,7 @@ The Encounter Scale (§9.7) defines the movement mode:
 - **Small Scale** (Individual/Tactical Command) → **Grid/Hex**, measured in **squares** (square grid or hex grid are interchangeable, mechanically identical).
 - **Large Scale** (Hordes, Military/Strategic Command) → **Zones** (Contact/Short/Medium/Long), 1 PA per adjacent zone.
 
-**Movement (Grid mode)**: `Movement = 4 + Mod(Vigor)` squares per PA spent Moving.
+**Movement (Grid mode)**: `Movement = 4 + Mod(Control)` squares per PA spent Moving.
 
 **Range conversion table** (unifies the two modes):
 
@@ -817,7 +817,7 @@ Cover (valid in both modes): **Light** (+2 Passive Defense) | **Partial** (+4 Pa
 `Initiative = 2d10 + Mod(Control)`. Descending order; ties resolved by higher Perception.
 
 ### 7.3 Actions and Action Points
-**3 PA per turn** (base value) + **1 Reaction**. PA only increases through rare talents, equipment, special skills, or divine powers — attributes never increase PA directly. Actions: Move (1 PA/zone or up to the Movement value in squares), Attack (1-2 PA depending on weapon category), Defend (1 PA, triggers an Opposed Test — see §7.5), Use Item (1 PA), Ready Action (holds PA to react to a trigger).
+**3 PA per turn** (base value) + **1 Reaction**. PA only increases through rare talents, equipment, special skills, or divine powers — attributes never increase PA directly. Actions: Move (1 PA/zone or up to the Movement value in squares), Attack (1-2 PA depending on weapon category), Defend (1 PA, triggers Dodge or Block — see §7.4.1), Use Item (1 PA), Ready Action (holds PA to react to a trigger).
 
 **Opportunity Attacks**: don't exist as their own mechanic — they're covered by the existing Reaction ("Interception": a character can use their Reaction when an enemy leaves their Contact Zone/square without disengaging carefully).
 
@@ -829,9 +829,37 @@ Combat is an Opposed Test by definition (§5.2), but by default this would make 
 Passive Defense = 10 + Mod(Control) + Equipment Base Bonus (armor, §6.7.1) + Equipment Base Bonus (shield, if equipped)
 ```
 
-- **Active Defense** (optional) — the defender spends 1 PA (the Defend action) or their Reaction, and the attack becomes a true Opposed Test (the defender rolls against the attacker).
+- **Active Defense** (optional) — the defender spends 1 PA (the Defend action) or their Reaction, and the attack becomes a true Opposed Test. Upon activating it, the defender chooses between **Dodge** or **Block** (§7.4.1) — the two skills that power this mechanism, with different attributes and effects.
 
 This resolves the tension between "fast combat" and "combat is an Opposed Test": fast by default, tactical when the player invests a resource.
+
+#### 7.4.1 Dodge (Control) vs. Block (Vigor) — CLOSED
+
+Unlike what the name suggests at first glance, Dodge and Block aren't the same thing with different labels — they're two mechanically distinct ways to execute Active Defense, each tied to a different attribute:
+
+**Dodge** — reflex, agility:
+```
+Roll = 2d10 + Attribute Grade Bonus (Control) + Dodge Grade Bonus
+```
+- Success → avoids the attack **entirely** (zero damage). Failure → takes full damage, no reduction.
+- Requires no equipment (uses only the body).
+- Doesn't work against Large Area attacks, or if the defender is Immobilized.
+- Characters with high Control tend to be better at Dodge.
+
+**Block** — resistance, physical:
+```
+Roll = 2d10 + Attribute Grade Bonus (Vigor) + Block Grade Bonus
+```
+- Success → reduces damage by `Grade Bonus × 2` (adds to the armor's Damage Reduction, §7.5).
+- Great Success (margin ≥5) → damage reduced to zero.
+- Extraordinary Success (margin ≥10) → zero damage **+** unlocks an immediate counter-attack, if the defender still has their Reaction available.
+- Requires a weapon or shield equipped.
+- Works even against Large Area attacks (the defender doesn't need to move, just react in place).
+- Characters with high Vigor tend to be better at Block.
+
+Neither is objectively superior — Dodge bets everything (avoids completely or doesn't avoid at all); Block is more predictable (guaranteed partial mitigation on a simple success, with the upside of zeroing damage and counter-attacking at high margins). The choice depends on the rest of the character's build.
+
+The **Parry** Technique (§6.6.8, Swords) still exists as a formal upgrade over Block — uses the same logic, but requires the Expert Skill and comes with an additional effect.
 
 ### 7.5 Attack and Damage (CORRECTED by Playtest, §17.10)
 ```
