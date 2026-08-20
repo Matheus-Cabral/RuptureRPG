@@ -19,7 +19,7 @@ public static partial class CatalogSeedData
         Entry("60000000-0000-0000-0000-000000000007", CatalogEntryType.Skill, "Escudos", new { Area = "Combate — Defesa", RelatedAttribute = "Controle" }),
         Entry("60000000-0000-0000-0000-000000000008", CatalogEntryType.Skill, "Armaduras", new { Area = "Combate — Defesa", RelatedAttribute = "Controle" }),
         Entry("60000000-0000-0000-0000-000000000009", CatalogEntryType.Skill, "Esquiva", new { Area = "Combate — Defesa", RelatedAttribute = "Controle" }),
-        Entry("60000000-0000-0000-0000-000000000010", CatalogEntryType.Skill, "Bloqueio", new { Area = "Combate — Defesa", RelatedAttribute = "Controle" }),
+        Entry("60000000-0000-0000-0000-000000000010", CatalogEntryType.Skill, "Bloqueio", new { Area = "Combate — Defesa", RelatedAttribute = "Vigor" }),
 
         // Combate Corporal (Corpo/Controle)
         Entry("60000000-0000-0000-0000-000000000011", CatalogEntryType.Skill, "Artes Marciais", new { Area = "Combate Corporal", RelatedAttribute = "Corpo" }),

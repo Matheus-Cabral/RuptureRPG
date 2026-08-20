@@ -10,6 +10,8 @@ public class CharacterDerivedStats
     public int Initiative { get; set; }
     public int PassiveDefense { get; set; }
     public int DamageReduction { get; set; }
+    public int EsquivaBonus { get; set; }  // Defesa Ativa (Controle) — GDD §7.4.1
+    public int BloqueioBonus { get; set; } // Defesa Ativa (Vigor) — GDD §7.4.1
     public int CarryCapacity { get; set; }
     public decimal CurrentWeight { get; set; }
     public int Np { get; set; }

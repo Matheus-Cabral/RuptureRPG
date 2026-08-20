@@ -49,7 +49,7 @@ public class CharacterStatsCalculator : ICharacterStatsCalculator
 
         var rankingBonus = RankingHpBonus.GetValueOrDefault(ranking, 0);
         var maxHp = 10 + attributeScores["Vigor"] * 2 + rankingBonus;
-        var movement = 4 + attributeModifiers["Vigor"];
+        var movement = 4 + attributeModifiers["Controle"];
         var initiative = attributeModifiers["Controle"];
 
         var equipped = equipment
@@ -88,6 +88,19 @@ public class CharacterStatsCalculator : ICharacterStatsCalculator
             + talents.Sum(t => TalentNpWeightFor(t.CatalogEntryId, catalogEntries))
             + equipment.Sum(e => EquipmentNpWeightFor(e.CatalogEntryId, catalogEntries));
 
+        // Active Defense (GDD §7.4.1) — every character can always attempt Esquiva or Bloqueio,
+        // invested or not, so unlike weapon rows (which only exist when equipped+linked) these
+        // are always computed. Esquiva is fixed to Controle and Bloqueio to Vigor because the
+        // rule's formula names the attribute explicitly, not via the skill's catalog
+        // RelatedAttribute — deliberately independent of it, unlike BuildWeaponRow below, which
+        // DOES read a linked skill's RelatedAttribute (so a GM-homebrewed weapon skill's attack
+        // math follows whatever attribute its catalog entry declares; this Active Defense pair
+        // does not, since the GDD hard-codes it).
+        var esquivaBonus = attributeGradeBonuses["Controle"]
+            + NamedSkillGradeBonus(skills, catalogEntries, skillGradeBonuses, "Esquiva");
+        var bloqueioBonus = attributeGradeBonuses["Vigor"]
+            + NamedSkillGradeBonus(skills, catalogEntries, skillGradeBonuses, "Bloqueio");
+
         return new CharacterDerivedStats
         {
             AttributeModifiers = attributeModifiers,
@@ -97,12 +110,36 @@ public class CharacterStatsCalculator : ICharacterStatsCalculator
             Initiative = initiative,
             PassiveDefense = passiveDefense,
             DamageReduction = damageReduction,
+            EsquivaBonus = esquivaBonus,
+            BloqueioBonus = bloqueioBonus,
             CarryCapacity = carryCapacity,
             CurrentWeight = currentWeight,
             Np = np,
             SkillGradeBonuses = skillGradeBonuses,
             Weapons = weapons
         };
+    }
+
+    // Finds the character's invested skill matching a fixed skill name (e.g. "Esquiva"),
+    // regardless of which catalog Guid backs it, and returns its grade bonus — or the
+    // "Sem Treinamento" (−2) grade if the character never invested in it at all.
+    // Known fragility: this matches by the catalog entry's editable Name, not a stable
+    // identifier — a GM renaming the seeded "Esquiva"/"Bloqueio" entry via the catalog admin
+    // page silently stops this from finding it (falls back to untrained). No stable
+    // slug/system-key field exists on skills to key off instead; accepted as a rare-homebrew
+    // edge case rather than adding one for just these two mechanics.
+    private static int NamedSkillGradeBonus(
+        IReadOnlyList<CharacterSkillEntry> skills,
+        IReadOnlyDictionary<Guid, CatalogEntry> catalogEntries,
+        IReadOnlyDictionary<Guid, int> skillGradeBonuses,
+        string skillName)
+    {
+        var invested = skills.FirstOrDefault(s =>
+            catalogEntries.TryGetValue(s.CatalogEntryId, out var entry) && entry.Name == skillName);
+
+        return invested is not null && skillGradeBonuses.TryGetValue(invested.CatalogEntryId, out var grade)
+            ? grade
+            : SkillGradeBonus(0);
     }
 
     private static WeaponCombatRow BuildWeaponRow(

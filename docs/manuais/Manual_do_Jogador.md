@@ -324,7 +324,7 @@ Usar essas magias/técnicas ainda custa PA normalmente — a regra libera só o 
 
 ### 4.1 Movimento
 
-- **Combates pequenos** (poucos combatentes por lado) → **Grid/Hex**, medido em quadros. Seu Deslocamento é `4 + Mod(Vigor)` quadros por PA gasto em Mover.
+- **Combates pequenos** (poucos combatentes por lado) → **Grid/Hex**, medido em quadros. Seu Deslocamento é `4 + Mod(Controle)` quadros por PA gasto em Mover.
 - **Combates em larga escala** (hordas, batalhas) → **Zonas** (Contato/Curta/Média/Longa), 1 PA por zona adjacente.
 
 | Zona | Grid/Hex (quadros) | Penalidade de alcance |
@@ -349,7 +349,21 @@ Por padrão, sua **Defesa Passiva** já protege você sem gastar PA:
 ```
 Defesa Passiva = 10 + Mod(Controle) + Bônus do Equipamento (armadura) + Bônus do Equipamento (escudo)
 ```
-Se quiser se defender ativamente, gaste 1 PA (ação Defender) ou sua Reação — o ataque vira um Teste Oposto de verdade, onde você rola contra o atacante.
+Se quiser se defender ativamente, gaste 1 PA (ação Defender) ou sua Reação — o ataque vira um Teste Oposto de verdade. Ao ativar, escolha entre **Esquiva** ou **Bloqueio**.
+
+**Esquiva (Controle)** — reflexo e agilidade:
+```
+Rolagem = 2d10 + Bônus de Grau do Atributo (Controle) + Bônus de Grau de Esquiva
+```
+Sucesso evita o ataque por completo (dano zero); falha não reduz nada. Não exige equipamento. Não funciona contra ataques de Área Grande, nem se você estiver Imobilizado.
+
+**Bloqueio (Vigor)** — resistência física:
+```
+Rolagem = 2d10 + Bônus de Grau do Atributo (Vigor) + Bônus de Grau de Bloqueio
+```
+Sucesso reduz o dano em `Bônus de Grau × 2` (soma à Redução de Dano da armadura). Grande Sucesso (margem ≥5) zera o dano. Sucesso Extraordinário (margem ≥10) zera o dano e libera um contra-golpe imediato, se você ainda tiver Reação. Exige arma ou escudo equipado — mas funciona mesmo contra Área Grande, já que você não precisa se mover.
+
+Nenhuma das duas é "melhor" — Esquiva aposta tudo (evita tudo ou nada), Bloqueio é mais previsível. Escolha conforme sua build: Controle alto favorece Esquiva, Vigor alto favorece Bloqueio.
 
 ### 4.5 Ataque e Dano
 ```

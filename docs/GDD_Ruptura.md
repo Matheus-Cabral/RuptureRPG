@@ -800,7 +800,7 @@ A Escala do Encontro (§9.7) define o modo de movimento:
 - **Pequena Escala** (Comando Individual/Tático) → **Grid/Hex**, medido em **quadros** (grid quadrado ou hexagonal são intercambiáveis, mecanicamente idênticos).
 - **Larga Escala** (Hordas, Comando Militar/Estratégico) → **Zonas** (Contato/Curta/Média/Longa), 1 PA por zona adjacente.
 
-**Deslocamento (modo Grid)**: `Deslocamento = 4 + Mod(Vigor)` quadros por PA gasto em Mover.
+**Deslocamento (modo Grid)**: `Deslocamento = 4 + Mod(Controle)` quadros por PA gasto em Mover.
 
 **Tabela de conversão de alcance** (unifica os dois modos):
 
@@ -817,7 +817,7 @@ Cobertura (válida nos dois modos): **Leve** (+2 Defesa Passiva) | **Parcial** (
 `Iniciativa = 2d10 + Mod(Controle)`. Ordem decrescente; empate resolvido por maior Percepção.
 
 ### 7.3 Ações e Pontos de Ação
-**3 PA por turno** (valor base) + **1 Reação**. PA só aumenta por talentos raros, equipamentos, perícias especiais ou poderes divinos — atributos nunca aumentam PA diretamente. Ações: Mover (1 PA/zona ou até o Deslocamento em quadros), Atacar (1-2 PA conforme categoria de arma), Defender (1 PA, ativa Teste Oposto — ver §7.5), Usar Item (1 PA), Preparar Ação (guarda PA para reagir a um gatilho).
+**3 PA por turno** (valor base) + **1 Reação**. PA só aumenta por talentos raros, equipamentos, perícias especiais ou poderes divinos — atributos nunca aumentam PA diretamente. Ações: Mover (1 PA/zona ou até o Deslocamento em quadros), Atacar (1-2 PA conforme categoria de arma), Defender (1 PA, ativa Esquiva ou Bloqueio — ver §7.4.1), Usar Item (1 PA), Preparar Ação (guarda PA para reagir a um gatilho).
 
 **Ataques de Oportunidade**: não existem como mecânica própria — são cobertos pela Reação já existente ("Interceptação": um personagem pode usar sua Reação quando um inimigo sai de sua Zona/quadro de Contato sem se desvincular com cautela).
 
@@ -829,9 +829,37 @@ Combate é Teste Oposto por definição (§5.2), mas por padrão isso tornaria t
 Defesa Passiva = 10 + Mod(Controle) + Bônus Base do Equipamento (armadura, §6.7.1) + Bônus Base do Equipamento (escudo, se equipado)
 ```
 
-- **Defesa Ativa** (opcional) — o defensor gasta 1 PA (ação Defender) ou sua Reação, e o ataque vira Teste Oposto de verdade (o defensor rola contra o atacante).
+- **Defesa Ativa** (opcional) — o defensor gasta 1 PA (ação Defender) ou sua Reação, e o ataque vira Teste Oposto de verdade. Ao ativar, o defensor escolhe entre **Esquiva** ou **Bloqueio** (§7.4.1) — as duas perícias que alimentam esse mecanismo, com atributos e efeitos diferentes.
 
 Isso resolve a tensão entre "combate rápido" e "combate é Teste Oposto": rápido por padrão, tático quando o jogador investe recurso.
+
+#### 7.4.1 Esquiva (Controle) vs. Bloqueio (Vigor) — FECHADO
+
+Diferente do que o nome sugere à primeira vista, Esquiva e Bloqueio não são a mesma coisa com rótulos diferentes — são duas formas mecanicamente distintas de executar a Defesa Ativa, cada uma ligada a um atributo diferente:
+
+**Esquiva** — reflexo, agilidade:
+```
+Rolagem = 2d10 + Bônus de Grau do Atributo (Controle) + Bônus de Grau de Esquiva
+```
+- Sucesso → evita o ataque **por completo** (dano zero). Falha → sofre o dano normal, sem redução.
+- Não exige equipamento (usa só o corpo).
+- Não funciona contra ataques de Área Grande, nem se o defensor estiver Imobilizado.
+- Personagens de Controle alto tendem a ser melhores em Esquiva.
+
+**Bloqueio** — resistência, físico:
+```
+Rolagem = 2d10 + Bônus de Grau do Atributo (Vigor) + Bônus de Grau de Bloqueio
+```
+- Sucesso → reduz o dano em `Bônus de Grau × 2` (soma à Redução de Dano da armadura, §7.5).
+- Grande Sucesso (margem ≥5) → dano reduzido a zero.
+- Sucesso Extraordinário (margem ≥10) → dano zero **+** libera um contra-golpe imediato, se o defensor ainda tiver Reação disponível.
+- Exige arma ou escudo equipado.
+- Funciona até contra Área Grande (o defensor não precisa se mover, só reagir no lugar).
+- Personagens de Vigor alto tendem a ser melhores em Bloqueio.
+
+Nenhuma das duas é objetivamente superior — Esquiva aposta tudo (evita completamente ou não evita nada); Bloqueio é mais previsível (mitigação parcial garantida em sucesso simples, com upside de zerar e contra-atacar em margens altas). A escolha depende do resto da build do personagem.
+
+A Técnica **Aparar** (§6.6.8, Espadas) continua existindo como upgrade formal sobre o Bloqueio — usa a mesma lógica, mas exige Perícia Especialista e vem com efeito adicional.
 
 ### 7.5 Ataque e Dano (CORRIGIDO por Playtest, §17.10)
 ```

@@ -11,9 +11,12 @@ public class CharacterStatsCalculatorTests
 {
     private readonly CharacterStatsCalculator _sut = new();
 
-    private static CatalogEntry Skill(Guid id, string relatedAttribute) => new()
+    private static CatalogEntry Skill(Guid id, string relatedAttribute) =>
+        SkillNamed(id, "Test Skill", relatedAttribute);
+
+    private static CatalogEntry SkillNamed(Guid id, string name, string relatedAttribute) => new()
     {
-        Id = id, Type = CatalogEntryType.Skill, Name = "Test Skill",
+        Id = id, Type = CatalogEntryType.Skill, Name = name,
         DataJson = JsonSerializer.Serialize(new { Area = "Combate — Armas", RelatedAttribute = relatedAttribute })
     };
 
@@ -108,9 +111,9 @@ public class CharacterStatsCalculatorTests
     // ── Movement / Initiative ────────────────────────────────────────────────
 
     [Fact]
-    public void Calculate_Movement_Is4PlusVigorModifier()
+    public void Calculate_Movement_Is4PlusControleModifier()
     {
-        var data = new CharacterSheetData { Attributes = new CharacterAttributes { Vigor = 4 } };
+        var data = new CharacterSheetData { Attributes = new CharacterAttributes { Controle = 4 } };
 
         var result = _sut.Calculate(data, new Dictionary<Guid, CatalogEntry>());
 
@@ -156,6 +159,48 @@ public class CharacterStatsCalculatorTests
 
         result.PassiveDefense.Should().Be(10 + (3 - 2) + 2 + 1);
         result.DamageReduction.Should().Be(2);
+    }
+
+    // ── Active Defense: Esquiva (Controle) / Bloqueio (Vigor) — GDD §7.4.1 ──
+
+    [Fact]
+    public void Calculate_ActiveDefense_UninvestedEsquivaAndBloqueio_UseAttributeGradePlusUntrainedSkillGrade()
+    {
+        var data = new CharacterSheetData
+        {
+            Attributes = new CharacterAttributes { Controle = 4, Vigor = 3 } // grade bonuses +3, +2
+        };
+
+        var result = _sut.Calculate(data, new Dictionary<Guid, CatalogEntry>());
+
+        result.EsquivaBonus.Should().Be(3 + -2); // Controle grade bonus + Sem Treinamento
+        result.BloqueioBonus.Should().Be(2 + -2); // Vigor grade bonus + Sem Treinamento
+    }
+
+    [Fact]
+    public void Calculate_ActiveDefense_InvestedEsquivaAndBloqueio_AddTheirSkillGradeBonus()
+    {
+        var esquivaId = Guid.NewGuid();
+        var bloqueioId = Guid.NewGuid();
+        var data = new CharacterSheetData
+        {
+            Attributes = new CharacterAttributes { Controle = 4, Vigor = 3 }, // grade bonuses +3, +2
+            Skills =
+            [
+                new CharacterSkillEntry { CatalogEntryId = esquivaId, Points = 50 },  // grade +2
+                new CharacterSkillEntry { CatalogEntryId = bloqueioId, Points = 75 }  // grade +3
+            ]
+        };
+        var catalog = new Dictionary<Guid, CatalogEntry>
+        {
+            [esquivaId] = SkillNamed(esquivaId, "Esquiva", "Controle"),
+            [bloqueioId] = SkillNamed(bloqueioId, "Bloqueio", "Vigor")
+        };
+
+        var result = _sut.Calculate(data, catalog);
+
+        result.EsquivaBonus.Should().Be(3 + 2);
+        result.BloqueioBonus.Should().Be(2 + 3);
     }
 
     // ── Carry capacity / current weight ─────────────────────────────────────

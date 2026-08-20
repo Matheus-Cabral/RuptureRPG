@@ -16,6 +16,14 @@
 </div>
 
 <div class="section-header">
+    <span class="section-title">@L["Sheet.Combat.ActiveDefense"]</span>
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:1.5rem;margin-bottom:1.5rem">
+    <div><span class="section-title" style="display:block">@L["Sheet.Combat.Esquiva"]</span><span>@FormatBonus(Derived?.EsquivaBonus)</span></div>
+    <div><span class="section-title" style="display:block">@L["Sheet.Combat.Bloqueio"]</span><span>@FormatBonus(Derived?.BloqueioBonus)</span></div>
+</div>
+
+<div class="section-header">
     <span class="section-title">@L["Sheet.Combat.Conditions"]</span>
 </div>
 <div style="display:flex;gap:.5rem;margin-bottom:1rem">
@@ -62,4 +70,7 @@
         Data.Combat.ActiveConditions.Add(_newCondition.Trim());
         _newCondition = string.Empty;
     }
+
+    private static string FormatBonus(int? value) =>
+        value is null ? string.Empty : value >= 0 ? $"+{value}" : value.ToString()!;
 }

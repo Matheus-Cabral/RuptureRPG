@@ -294,6 +294,9 @@
   <data name="Sheet.Combat.Initiative"><value>Initiative</value></data>
   <data name="Sheet.Combat.PassiveDefense"><value>Passive Defense</value></data>
   <data name="Sheet.Combat.DamageReduction"><value>Damage Reduction</value></data>
+  <data name="Sheet.Combat.ActiveDefense"><value>Active Defense</value></data>
+  <data name="Sheet.Combat.Esquiva"><value>Esquiva</value></data>
+  <data name="Sheet.Combat.Bloqueio"><value>Bloqueio</value></data>
   <data name="Sheet.Combat.Conditions"><value>Active Conditions</value></data>
   <data name="Sheet.Combat.AddCondition"><value>Add</value></data>
   <data name="Sheet.Combat.Weapons"><value>Weapons (equipped, see Equipment tab)</value></data>
