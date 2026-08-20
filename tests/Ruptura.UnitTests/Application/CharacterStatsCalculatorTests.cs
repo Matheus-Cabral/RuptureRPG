@@ -161,6 +161,51 @@ public class CharacterStatsCalculatorTests
         result.DamageReduction.Should().Be(2);
     }
 
+    // ── Category matching is case/whitespace-insensitive (free-text catalog field) ──
+
+    [Theory]
+    [InlineData("Armadura")]
+    [InlineData("ARMADURA")]
+    [InlineData(" armadura ")]
+    public void Calculate_ArmorCategory_MatchesRegardlessOfCaseOrWhitespace(string category)
+    {
+        var armorId = Guid.NewGuid();
+        var data = new CharacterSheetData
+        {
+            Equipment = [new CharacterEquipmentEntry { CatalogEntryId = armorId, IsEquipped = true }]
+        };
+        var catalog = new Dictionary<Guid, CatalogEntry>
+        {
+            [armorId] = Equipment(armorId, category, "Comum", defenseBonus: 2, armorReduction: 3)
+        };
+
+        var result = _sut.Calculate(data, catalog);
+
+        result.PassiveDefense.Should().Be(10 + -1 + 2); // Controle defaults to 1 → modifier -1
+        result.DamageReduction.Should().Be(3);
+    }
+
+    [Theory]
+    [InlineData("Arma")]
+    [InlineData("ARMA")]
+    [InlineData(" arma ")]
+    public void Calculate_WeaponCategory_MatchesRegardlessOfCaseOrWhitespace(string category)
+    {
+        var weaponId = Guid.NewGuid();
+        var data = new CharacterSheetData
+        {
+            Equipment = [new CharacterEquipmentEntry { CatalogEntryId = weaponId, IsEquipped = true }]
+        };
+        var catalog = new Dictionary<Guid, CatalogEntry>
+        {
+            [weaponId] = Equipment(weaponId, category, "Comum", diceCategory: "Leve")
+        };
+
+        var result = _sut.Calculate(data, catalog);
+
+        result.Weapons.Should().ContainSingle();
+    }
+
     // ── Active Defense: Esquiva (Controle) / Bloqueio (Vigor) — GDD §7.4.1 ──
 
     [Fact]

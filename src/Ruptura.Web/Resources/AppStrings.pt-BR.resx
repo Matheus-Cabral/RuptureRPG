@@ -243,9 +243,12 @@
   <data name="Gm.Catalog.Field.NonConstructible"><value>Não construível</value></data>
   <data name="Gm.Catalog.Field.Bonus"><value>Bônus</value></data>
   <data name="Gm.Catalog.Field.Damage"><value>Dano</value></data>
-  <data name="Gm.Catalog.Field.Defense"><value>Defesa</value></data>
-  <data name="Gm.Catalog.Field.Properties"><value>Propriedades</value></data>
-  <data name="Gm.Catalog.Field.Description"><value>Descrição</value></data>
+  <data name="Gm.Catalog.Field.Rarity"><value>Raridade</value></data>
+  <data name="Gm.Catalog.Field.AttackBonus"><value>Bônus de ataque</value></data>
+  <data name="Gm.Catalog.Field.DamageBonus"><value>Bônus de dano</value></data>
+  <data name="Gm.Catalog.Field.DefenseBonus"><value>Bônus de defesa</value></data>
+  <data name="Gm.Catalog.Field.WeaponDiceCategory"><value>Categoria de dado da arma</value></data>
+  <data name="Gm.Catalog.Field.ArmorDamageReduction"><value>Redução de dano da armadura</value></data>
 
   <!-- Editor de Ficha de Personagem -->
   <data name="Sheet.Loading"><value>Carregando ficha…</value></data>
@@ -317,6 +320,7 @@
   <data name="Sheet.RefList.Remove"><value>Remover</value></data>
   <data name="Sheet.Equipment.CarryCapacity"><value>Capacidade de Carga</value></data>
   <data name="Sheet.Equipment.CurrentWeight"><value>Peso Atual</value></data>
+  <data name="Sheet.Equipment.Silver"><value>Prata</value></data>
   <data name="Sheet.Equipment.PactCoins"><value>Moedas de Pacto</value></data>
   <data name="Sheet.Equipment.Quantity"><value>Qtd.</value></data>
   <data name="Sheet.Equipment.Durability"><value>Durabilidade</value></data>

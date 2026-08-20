@@ -83,6 +83,7 @@ public class CharacterEquipmentEntry
 
 public class CharacterCurrency
 {
+    public int Silver { get; set; }
     public int PactCoins { get; set; }
 }
 

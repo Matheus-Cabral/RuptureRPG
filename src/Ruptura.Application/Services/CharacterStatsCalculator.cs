@@ -59,12 +59,12 @@ public class CharacterStatsCalculator : ICharacterStatsCalculator
             .ToList();
 
         var armorAndShieldDefense = equipped
-            .Where(x => x.Data!.Category is "armadura" or "escudo")
+            .Where(x => CategoryIs(x.Data!.Category, "armadura") || CategoryIs(x.Data!.Category, "escudo"))
             .Sum(x => x.Data!.DefenseBonus);
         var passiveDefense = 10 + attributeModifiers["Controle"] + armorAndShieldDefense;
 
         var damageReduction = equipped
-            .Where(x => x.Data!.Category == "armadura")
+            .Where(x => CategoryIs(x.Data!.Category, "armadura"))
             .Sum(x => x.Data!.ArmorDamageReduction ?? 0);
 
         var carryCapacity = attributeScores["Corpo"] * 5;
@@ -72,7 +72,7 @@ public class CharacterStatsCalculator : ICharacterStatsCalculator
             (DeserializeEquipment(e.CatalogEntryId, catalogEntries)?.Weight ?? 0) * e.Quantity);
 
         var weapons = equipped
-            .Where(x => x.Data!.Category == "arma")
+            .Where(x => CategoryIs(x.Data!.Category, "arma"))
             .Select(x =>
             {
                 var name = catalogEntries.TryGetValue(x.Entry.CatalogEntryId, out var itemEntry)
@@ -193,6 +193,16 @@ public class CharacterStatsCalculator : ICharacterStatsCalculator
         < 0 => $" {value}",
         _ => string.Empty
     };
+
+    // EquipmentItemCatalogData.Category is free text typed by a GM into the Catalog admin
+    // form (no dropdown backs it — CatalogFieldKind has no "select" option) but is expected
+    // to be one of "arma"/"armadura"/"escudo"/"item" (§4.2.1). A GM typing "Arma" or "Armadura"
+    // (matching every OTHER catalog value's capitalized-Portuguese-word convention, e.g.
+    // Rarity's "Comum") against this one lowercase-only field would silently drop the item
+    // from every combat calculation below with no error — comparing case/whitespace-insensitively
+    // closes that gap without requiring a schema change.
+    private static bool CategoryIs(string category, string expected) =>
+        string.Equals(category.Trim(), expected, StringComparison.OrdinalIgnoreCase);
 
     // Skill.RelatedAttribute values in the catalog are accented GDD names
     // ("Presença", "Percepção"); CharacterAttributes property names drop the accent

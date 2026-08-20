@@ -15,6 +15,11 @@ else
     <div><span class="section-title" style="display:block">@L["Sheet.Equipment.CarryCapacity"]</span><span>@Derived?.CarryCapacity</span></div>
     <div><span class="section-title" style="display:block">@L["Sheet.Equipment.CurrentWeight"]</span><span>@Derived?.CurrentWeight</span></div>
     <div>
+        <label class="form-label" style="display:block">@L["Sheet.Equipment.Silver"]</label>
+        <input class="form-control" type="number" min="0"
+               value="@Data.Currency.Silver" @onchange="e => Data.Currency.Silver = ParseInt(e.Value, 0)" style="width:120px" />
+    </div>
+    <div>
         <label class="form-label" style="display:block">@L["Sheet.Equipment.PactCoins"]</label>
         <input class="form-control" type="number" min="0"
                value="@Data.Currency.PactCoins" @onchange="e => Data.Currency.PactCoins = ParseInt(e.Value, 0)" style="width:120px" />

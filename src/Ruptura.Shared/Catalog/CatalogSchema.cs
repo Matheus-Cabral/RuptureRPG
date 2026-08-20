@@ -24,7 +24,19 @@ public static class CatalogSchema
             ["Technique"] = [F("Style", CatalogFieldKind.Text), F("Category", CatalogFieldKind.Text), F("PaCost", CatalogFieldKind.Text), F("Damage", CatalogFieldKind.Text), F("Effect", CatalogFieldKind.TextArea)],
             ["Installation"] = [F("Category", CatalogFieldKind.Text), F("Weight", CatalogFieldKind.Number), F("LevelCap", CatalogFieldKind.Number), F("Prerequisites", CatalogFieldKind.TextArea), F("Unlocks", CatalogFieldKind.TextArea), F("NonConstructible", CatalogFieldKind.Bool)],
             ["Doctrine"] = [F("Bonus", CatalogFieldKind.TextArea)],
-            ["EquipmentItem"] = [F("Category", CatalogFieldKind.Text), F("Damage", CatalogFieldKind.Text), F("Defense", CatalogFieldKind.Text), F("Weight", CatalogFieldKind.Number), F("Properties", CatalogFieldKind.TextArea), F("Description", CatalogFieldKind.TextArea)],
+            // Keys here MUST exactly match EquipmentItemCatalogData's C# property names — that
+            // class, not this schema, is what CharacterStatsCalculator actually deserializes
+            // DataJson into. This entry originally listed Damage/Defense/Properties/Description,
+            // none of which exist on EquipmentItemCatalogData — every equipment item a GM created
+            // through this form silently had no Rarity (→ 0 NP contribution), no
+            // ArmorDamageReduction (→ 0 damage reduction), and no AttackBonus/DamageBonus
+            // (→ equipment never added to weapon attack/damage). Fixed by aligning field-for-field.
+            ["EquipmentItem"] = [
+                F("Category", CatalogFieldKind.Text), F("Rarity", CatalogFieldKind.Text),
+                F("AttackBonus", CatalogFieldKind.Number), F("DamageBonus", CatalogFieldKind.Number),
+                F("DefenseBonus", CatalogFieldKind.Number), F("WeaponDiceCategory", CatalogFieldKind.Text),
+                F("ArmorDamageReduction", CatalogFieldKind.Number), F("Weight", CatalogFieldKind.Number)
+            ],
         };
 
     public static IReadOnlyList<CatalogField> FieldsFor(string type) =>
