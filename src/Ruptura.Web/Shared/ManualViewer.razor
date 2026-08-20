@@ -1,6 +1,7 @@
 @using Markdig
 @inject IStringLocalizer<AppStrings> L
 @inject IManualClientService ManualService
+@inject NavigationManager Nav
 
 @if (_loading)
 {
@@ -27,7 +28,8 @@ else
     protected override async Task OnInitializedAsync()
     {
         var raw = await ManualService.GetManualAsync(Type);
-        _html = raw is null ? null : Markdown.ToHtml(raw, Pipeline);
+        var currentPath = "/" + Nav.ToBaseRelativePath(Nav.Uri).Split('#')[0].Split('?')[0];
+        _html = raw is null ? null : ManualAnchorRewriter.RenderWithFixedAnchors(raw, Pipeline, currentPath);
         _loading = false;
     }
 }
