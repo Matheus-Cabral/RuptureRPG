@@ -30,11 +30,11 @@ services:
       ConnectionStrings__DefaultConnection: >
         Host=db;Port=5432;Database=${POSTGRES_DB};
         Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
-      Jwt__SecretKey: ${JWT_SECRET_KEY}
-      Jwt__Issuer: ${JWT_ISSUER}
-      Jwt__Audience: ${JWT_AUDIENCE}
-      Jwt__AccessTokenExpirationMinutes: ${JWT_ACCESS_EXPIRY_MINUTES}
-      Jwt__RefreshTokenExpirationDays: ${JWT_REFRESH_EXPIRY_DAYS}
+      JwtSettings__SecretKey: ${JWT_SECRET_KEY}
+      JwtSettings__Issuer: ${JWT_ISSUER}
+      JwtSettings__Audience: ${JWT_AUDIENCE}
+      JwtSettings__AccessTokenExpirationMinutes: ${JWT_ACCESS_EXPIRY_MINUTES}
+      JwtSettings__RefreshTokenExpirationDays: ${JWT_REFRESH_EXPIRY_DAYS}
       Cors__AllowedOrigin: ${CORS_ALLOWED_ORIGIN}
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
       MediaSettings__MaxFileSizeMb: ${MEDIA_MAX_FILE_SIZE_MB}
