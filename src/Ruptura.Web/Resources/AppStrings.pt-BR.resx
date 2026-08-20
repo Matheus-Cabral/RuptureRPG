@@ -127,8 +127,6 @@
   <data name="Gm.Players.NoResults"><value>Nenhum jogador corresponde à busca.</value></data>
 
   <!-- Dashboard do Jogador -->
-  <data name="Dashboard.Player.Title"><value>Meu Personagem</value></data>
-  <data name="Dashboard.Player.Subtitle"><value>Sua ficha de personagem aparecerá aqui quando o Mestre a atribuir.</value></data>
 
   <!-- Dica de senha -->
   <data name="Register.PasswordHint"><value>Senha: mín. 8 caracteres, com maiúscula, minúscula e número.</value></data>
@@ -330,11 +328,9 @@
   <data name="Sheet.Guild.State"><value>Estado</value></data>
   <data name="Sheet.Guild.Expeditions"><value>Expedições</value></data>
   <data name="Sheet.Guild.FloorsCleared"><value>Andares Limpos</value></data>
-  <data name="Campaigns.Title"><value>Minhas Campanhas</value></data>
   <data name="Campaigns.Empty"><value>Você ainda não participa de nenhuma campanha.</value></data>
   <data name="Campaigns.OpenCharacter"><value>Abrir Personagem</value></data>
   <data name="Character.AwaitingGrant"><value>Seu Mestre ainda não concedeu um personagem a você.</value></data>
-  <data name="Nav.Campaigns.Player"><value>Minhas Campanhas</value></data>
   <data name="Journal.Empty"><value>Nenhuma entrada no diário ainda.</value></data>
   <data name="Journal.ImageAlt"><value>Imagem da entrada do diário</value></data>
   <data name="Journal.NewEntryPlaceholder"><value>O que aconteceu hoje...</value></data>

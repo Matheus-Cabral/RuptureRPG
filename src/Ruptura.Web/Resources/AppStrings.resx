@@ -127,8 +127,6 @@
   <data name="Gm.Players.NoResults"><value>No players match your search.</value></data>
 
   <!-- Player Dashboard -->
-  <data name="Dashboard.Player.Title"><value>My Character</value></data>
-  <data name="Dashboard.Player.Subtitle"><value>Your character sheet will appear here once assigned by the Game Master.</value></data>
 
   <!-- Password hint -->
   <data name="Register.PasswordHint"><value>Password: min. 8 characters, with uppercase, lowercase and a number.</value></data>
@@ -330,11 +328,9 @@
   <data name="Sheet.Guild.State"><value>State</value></data>
   <data name="Sheet.Guild.Expeditions"><value>Expeditions</value></data>
   <data name="Sheet.Guild.FloorsCleared"><value>Floors Cleared</value></data>
-  <data name="Campaigns.Title"><value>My Campaigns</value></data>
   <data name="Campaigns.Empty"><value>You're not part of any campaign yet.</value></data>
   <data name="Campaigns.OpenCharacter"><value>Open Character</value></data>
   <data name="Character.AwaitingGrant"><value>Your Game Master hasn't granted you a character yet.</value></data>
-  <data name="Nav.Campaigns.Player"><value>My Campaigns</value></data>
   <data name="Journal.Empty"><value>No journal entries yet.</value></data>
   <data name="Journal.ImageAlt"><value>Journal entry image</value></data>
   <data name="Journal.NewEntryPlaceholder"><value>What happened today...</value></data>

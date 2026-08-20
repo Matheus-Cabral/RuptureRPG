@@ -1,12 +1,48 @@
 @using Microsoft.Extensions.Localization
 @using Ruptura.Web.Resources
+@using Ruptura.Shared.Campaigns
 @inject IStringLocalizer<AppStrings> L
+@inject ICampaignClientService CampaignService
 
-<div class="ledger-empty" style="text-align:left;padding:2rem 0;border-top:1px solid var(--border)">
-    <p style="margin-bottom:.5rem;font-family:var(--font-display);font-size:var(--text-sm);letter-spacing:.04em;color:var(--text)">
-        @L["Dashboard.Player.Title"]
-    </p>
-    <p style="color:var(--text-muted);font-size:var(--text-xs);margin-bottom:0">
-        @L["Dashboard.Player.Subtitle"]
-    </p>
-</div>
+@if (_loading)
+{
+    <LoadingIndicator Text="@L["Common.Loading"]" />
+}
+else if (_campaigns.Count == 0)
+{
+    <div class="ledger-empty"><p>@L["Campaigns.Empty"]</p></div>
+}
+else
+{
+    <div class="ledger-table-wrap">
+        <table class="ledger-table stack-mobile">
+            <thead><tr><th>@L["Gm.CampaignDetail.Col.Name"]</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var campaign in _campaigns)
+                {
+                    <tr>
+                        <td data-label="@L["Gm.CampaignDetail.Col.Name"]">@campaign.Name</td>
+                        <td data-label="">
+                            <div style="display:flex;flex-wrap:wrap;gap:.5rem">
+                                <a class="btn btn-outline-secondary btn-sm" href="/campaigns/@campaign.Id/character">@L["Campaigns.OpenCharacter"]</a>
+                                <a class="btn btn-outline-secondary btn-sm" href="/campaigns/@campaign.Id/guild">@L["Guild.OpenSheet"]</a>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private List<CampaignResponse> _campaigns = [];
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await CampaignService.GetMineAsync();
+        _campaigns = result?.Data?.ToList() ?? [];
+        _loading = false;
+    }
+}
