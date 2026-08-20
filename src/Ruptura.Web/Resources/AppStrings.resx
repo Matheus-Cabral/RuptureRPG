@@ -197,6 +197,10 @@
   <data name="Gm.Catalog.Cancel"><value>Cancel</value></data>
   <data name="Gm.Catalog.Delete"><value>Delete</value></data>
   <data name="Gm.Catalog.Archived"><value>Archived</value></data>
+  <data name="Gm.Catalog.Public"><value>Public</value></data>
+  <data name="Gm.Catalog.Private"><value>Private</value></data>
+  <data name="Gm.Catalog.PublicToggle"><value>Visible to players</value></data>
+  <data name="Gm.Catalog.PublicToggleHelp"><value>Only entries marked visible show up for players — in the character sheet and the guild sheet — to view and add. Unchecked entries stay GM-only, e.g. while drafting.</value></data>
   <data name="Gm.Catalog.SearchPlaceholder"><value>Search catalog…</value></data>
   <data name="Gm.Catalog.NoResults"><value>No entries match your search.</value></data>
   <data name="Gm.Catalog.DeleteConfirm.Title"><value>Delete entry?</value></data>

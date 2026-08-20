@@ -25,12 +25,17 @@ public class CatalogEntryService(
         if (campaign is null)
             return Result.Failure<IEnumerable<CatalogEntryResponse>>(ErrorCodes.Catalog.NotFound);
 
-        var isMember = campaign.GameMasterId == callerId
-            || await membershipRepo.ExistsAsync(campaignId, callerId, ct);
+        var isGameMaster = campaign.GameMasterId == callerId;
+        var isMember = isGameMaster || await membershipRepo.ExistsAsync(campaignId, callerId, ct);
         if (!isMember)
             return Result.Failure<IEnumerable<CatalogEntryResponse>>(ErrorCodes.Catalog.NotFound);
 
         var entries = await catalogRepo.GetByTypeAsync(parsedType, campaignId, includeArchived, ct);
+        // The GM sees everything, including private homebrew drafts, so they can work on them
+        // before publishing. Players (and any other non-GM member) only see IsPublic entries —
+        // global/official entries are always IsPublic (see CatalogEntry.IsPublic), so this never
+        // hides core rulebook content, only a GM's unpublished homebrew.
+        if (!isGameMaster) entries = entries.Where(e => e.IsPublic);
         return Result.Success(entries.Select(MapToResponse));
     }
 
@@ -57,6 +62,7 @@ public class CatalogEntryService(
             CampaignId = request.CampaignId,
             Name = request.Name,
             DataJson = request.DataJson,
+            IsPublic = request.IsPublic,
             CreatedByGameMasterId = gameMasterId,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
@@ -95,6 +101,7 @@ public class CatalogEntryService(
 
         entry.Name = request.Name;
         entry.DataJson = request.DataJson;
+        entry.IsPublic = request.IsPublic;
         entry.UpdatedAt = DateTime.UtcNow;
         catalogRepo.Update(entry);
         await catalogRepo.SaveChangesAsync(ct);
@@ -141,6 +148,7 @@ public class CatalogEntryService(
         DataJson = c.DataJson,
         CreatedByGameMasterId = c.CreatedByGameMasterId,
         CreatedAt = c.CreatedAt,
-        IsArchived = c.IsArchived
+        IsArchived = c.IsArchived,
+        IsPublic = c.IsPublic
     };
 }

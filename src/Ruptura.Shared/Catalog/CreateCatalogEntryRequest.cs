@@ -15,4 +15,6 @@ public class CreateCatalogEntryRequest
 
     [Required]
     public string DataJson { get; set; } = "{}";
+
+    public bool IsPublic { get; set; } = true;
 }

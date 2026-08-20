@@ -11,4 +11,5 @@ public class CatalogEntryResponse
     public Guid? CreatedByGameMasterId { get; set; }
     public DateTime CreatedAt { get; set; }
     public bool IsArchived { get; set; }
+    public bool IsPublic { get; set; }
 }

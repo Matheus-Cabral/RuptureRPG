@@ -243,6 +243,40 @@ public class CatalogControllerTests(IntegrationTestFactory factory)
     }
 
     [Fact]
+    public async Task GetByType_AsPlayer_HidesPrivateHomebrewEntry_ButGmStillSeesIt()
+    {
+        var (gmClient, campaignId) = await SetupGameMasterWithCampaignAsync();
+
+        var inviteResponse = await gmClient.PostAsync("api/invites", null);
+        var invite = (await inviteResponse.Content
+            .ReadFromJsonAsync<ApiResponse<Ruptura.Shared.Invites.InviteCodeResponse>>())!.Data!;
+        var player = await AuthHelper.RegisterPlayerAsync(factory.CreateClient(), invite.Code, Faker.Internet.Email());
+        await gmClient.PostAsJsonAsync($"api/campaigns/{campaignId}/members", new AssignMemberRequest
+        {
+            PlayerId = player.User.Id
+        });
+
+        const string draftName = "Talento em Rascunho";
+        var createResponse = await gmClient.PostAsJsonAsync("api/catalog", new CreateCatalogEntryRequest
+        {
+            CampaignId = campaignId, Type = "Talent", Name = draftName, DataJson = "{}", IsPublic = false
+        });
+        createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var playerClient = factory.CreateClient();
+        AuthHelper.SetBearerToken(playerClient, player.AccessToken);
+        var playerListResponse = await playerClient.GetAsync($"api/catalog?type=Talent&campaignId={campaignId}");
+        var playerList = (await playerListResponse.Content
+            .ReadFromJsonAsync<ApiResponse<IEnumerable<CatalogEntryResponse>>>())!.Data!;
+        playerList.Should().NotContain(e => e.Name == draftName);
+
+        var gmListResponse = await gmClient.GetAsync($"api/catalog?type=Talent&campaignId={campaignId}");
+        var gmList = (await gmListResponse.Content
+            .ReadFromJsonAsync<ApiResponse<IEnumerable<CatalogEntryResponse>>>())!.Data!;
+        gmList.Should().Contain(e => e.Name == draftName && !e.IsPublic);
+    }
+
+    [Fact]
     public async Task WriteEndpoints_AsPlayer_PutAndDeleteReturn403()
     {
         var (gmClient, _) = await SetupGameMasterWithCampaignAsync();

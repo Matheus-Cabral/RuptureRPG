@@ -77,6 +77,54 @@ public class CatalogEntryServiceTests
     }
 
     [Fact]
+    public async Task GetByTypeAsync_WhenCallerIsMember_FiltersOutPrivateEntries()
+    {
+        var playerId = Guid.NewGuid();
+        var campaignId = Guid.NewGuid();
+        var campaign = new Campaign { Id = campaignId, GameMasterId = Guid.NewGuid() };
+        var entries = new List<CatalogEntry>
+        {
+            new() { Id = Guid.NewGuid(), Type = CatalogEntryType.Talent, Name = "Público", IsPublic = true },
+            new() { Id = Guid.NewGuid(), Type = CatalogEntryType.Talent, Name = "Rascunho", IsPublic = false }
+        };
+
+        _campaignRepoMock.Setup(r => r.GetByIdAsync(campaignId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(campaign);
+        _membershipRepoMock.Setup(r => r.ExistsAsync(campaignId, playerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        _catalogRepoMock.Setup(r => r.GetByTypeAsync(CatalogEntryType.Talent, campaignId, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(entries);
+
+        var result = await _sut.GetByTypeAsync(playerId, "Talent", campaignId, includeArchived: false);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Should().ContainSingle(e => e.Name == "Público");
+    }
+
+    [Fact]
+    public async Task GetByTypeAsync_WhenCallerIsGameMaster_IncludesPrivateEntries()
+    {
+        var gmId = Guid.NewGuid();
+        var campaignId = Guid.NewGuid();
+        var campaign = new Campaign { Id = campaignId, GameMasterId = gmId };
+        var entries = new List<CatalogEntry>
+        {
+            new() { Id = Guid.NewGuid(), Type = CatalogEntryType.Talent, Name = "Público", IsPublic = true },
+            new() { Id = Guid.NewGuid(), Type = CatalogEntryType.Talent, Name = "Rascunho", IsPublic = false }
+        };
+
+        _campaignRepoMock.Setup(r => r.GetByIdAsync(campaignId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(campaign);
+        _catalogRepoMock.Setup(r => r.GetByTypeAsync(CatalogEntryType.Talent, campaignId, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(entries);
+
+        var result = await _sut.GetByTypeAsync(gmId, "Talent", campaignId, includeArchived: false);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Should().HaveCount(2);
+    }
+
+    [Fact]
     public async Task GetByTypeAsync_WhenCallerNotMember_ReturnsNotFound()
     {
         var strangerId = Guid.NewGuid();
@@ -153,6 +201,33 @@ public class CatalogEntryServiceTests
         _catalogRepoMock.Verify(r => r.AddAsync(
             It.Is<CatalogEntry>(e => e.Name == "Fôlego de Aço" && e.CreatedByGameMasterId == gmId),
             It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WithIsPublicFalse_CreatesPrivateEntry()
+    {
+        var gmId = Guid.NewGuid();
+        var campaignId = Guid.NewGuid();
+        var campaign = new Campaign { Id = campaignId, GameMasterId = gmId };
+
+        _campaignRepoMock.Setup(r => r.GetByIdAsync(campaignId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(campaign);
+        _catalogRepoMock.Setup(r => r.ExistsAsync(CatalogEntryType.Talent, campaignId, "Rascunho", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+        _catalogRepoMock.Setup(r => r.AddAsync(It.IsAny<CatalogEntry>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        _catalogRepoMock.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(1);
+
+        var result = await _sut.CreateAsync(gmId, new CreateCatalogEntryRequest
+        {
+            CampaignId = campaignId, Type = "Talent", Name = "Rascunho", DataJson = "{}", IsPublic = false
+        });
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.IsPublic.Should().BeFalse();
+        _catalogRepoMock.Verify(r => r.AddAsync(
+            It.Is<CatalogEntry>(e => !e.IsPublic), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -272,6 +347,32 @@ public class CatalogEntryServiceTests
         result.IsSuccess.Should().BeTrue();
         result.Value!.Name.Should().Be("New");
         entry.Name.Should().Be("New");
+    }
+
+    [Fact]
+    public async Task UpdateAsync_TogglesIsPublic()
+    {
+        var gmId = Guid.NewGuid();
+        var campaignId = Guid.NewGuid();
+        var entry = new CatalogEntry
+        {
+            Id = Guid.NewGuid(), Type = CatalogEntryType.Talent, CampaignId = campaignId, Name = "X", IsPublic = true
+        };
+        var campaign = new Campaign { Id = campaignId, GameMasterId = gmId };
+
+        _catalogRepoMock.Setup(r => r.GetByIdAsync(entry.Id, It.IsAny<CancellationToken>())).ReturnsAsync(entry);
+        _campaignRepoMock.Setup(r => r.GetByIdAsync(campaignId, It.IsAny<CancellationToken>())).ReturnsAsync(campaign);
+        _catalogRepoMock.Setup(r => r.ExistsAsync(CatalogEntryType.Talent, campaignId, "X", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+        _catalogRepoMock.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+
+        var result = await _sut.UpdateAsync(gmId, entry.Id, new UpdateCatalogEntryRequest
+        {
+            Name = "X", DataJson = "{}", IsPublic = false
+        });
+
+        result.IsSuccess.Should().BeTrue();
+        entry.IsPublic.Should().BeFalse();
     }
 
     [Fact]

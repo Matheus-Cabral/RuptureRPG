@@ -60,6 +60,7 @@
                                 <tr>
                                     <th>@L["Gm.CampaignDetail.Col.Name"]</th>
                                     <th>@L["Gm.Catalog.TypeLabel"]</th>
+                                    <th>@L["Gm.Catalog.PublicToggle"]</th>
                                     <th></th>
                                 </tr>
                             </thead>
@@ -72,6 +73,7 @@
                                         @onkeydown="e => OnRowKey(e, entry)">
                                         <td data-label="@L["Gm.CampaignDetail.Col.Name"]">@entry.Name</td>
                                         <td data-label="@L["Gm.Catalog.TypeLabel"]">@(entry.IsGlobal ? L["Gm.Catalog.Official"] : L["Gm.Catalog.Homebrew"])</td>
+                                        <td data-label="@L["Gm.Catalog.PublicToggle"]">@(entry.IsPublic ? L["Gm.Catalog.Public"] : L["Gm.Catalog.Private"])</td>
                                         <td data-label="" @onclick:stopPropagation="true">
                                             @if (entry.IsArchived)
                                             {
@@ -110,6 +112,14 @@
     </div>
     <div class="bestiary-form" style="display:flex;flex-direction:column;gap:.75rem;max-width:480px">
         <input class="form-control" placeholder="@L["Gm.Catalog.NamePlaceholder"]" @bind="_formName" @bind:event="oninput" />
+
+        <div class="field-row">
+            <label class="field-label">
+                <input type="checkbox" checked="@_formIsPublic" @onchange="e => _formIsPublic = (bool)(e.Value ?? false)" />
+                @L["Gm.Catalog.PublicToggle"]
+            </label>
+            <p class="dash-help">@L["Gm.Catalog.PublicToggleHelp"]</p>
+        </div>
 
         @if (!_advancedMode)
         {
@@ -192,6 +202,7 @@
     private bool _saving;
     private Guid? _editingId;
     private string _formName = string.Empty;
+    private bool _formIsPublic = true;
     private CatalogEntryData _formData = CatalogEntryData.Parse("{}");
     private bool _advancedMode;
     private string _advancedJson = "{}";
@@ -247,6 +258,7 @@
     {
         _editingId = entry.Id;
         _formName = entry.Name;
+        _formIsPublic = entry.IsPublic;
         _formData = CatalogEntryData.Parse(entry.DataJson);
         _advancedJson = _formData.ToJson(indented: true);
         _advancedMode = false;
@@ -257,6 +269,7 @@
     {
         _editingId = null;
         _formName = string.Empty;
+        _formIsPublic = true;
         _formData = CatalogEntryData.Parse("{}");
         _advancedJson = "{}";
         _advancedMode = false;
@@ -304,11 +317,12 @@
         var result = wasCreate
             ? await CatalogService.CreateAsync(new CreateCatalogEntryRequest
             {
-                CampaignId = CampaignId, Type = _selectedType, Name = _formName, DataJson = dataJson
+                CampaignId = CampaignId, Type = _selectedType, Name = _formName, DataJson = dataJson,
+                IsPublic = _formIsPublic
             })
             : await CatalogService.UpdateAsync(_editingId!.Value, new UpdateCatalogEntryRequest
             {
-                Name = _formName, DataJson = dataJson
+                Name = _formName, DataJson = dataJson, IsPublic = _formIsPublic
             });
 
         if (result?.Data is not null)
