@@ -1,5 +1,6 @@
 @page "/campaigns/{CampaignId:guid}/guild"
 @attribute [Authorize]
+@implements IDisposable
 @using Microsoft.Extensions.Localization
 @using Ruptura.Web.Resources
 @using Ruptura.Shared.Guilds
@@ -25,6 +26,16 @@
     }
     else
     {
+        @if (_conflict)
+        {
+            <div class="alert-danger" style="display:flex;gap:1rem;align-items:center;justify-content:space-between;margin-bottom:1rem">
+                <span>@L["Guild.Autosave.ConflictBanner"]</span>
+                <button class="btn btn-outline-secondary btn-sm" @onclick="ReloadAfterConflictAsync">
+                    @L["Guild.Autosave.Reload"]
+                </button>
+            </div>
+        }
+
         <div style="display:flex;flex-wrap:wrap;gap:1rem;align-items:flex-end;margin-bottom:1.5rem">
             <div>
                 <label class="form-label">@L["Guild.NameLabel"]</label>
@@ -39,6 +50,7 @@
                 @if (_saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
                 @L["Guild.Save"]
             </button>
+            <span class="section-title">@AutosaveStatusText()</span>
         </div>
 
         <ul class="nav nav-tabs guild-tab-strip">
@@ -139,6 +151,12 @@
     private bool _saving;
     private string _activeTab = "capacities";
 
+    private AutosaveWatcher? _autosave;
+    private AutosaveStatus _autosaveState = AutosaveStatus.Idle;
+    private DateTime? _lastSavedAt;
+    private bool _conflict;
+    private bool _autosaveInFlight;
+
     protected override async Task OnInitializedAsync()
     {
         var campaignsResult = await CampaignService.GetMineAsync();
@@ -159,7 +177,15 @@
 
         await LoadGuildAsync();
         _loading = false;
+
+        if (_guild is not null)
+        {
+            _autosave = new AutosaveWatcher(TimeSpan.FromSeconds(1.5), Snapshot, AutosaveAsync);
+            _autosave.Start();
+        }
     }
+
+    private string Snapshot() => $"{_guildName}|{System.Text.Json.JsonSerializer.Serialize(_data)}";
 
     private async Task LoadGuildAsync()
     {
@@ -256,9 +282,18 @@
         // carries that adopted version and stays correct.
     }
 
+    // Manual save and autosave share `_saving`/`_autosaveInFlight` as a mutual-exclusion pair —
+    // without it, a manual click could fire while an autosave tick is mid-request; both PUT the
+    // same blob concurrently under the same `_guild.Version`, and whichever the server processes
+    // second 409s against the version the first one just bumped — a spurious "someone else
+    // edited this" conflict that was actually just this page racing itself. Neither path adopts
+    // `result.Response.Data.Data`/`GuildName` wholesale (only Version + DerivedStats, in place on
+    // the existing `_guild`) for the same reason as the character sheet: `_data`/`_guildName` are
+    // the live objects every tab component is bound to, and swapping them for the server's echo
+    // of the pre-request snapshot would revert any keystrokes typed while the request was in flight.
     private async Task SaveAsync()
     {
-        if (_guild is null) return;
+        if (_guild is null || _saving || _autosaveInFlight) return;
 
         _saving = true;
 
@@ -273,15 +308,20 @@
 
             if (result.Response?.Data is not null)
             {
-                _guild = result.Response.Data;
-                _data = _guild.Data;
-                _guildName = _guild.GuildName;
+                _guild.Version = result.Response.Data.Version;
+                _guild.DerivedStats = result.Response.Data.DerivedStats;
+                _autosave?.MarkSaved();
+                _lastSavedAt = DateTime.Now;
+                _autosaveState = AutosaveStatus.Saved;
                 Toast.Success(L["Guild.Saved"]);
             }
             else if (result.IsConflict)
             {
-                Toast.Error(L["Guild.Conflict"]);
-                await LoadGuildAsync();
+                // Manual save now goes through the same non-destructive conflict path as
+                // autosave (see AutosaveAsync) instead of silently reloading over the user's
+                // edit — a manual click racing another editor's save is the same situation.
+                _conflict = true;
+                _autosaveState = AutosaveStatus.Idle;
             }
             else
             {
@@ -294,6 +334,85 @@
             StateHasChanged();
         }
     }
+
+    // Fires from AutosaveWatcher's background poll — no toast (would spam every ~1.5s of active
+    // editing), just the inline status text. Deliberately does NOT adopt `result.Response.Data`
+    // into `_data`/`_guildName`: those are the live objects every tab component is bound to, and
+    // if the user kept typing while this request was in flight, swapping in the server's echo of
+    // the *pre-keystroke* snapshot would visibly revert them. `Version` and `DerivedStats` ARE
+    // adopted — Version because the next save (auto or manual) must carry the fresh xmin or it
+    // will spuriously 409 against its own prior autosave; DerivedStats because it's read-only
+    // display that should update live without the player clicking Save.
+    private async Task AutosaveAsync()
+    {
+        if (_guild is null || _conflict || _saving || _autosaveInFlight) return;
+
+        _autosaveInFlight = true;
+        _autosaveState = AutosaveStatus.Saving;
+        await InvokeAsync(StateHasChanged);
+
+        try
+        {
+            var result = await GuildService.UpdateGuildAsync(CampaignId, new UpdateGuildSheetRequest
+            {
+                GuildName = _guildName,
+                DataJson = System.Text.Json.JsonSerializer.Serialize(_data),
+                Version = _guild.Version
+            });
+
+            if (result.Response?.Data is not null)
+            {
+                _guild.Version = result.Response.Data.Version;
+                _guild.DerivedStats = result.Response.Data.DerivedStats;
+                _autosave?.MarkSaved();
+                _lastSavedAt = DateTime.Now;
+                _autosaveState = AutosaveStatus.Saved;
+            }
+            else if (result.IsConflict)
+            {
+                // Someone else saved first — their write is safe. Stop retrying (every subsequent
+                // tick would just 409 again on the same stale Version) and let the user decide when
+                // to discard their own in-progress edit by reloading, instead of doing it for them.
+                _conflict = true;
+                _autosaveState = AutosaveStatus.Idle;
+            }
+            else
+            {
+                _autosaveState = AutosaveStatus.Error;
+            }
+        }
+        catch (Exception)
+        {
+            // A network/deserialization exception must still land in Error, not leave the status
+            // stuck on "Saving…" forever — AutosaveWatcher's own catch only protects the polling
+            // loop itself, it doesn't know about this page's status field.
+            _autosaveState = AutosaveStatus.Error;
+        }
+        finally
+        {
+            _autosaveInFlight = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task ReloadAfterConflictAsync()
+    {
+        await LoadGuildAsync();
+        _conflict = false;
+        _autosaveState = AutosaveStatus.Idle;
+        _autosave?.ResetBaseline();
+    }
+
+    private string AutosaveStatusText() => _autosaveState switch
+    {
+        AutosaveStatus.Saving => L["Guild.Autosave.Saving"],
+        AutosaveStatus.Saved when _lastSavedAt is not null =>
+            string.Format(L["Guild.Autosave.SavedAt"], _lastSavedAt.Value.ToString("HH:mm")),
+        AutosaveStatus.Error => L["Guild.Autosave.Error"],
+        _ => string.Empty
+    };
+
+    public void Dispose() => _autosave?.Dispose();
 
     private async Task UploadEmblemAsync(InputFileChangeEventArgs e)
     {

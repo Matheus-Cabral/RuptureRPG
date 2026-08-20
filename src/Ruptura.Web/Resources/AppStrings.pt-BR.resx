@@ -250,6 +250,9 @@
   <data name="Sheet.UnknownCharacter"><value>Personagem</value></data>
   <data name="Sheet.Save"><value>Salvar</value></data>
   <data name="Sheet.Saved"><value>Salvo.</value></data>
+  <data name="Sheet.Autosave.Saving"><value>Salvando…</value></data>
+  <data name="Sheet.Autosave.SavedAt"><value>Salvo às {0}</value></data>
+  <data name="Sheet.Autosave.Error"><value>Não foi possível salvar automaticamente — suas edições estão preservadas, vou tentar de novo</value></data>
   <data name="Sheet.NameLabel"><value>Nome do Personagem</value></data>
   <data name="Sheet.Attributes.Name"><value>Atributo</value></data>
   <data name="Sheet.PortraitLabel"><value>Retrato (caminho ou URL)</value></data>
@@ -409,6 +412,11 @@
   <data name="Guild.Save"><value>Salvar</value></data>
   <data name="Guild.Saved"><value>Guilda salva.</value></data>
   <data name="Guild.Conflict"><value>Outra pessoa editou esta guilda — recarregando a versão mais recente.</value></data>
+  <data name="Guild.Autosave.Saving"><value>Salvando…</value></data>
+  <data name="Guild.Autosave.SavedAt"><value>Salvo às {0}</value></data>
+  <data name="Guild.Autosave.Error"><value>Não foi possível salvar automaticamente — suas edições estão preservadas, vou tentar de novo</value></data>
+  <data name="Guild.Autosave.ConflictBanner"><value>Outra pessoa salvou esta guilda nesse meio tempo. Suas alterações não salvas continuam aqui, intactas — recarregue quando quiser (isso vai descartá-las).</value></data>
+  <data name="Guild.Autosave.Reload"><value>Recarregar</value></data>
   <data name="Guild.EmblemUploaded"><value>Emblema enviado.</value></data>
   <data name="Guild.Remove"><value>Remover</value></data>
   <data name="Guild.Tab.Capacities"><value>Capacidades</value></data>

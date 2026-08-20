@@ -50,6 +50,7 @@ else
             @if (_saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
             @L["Sheet.Save"]
         </button>
+        <span class="section-title">@AutosaveStatusText()</span>
     </div>
 
     <ul class="nav nav-tabs">
@@ -111,6 +112,7 @@ else
     </div>
 }
 
+@implements IDisposable
 @code {
     [Parameter] public Guid SheetId { get; set; }
     [Parameter] public Guid CampaignId { get; set; }
@@ -146,12 +148,31 @@ else
     private bool _isRetired;
     private string _activeTab = "identity";
 
+    private AutosaveWatcher? _autosave;
+    private AutosaveStatus _autosaveState = AutosaveStatus.Idle;
+    private DateTime? _lastSavedAt;
+    private bool _autosaveInFlight;
+
+    // Bumped on every LoadAsync (fresh sheet load, e.g. navigating to a different character).
+    // SaveAsync/AutosaveAsync capture this before their network round-trip and compare it after
+    // — Dispose() below can't cancel a request that's already in flight, so without this check a
+    // late-arriving response from the PREVIOUS sheet could land after the new one has loaded and
+    // stamp its (already-edited) _data as "saved" via MarkSaved() without ever having sent it.
+    private int _loadGeneration;
+
     protected override async Task OnParametersSetAsync() => await LoadAsync();
 
     private async Task LoadAsync()
     {
         _loading = true;
         _errorMessage = null;
+        _loadGeneration++;
+
+        // A route change (navigating between characters) re-runs OnParametersSetAsync on the
+        // same component instance — tear down any watcher from the previous sheet first.
+        _autosave?.Dispose();
+        _autosave = null;
+
         var result = await SheetService.GetAsync(SheetId);
         if (result?.Data is null)
         {
@@ -168,13 +189,29 @@ else
             _portraitDataUri = await MediaService.GetDataUriAsync(_portraitImagePath);
             _isDead = result.Data.IsDead;
             _isRetired = result.Data.IsRetired;
+
+            _autosave = new AutosaveWatcher(TimeSpan.FromSeconds(1.5), Snapshot, AutosaveAsync);
+            _autosave.Start();
         }
         _loading = false;
     }
 
+    private string Snapshot() =>
+        $"{_characterName}|{_isDead}|{_isRetired}|{System.Text.Json.JsonSerializer.Serialize(_data)}";
+
+    // Manual save and autosave share `_saving`/`_autosaveInFlight` as a mutual-exclusion pair —
+    // without it, a manual click could fire while an autosave tick is mid-request, both PUT the
+    // same blob concurrently, and (on the guild sheet's version-checked sibling of this page)
+    // spuriously conflict with each other. Not adopting `result.Data.Data` into `_data` here (nor
+    // in AutosaveAsync below) is deliberate: `_data` is the live object every tab component is
+    // bound to, and if the user typed more keystrokes while this request was in flight, swapping
+    // in the server's echo of the *pre-keystroke* snapshot would visibly revert them. `_derived`
+    // is safe to adopt — it's read-only display.
     private async Task SaveAsync()
     {
+        if (_saving || _autosaveInFlight) return;
         _saving = true;
+        var generation = _loadGeneration;
 
         var result = await SheetService.UpdateAsync(SheetId, new UpdateCharacterSheetRequest
         {
@@ -184,20 +221,85 @@ else
             IsRetired = _isRetired
         });
 
-        if (result?.Data is not null)
+        if (generation == _loadGeneration)
         {
-            _sheet = result.Data;
-            _data = result.Data.Data;
-            _derived = result.Data.DerivedStats;
-            Toast.Success(L["Sheet.Saved"]);
-        }
-        else
-        {
-            Toast.Error(result?.Message ?? L["Common.Error"]);
+            if (result?.Data is not null)
+            {
+                _sheet = result.Data;
+                _derived = result.Data.DerivedStats;
+                _autosave?.MarkSaved();
+                _lastSavedAt = DateTime.Now;
+                _autosaveState = AutosaveStatus.Saved;
+                Toast.Success(L["Sheet.Saved"]);
+            }
+            else
+            {
+                Toast.Error(result?.Message ?? L["Common.Error"]);
+            }
         }
 
         _saving = false;
     }
+
+    // Fires from AutosaveWatcher's background poll — no toast (would spam every ~1.5s of active
+    // editing), just the inline status text. See SaveAsync's comment for why `_data` is untouched.
+    private async Task AutosaveAsync()
+    {
+        if (_saving || _autosaveInFlight) return;
+        _autosaveInFlight = true;
+        var generation = _loadGeneration;
+        _autosaveState = AutosaveStatus.Saving;
+        await InvokeAsync(StateHasChanged);
+
+        try
+        {
+            var result = await SheetService.UpdateAsync(SheetId, new UpdateCharacterSheetRequest
+            {
+                CharacterName = _characterName,
+                DataJson = System.Text.Json.JsonSerializer.Serialize(_data),
+                IsDead = _isDead,
+                IsRetired = _isRetired
+            });
+
+            if (generation == _loadGeneration)
+            {
+                if (result?.Data is not null)
+                {
+                    _derived = result.Data.DerivedStats;
+                    _autosave?.MarkSaved();
+                    _lastSavedAt = DateTime.Now;
+                    _autosaveState = AutosaveStatus.Saved;
+                }
+                else
+                {
+                    _autosaveState = AutosaveStatus.Error;
+                }
+            }
+        }
+        catch (Exception)
+        {
+            // A network/deserialization exception must still land in Error, not leave the status
+            // stuck on "Saving…" forever — AutosaveWatcher's own catch only protects the polling
+            // loop itself, it doesn't know about this page's status field.
+            if (generation == _loadGeneration) _autosaveState = AutosaveStatus.Error;
+        }
+        finally
+        {
+            _autosaveInFlight = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private string AutosaveStatusText() => _autosaveState switch
+    {
+        AutosaveStatus.Saving => L["Sheet.Autosave.Saving"],
+        AutosaveStatus.Saved when _lastSavedAt is not null =>
+            string.Format(L["Sheet.Autosave.SavedAt"], _lastSavedAt.Value.ToString("HH:mm")),
+        AutosaveStatus.Error => L["Sheet.Autosave.Error"],
+        _ => string.Empty
+    };
+
+    public void Dispose() => _autosave?.Dispose();
 
     private async Task UploadPortraitAsync(InputFileChangeEventArgs e)
     {

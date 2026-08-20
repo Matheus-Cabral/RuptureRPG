@@ -250,6 +250,9 @@
   <data name="Sheet.UnknownCharacter"><value>Character</value></data>
   <data name="Sheet.Save"><value>Save</value></data>
   <data name="Sheet.Saved"><value>Saved.</value></data>
+  <data name="Sheet.Autosave.Saving"><value>Saving…</value></data>
+  <data name="Sheet.Autosave.SavedAt"><value>Saved at {0}</value></data>
+  <data name="Sheet.Autosave.Error"><value>Couldn't autosave — your edits are kept, will retry</value></data>
   <data name="Sheet.NameLabel"><value>Character Name</value></data>
   <data name="Sheet.Attributes.Name"><value>Attribute</value></data>
   <data name="Sheet.PortraitLabel"><value>Portrait (path or URL)</value></data>
@@ -409,6 +412,11 @@
   <data name="Guild.Save"><value>Save</value></data>
   <data name="Guild.Saved"><value>Guild saved.</value></data>
   <data name="Guild.Conflict"><value>Someone else edited this guild — reloading the latest version.</value></data>
+  <data name="Guild.Autosave.Saving"><value>Saving…</value></data>
+  <data name="Guild.Autosave.SavedAt"><value>Saved at {0}</value></data>
+  <data name="Guild.Autosave.Error"><value>Couldn't autosave — your edits are kept, will retry</value></data>
+  <data name="Guild.Autosave.ConflictBanner"><value>Someone else saved this guild in the meantime. Your unsaved changes are still here and safe — reload when you're ready (this will discard them).</value></data>
+  <data name="Guild.Autosave.Reload"><value>Reload</value></data>
   <data name="Guild.EmblemUploaded"><value>Emblem uploaded.</value></data>
   <data name="Guild.Remove"><value>Remove</value></data>
   <data name="Guild.Tab.Capacities"><value>Capacities</value></data>
