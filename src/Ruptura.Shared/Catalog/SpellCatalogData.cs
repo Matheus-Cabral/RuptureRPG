@@ -1,8 +1,12 @@
+using System.Text.Json.Serialization;
+
 namespace Ruptura.Shared.Catalog;
 
 public class SpellCatalogData
 {
     public string School { get; set; } = string.Empty;
+
+    [JsonConverter(typeof(StringOrNumberJsonConverter))]
     public string ComplexityPaCost { get; set; } = string.Empty;
     public string Range { get; set; } = string.Empty;
     public string Area { get; set; } = string.Empty;

@@ -396,6 +396,35 @@ public class CharacterStatsCalculatorTests
     }
 
     [Fact]
+    public void Calculate_Np_IncludesSpell_WithNumericComplexityPaCost_LikeRealSeedData()
+    {
+        // Root-cause repro: CatalogSeedData.Spells.cs writes ComplexityPaCost as a JSON
+        // *number* (`ComplexityPaCost = 1`), and the GM Catalog admin form leaves that field's
+        // JSON type untouched when only PowerTier is edited (CatalogEntryData.SetString only
+        // rewrites the key it's called on). SpellCatalogData.ComplexityPaCost is a C# string,
+        // and JsonSerializer.Deserialize throws on JSON-number-into-string, which SafeDeserialize
+        // swallows and turns into null — silently dropping PowerTier along with it. The
+        // synthetic-JSON test above (ComplexityPaCost as a string) never caught this.
+        var spellId = Guid.NewGuid();
+        var data = new CharacterSheetData
+        {
+            Spells = [new CharacterCatalogRefEntry { CatalogEntryId = spellId }]
+        };
+        var catalog = new Dictionary<Guid, CatalogEntry>
+        {
+            [spellId] = new()
+            {
+                Id = spellId, Type = CatalogEntryType.Spell, Name = "Amarras de Vontade",
+                DataJson = """{"School":"Controle","ComplexityPaCost":1,"Range":"Curta","Area":"Único Alvo","Duration":"1 turno","Test":"Oposto vs. Vontade","Effect":"Imobiliza 1 alvo, 1 turno","PowerTier":"comum"}"""
+            }
+        };
+
+        var result = _sut.Calculate(data, catalog);
+
+        result.Np.Should().Be(5); // "comum" → 5
+    }
+
+    [Fact]
     public void Calculate_Np_SpellPowerTierLookup_IsCaseAndWhitespaceInsensitive()
     {
         // Mirrors CharacterStatsCalculator.CategoryIs: a GM typing "Avançada" (capitalized,
