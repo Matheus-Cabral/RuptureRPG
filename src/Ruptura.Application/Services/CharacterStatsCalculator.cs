@@ -29,6 +29,16 @@ public class CharacterStatsCalculator : ICharacterStatsCalculator
         ["Comum"] = 1, ["Incomum"] = 3, ["Raro"] = 7, ["Épico"] = 15, ["Lendário"] = 30, ["Divino"] = 50
     };
 
+    // GDD §6.8: "Poder de Especialização = Talentos + Habilidades" — Habilidade covers both
+    // Magias (Spells) and Técnicas (Techniques). Case/whitespace-insensitive per the same
+    // reasoning as CategoryIs below: SpellCatalogData/TechniqueCatalogData.PowerTier is now a
+    // constrained Select in CatalogSchema, but old/imported DataJson could still carry
+    // differently-cased values, and a mismatch here must not silently zero out NP.
+    private static readonly Dictionary<string, int> AbilityNpWeight = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["comum"] = 5, ["avançada"] = 10, ["suprema"] = 20
+    };
+
     public CharacterDerivedStats Calculate(
         CharacterSheetData data,
         IReadOnlyDictionary<Guid, CatalogEntry> catalogEntries)
@@ -38,6 +48,8 @@ public class CharacterStatsCalculator : ICharacterStatsCalculator
         // throwing deep inside a LINQ chain below.
         var skills = data.Skills ?? [];
         var talents = data.Talents ?? [];
+        var spells = data.Spells ?? [];
+        var techniques = data.Techniques ?? [];
         var equipment = data.Equipment ?? [];
         var ranking = data.GuildRegistry?.Ranking ?? "Bronze";
 
@@ -86,6 +98,8 @@ public class CharacterStatsCalculator : ICharacterStatsCalculator
         var np = attributeGradeBonuses.Values.Sum()
             + skillGradeBonuses.Values.Sum()
             + talents.Sum(t => TalentNpWeightFor(t.CatalogEntryId, catalogEntries))
+            + spells.Sum(s => SpellNpWeightFor(s.CatalogEntryId, catalogEntries))
+            + techniques.Sum(t => TechniqueNpWeightFor(t.CatalogEntryId, catalogEntries))
             + equipment.Sum(e => EquipmentNpWeightFor(e.CatalogEntryId, catalogEntries));
 
         // Active Defense (GDD §7.4.1) — every character can always attempt Esquiva or Bloqueio,
@@ -257,6 +271,23 @@ public class CharacterStatsCalculator : ICharacterStatsCalculator
         var data = DeserializeEquipment(id, catalogEntries);
         return data is null ? 0 : EquipmentNpWeight.GetValueOrDefault(data.Rarity, 0);
     }
+
+    private static int SpellNpWeightFor(Guid id, IReadOnlyDictionary<Guid, CatalogEntry> catalogEntries)
+    {
+        if (!catalogEntries.TryGetValue(id, out var entry)) return 0;
+        var data = SafeDeserialize<SpellCatalogData>(entry.DataJson);
+        return AbilityNpWeightFor(data?.PowerTier);
+    }
+
+    private static int TechniqueNpWeightFor(Guid id, IReadOnlyDictionary<Guid, CatalogEntry> catalogEntries)
+    {
+        if (!catalogEntries.TryGetValue(id, out var entry)) return 0;
+        var data = SafeDeserialize<TechniqueCatalogData>(entry.DataJson);
+        return AbilityNpWeightFor(data?.PowerTier);
+    }
+
+    private static int AbilityNpWeightFor(string? powerTier) =>
+        AbilityNpWeight.GetValueOrDefault(powerTier?.Trim() ?? string.Empty, 0);
 
     // A GM can save malformed homebrew DataJson via the raw-textarea catalog admin page
     // (e.g. a string where a number is expected). Deserialization failure must never bubble

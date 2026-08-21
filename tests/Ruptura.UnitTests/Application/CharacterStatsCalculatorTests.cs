@@ -26,6 +26,25 @@ public class CharacterStatsCalculatorTests
         DataJson = JsonSerializer.Serialize(new { Category = "Combate", Effect = "x", PowerTier = powerTier })
     };
 
+    private static CatalogEntry Spell(Guid id, string powerTier) => new()
+    {
+        Id = id, Type = CatalogEntryType.Spell, Name = "Test Spell",
+        DataJson = JsonSerializer.Serialize(new
+        {
+            School = "Evocação", ComplexityPaCost = "Menor (1 PA)", Range = "Curta", Area = "Único Alvo",
+            Duration = "Instantânea", Test = "Absoluto", Damage = "1d6", Effect = "x", PowerTier = powerTier
+        })
+    };
+
+    private static CatalogEntry Technique(Guid id, string powerTier) => new()
+    {
+        Id = id, Type = CatalogEntryType.Technique, Name = "Test Technique",
+        DataJson = JsonSerializer.Serialize(new
+        {
+            Style = "Espadas", Category = "Técnica", PaCost = "1", Damage = "", Effect = "x", PowerTier = powerTier
+        })
+    };
+
     private static CatalogEntry Equipment(
         Guid id, string category, string rarity, int attackBonus = 0, int damageBonus = 0,
         int defenseBonus = 0, string? diceCategory = null, int? armorReduction = null, decimal weight = 0) => new()
@@ -351,6 +370,50 @@ public class CharacterStatsCalculatorTests
         var result = _sut.Calculate(data, catalog);
 
         result.Np.Should().Be(8 + 1 + 5 + 7);
+    }
+
+    [Fact]
+    public void Calculate_Np_IncludesSpellAndTechniquePowerTierWeights()
+    {
+        var spellId = Guid.NewGuid();
+        var techniqueId = Guid.NewGuid();
+        var data = new CharacterSheetData
+        {
+            Spells = [new CharacterCatalogRefEntry { CatalogEntryId = spellId }],         // "avançada" → 10
+            Techniques = [new CharacterCatalogRefEntry { CatalogEntryId = techniqueId }]  // "suprema" → 20
+        };
+        var catalog = new Dictionary<Guid, CatalogEntry>
+        {
+            [spellId] = Spell(spellId, "avançada"),
+            [techniqueId] = Technique(techniqueId, "suprema")
+        };
+
+        var result = _sut.Calculate(data, catalog);
+
+        // Base attributes default to score 1 → grade bonus 0 each, so NP is isolated to
+        // the Poder de Especialização (Habilidades) contribution — GDD §6.8.
+        result.Np.Should().Be(10 + 20);
+    }
+
+    [Fact]
+    public void Calculate_Np_SpellPowerTierLookup_IsCaseAndWhitespaceInsensitive()
+    {
+        // Mirrors CharacterStatsCalculator.CategoryIs: a GM typing "Avançada" (capitalized,
+        // matching every other catalog value's convention) instead of the seeded lowercase
+        // "avançada" must not silently drop the spell's NP contribution to 0.
+        var spellId = Guid.NewGuid();
+        var data = new CharacterSheetData
+        {
+            Spells = [new CharacterCatalogRefEntry { CatalogEntryId = spellId }]
+        };
+        var catalog = new Dictionary<Guid, CatalogEntry>
+        {
+            [spellId] = Spell(spellId, " Avançada ")
+        };
+
+        var result = _sut.Calculate(data, catalog);
+
+        result.Np.Should().Be(10);
     }
 
     // ── Finding 2: untrained-skill grade drift ──────────────────────────────

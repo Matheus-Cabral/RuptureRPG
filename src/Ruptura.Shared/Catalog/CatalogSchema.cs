@@ -30,6 +30,17 @@ public static class CatalogSchema
         new("item", "Gm.Catalog.EquipmentCategory.Item")
     ];
 
+    // GDD §6.8 "Poder de Especialização = Talentos + Habilidades" — Spell/Technique are the
+    // two catalog types that make up "Habilidades" (Talent already has its own menor/médio/maior
+    // PowerTier). A constrained Select — same fix already applied to EquipmentCategoryOptions —
+    // instead of free Text keeps a GM-typed "Avançada" from silently contributing 0 NP.
+    private static readonly CatalogFieldOption[] AbilityPowerTierOptions =
+    [
+        new("comum", "Gm.Catalog.PowerTier.Common"),
+        new("avançada", "Gm.Catalog.PowerTier.Advanced"),
+        new("suprema", "Gm.Catalog.PowerTier.Supreme")
+    ];
+
     private static readonly IReadOnlyDictionary<string, IReadOnlyList<CatalogField>> ByType =
         new Dictionary<string, IReadOnlyList<CatalogField>>
         {
@@ -39,8 +50,8 @@ public static class CatalogSchema
             ["Aptitude"] = [F("CoveredAreas", CatalogFieldKind.TextArea)],
             ["Talent"] = [F("Category", CatalogFieldKind.Text), F("Effect", CatalogFieldKind.TextArea), F("PowerTier", CatalogFieldKind.Text)],
             ["Skill"] = [F("Area", CatalogFieldKind.Text), F("RelatedAttribute", CatalogFieldKind.Text)],
-            ["Spell"] = [F("School", CatalogFieldKind.Text), F("ComplexityPaCost", CatalogFieldKind.Text), F("Range", CatalogFieldKind.Text), F("Area", CatalogFieldKind.Text), F("Duration", CatalogFieldKind.Text), F("Test", CatalogFieldKind.Text), F("Damage", CatalogFieldKind.Text), F("Effect", CatalogFieldKind.TextArea)],
-            ["Technique"] = [F("Style", CatalogFieldKind.Text), F("Category", CatalogFieldKind.Text), F("PaCost", CatalogFieldKind.Text), F("Damage", CatalogFieldKind.Text), F("Effect", CatalogFieldKind.TextArea)],
+            ["Spell"] = [F("School", CatalogFieldKind.Text), F("ComplexityPaCost", CatalogFieldKind.Text), F("Range", CatalogFieldKind.Text), F("Area", CatalogFieldKind.Text), F("Duration", CatalogFieldKind.Text), F("Test", CatalogFieldKind.Text), F("Damage", CatalogFieldKind.Text), F("Effect", CatalogFieldKind.TextArea), F("PowerTier", CatalogFieldKind.Select, AbilityPowerTierOptions)],
+            ["Technique"] = [F("Style", CatalogFieldKind.Text), F("Category", CatalogFieldKind.Text), F("PaCost", CatalogFieldKind.Text), F("Damage", CatalogFieldKind.Text), F("Effect", CatalogFieldKind.TextArea), F("PowerTier", CatalogFieldKind.Select, AbilityPowerTierOptions)],
             ["Installation"] = [F("Category", CatalogFieldKind.Text), F("Weight", CatalogFieldKind.Number), F("LevelCap", CatalogFieldKind.Number), F("Prerequisites", CatalogFieldKind.TextArea), F("Unlocks", CatalogFieldKind.TextArea), F("NonConstructible", CatalogFieldKind.Bool)],
             ["Doctrine"] = [F("Bonus", CatalogFieldKind.TextArea)],
             // Keys here MUST exactly match EquipmentItemCatalogData's C# property names — that

@@ -253,6 +253,9 @@
   <data name="Gm.Catalog.EquipmentCategory.Armor"><value>Armadura</value></data>
   <data name="Gm.Catalog.EquipmentCategory.Shield"><value>Escudo</value></data>
   <data name="Gm.Catalog.EquipmentCategory.Item"><value>Item</value></data>
+  <data name="Gm.Catalog.PowerTier.Common"><value>Comum</value></data>
+  <data name="Gm.Catalog.PowerTier.Advanced"><value>Avançada</value></data>
+  <data name="Gm.Catalog.PowerTier.Supreme"><value>Suprema</value></data>
 
   <!-- Editor de Ficha de Personagem -->
   <data name="Sheet.Loading"><value>Carregando ficha…</value></data>

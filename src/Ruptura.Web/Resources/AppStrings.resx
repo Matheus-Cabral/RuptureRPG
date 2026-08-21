@@ -253,6 +253,9 @@
   <data name="Gm.Catalog.EquipmentCategory.Armor"><value>Armor</value></data>
   <data name="Gm.Catalog.EquipmentCategory.Shield"><value>Shield</value></data>
   <data name="Gm.Catalog.EquipmentCategory.Item"><value>Item</value></data>
+  <data name="Gm.Catalog.PowerTier.Common"><value>Common</value></data>
+  <data name="Gm.Catalog.PowerTier.Advanced"><value>Advanced</value></data>
+  <data name="Gm.Catalog.PowerTier.Supreme"><value>Supreme</value></data>
 
   <!-- Character Sheet Editor -->
   <data name="Sheet.Loading"><value>Loading character sheet…</value></data>
