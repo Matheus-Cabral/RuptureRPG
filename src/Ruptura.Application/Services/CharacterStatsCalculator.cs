@@ -72,7 +72,7 @@ public class CharacterStatsCalculator : ICharacterStatsCalculator
 
         var armorAndShieldDefense = equipped
             .Where(x => CategoryIs(x.Data!.Category, "armadura") || CategoryIs(x.Data!.Category, "escudo"))
-            .Sum(x => x.Data!.DefenseBonus);
+            .Sum(x => x.Data!.DefenseBonus - (IsDamaged(x.Entry, x.Data!) ? 1 : 0));
         var passiveDefense = 10 + attributeModifiers["Controle"] + armorAndShieldDefense;
 
         var damageReduction = equipped
@@ -190,7 +190,7 @@ public class CharacterStatsCalculator : ICharacterStatsCalculator
             ? d
             : "1d6";
 
-        var damage = attributeModifier + skillGrade + eqData.DamageBonus;
+        var damage = attributeModifier + skillGrade + eqData.DamageBonus - (IsDamaged(entry, eqData) ? 1 : 0);
 
         return new WeaponCombatRow
         {
@@ -207,6 +207,12 @@ public class CharacterStatsCalculator : ICharacterStatsCalculator
         < 0 => $" {value}",
         _ => string.Empty
     };
+
+    // GDD §6.7.6 — an item is Danificado once its Golpes de Desgaste (DurabilityRemaining) is
+    // exhausted, PROVIDED its Raridade resolves to a known ceiling (an unrecognized Raridade
+    // has no ceiling to compare against, so it's never "damaged").
+    private static bool IsDamaged(CharacterEquipmentEntry entry, EquipmentItemCatalogData data) =>
+        EquipmentReference.MaxDurabilityFor(data.Rarity) > 0 && entry.DurabilityRemaining <= 0;
 
     // EquipmentItemCatalogData.Category is free text typed by a GM into the Catalog admin
     // form (no dropdown backs it — CatalogFieldKind has no "select" option) but is expected

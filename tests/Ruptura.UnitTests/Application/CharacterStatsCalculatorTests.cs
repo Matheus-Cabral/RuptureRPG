@@ -162,8 +162,8 @@ public class CharacterStatsCalculatorTests
             Attributes = new CharacterAttributes { Controle = 3 },
             Equipment =
             [
-                new CharacterEquipmentEntry { CatalogEntryId = armorId, IsEquipped = true },
-                new CharacterEquipmentEntry { CatalogEntryId = shieldId, IsEquipped = true },
+                new CharacterEquipmentEntry { CatalogEntryId = armorId, IsEquipped = true, DurabilityRemaining = 1 },
+                new CharacterEquipmentEntry { CatalogEntryId = shieldId, IsEquipped = true, DurabilityRemaining = 1 },
                 new CharacterEquipmentEntry { CatalogEntryId = unequippedArmorId, IsEquipped = false }
             ]
         };
@@ -191,7 +191,7 @@ public class CharacterStatsCalculatorTests
         var armorId = Guid.NewGuid();
         var data = new CharacterSheetData
         {
-            Equipment = [new CharacterEquipmentEntry { CatalogEntryId = armorId, IsEquipped = true }]
+            Equipment = [new CharacterEquipmentEntry { CatalogEntryId = armorId, IsEquipped = true, DurabilityRemaining = 1 }]
         };
         var catalog = new Dictionary<Guid, CatalogEntry>
         {
@@ -304,7 +304,8 @@ public class CharacterStatsCalculatorTests
             [
                 new CharacterEquipmentEntry
                 {
-                    CatalogEntryId = weaponId, IsEquipped = true, LinkedSkillEntryId = skillId
+                    CatalogEntryId = weaponId, IsEquipped = true, LinkedSkillEntryId = skillId,
+                    DurabilityRemaining = 1
                 }
             ]
         };
@@ -553,5 +554,101 @@ public class CharacterStatsCalculatorTests
         result!.CurrentWeight.Should().Be(0); // malformed item's Weight couldn't be read → treated as absent
         var row = result.Weapons.Should().ContainSingle().Subject; // weapon itself deserializes fine
         row.AttackBonus.Should().Be(0); // its linked skill's malformed data is treated as no linked skill
+    }
+
+    // ── Danificado (GDD §6.7.6) — Golpes de Desgaste exhausted (DurabilityRemaining <= 0) ──
+
+    [Fact]
+    public void Calculate_DamagedEquippedWeapon_DamageDropsBy1()
+    {
+        var skillId = Guid.NewGuid();
+        var weaponId = Guid.NewGuid();
+        var data = new CharacterSheetData
+        {
+            Attributes = new CharacterAttributes { Controle = 4 }, // modifier +2, grade bonus +3
+            Skills = [new CharacterSkillEntry { CatalogEntryId = skillId, Points = 30 }], // grade bonus +1
+            Equipment =
+            [
+                new CharacterEquipmentEntry
+                {
+                    CatalogEntryId = weaponId, IsEquipped = true, LinkedSkillEntryId = skillId,
+                    DurabilityRemaining = 0 // "Comum" max is 3 → 0 remaining = Danificado
+                }
+            ]
+        };
+        var catalog = new Dictionary<Guid, CatalogEntry>
+        {
+            [skillId] = Skill(skillId, "Controle"),
+            [weaponId] = Equipment(weaponId, "arma", "Comum", damageBonus: 2, diceCategory: "Média")
+        };
+
+        var result = _sut.Calculate(data, catalog);
+
+        var row = result.Weapons.Should().ContainSingle().Subject;
+        row.DamageFormula.Should().Be("1d8 +4"); // undamaged would be "1d8 +5" (attr +2, skill +1, item +2); Danificado -1
+    }
+
+    [Fact]
+    public void Calculate_DamagedArmorAndShield_DefenseDropsBy1Each()
+    {
+        var armorId = Guid.NewGuid();
+        var shieldId = Guid.NewGuid();
+        var data = new CharacterSheetData
+        {
+            Attributes = new CharacterAttributes { Controle = 3 },
+            Equipment =
+            [
+                new CharacterEquipmentEntry { CatalogEntryId = armorId, IsEquipped = true, DurabilityRemaining = 0 },
+                new CharacterEquipmentEntry { CatalogEntryId = shieldId, IsEquipped = true, DurabilityRemaining = 0 }
+            ]
+        };
+        var catalog = new Dictionary<Guid, CatalogEntry>
+        {
+            [armorId] = Equipment(armorId, "armadura", "Comum", defenseBonus: 2),
+            [shieldId] = Equipment(shieldId, "escudo", "Comum", defenseBonus: 1)
+        };
+
+        var result = _sut.Calculate(data, catalog);
+
+        // Undamaged would be 10 + (3-2) + 2 + 1 = 14; each Danificado item loses 1.
+        result.PassiveDefense.Should().Be(10 + (3 - 2) + (2 - 1) + (1 - 1));
+    }
+
+    [Fact]
+    public void Calculate_UndamagedEquipment_PositiveDurability_NoPenalty()
+    {
+        var armorId = Guid.NewGuid();
+        var data = new CharacterSheetData
+        {
+            Attributes = new CharacterAttributes { Controle = 3 },
+            Equipment = [new CharacterEquipmentEntry { CatalogEntryId = armorId, IsEquipped = true, DurabilityRemaining = 3 }]
+        };
+        var catalog = new Dictionary<Guid, CatalogEntry>
+        {
+            [armorId] = Equipment(armorId, "armadura", "Comum", defenseBonus: 2)
+        };
+
+        var result = _sut.Calculate(data, catalog);
+
+        result.PassiveDefense.Should().Be(10 + (3 - 2) + 2); // full bonus, not damaged
+    }
+
+    [Fact]
+    public void Calculate_UnrecognizedRarity_NeverTreatedAsDamaged_EvenAtZeroDurability()
+    {
+        var armorId = Guid.NewGuid();
+        var data = new CharacterSheetData
+        {
+            Attributes = new CharacterAttributes { Controle = 3 },
+            Equipment = [new CharacterEquipmentEntry { CatalogEntryId = armorId, IsEquipped = true, DurabilityRemaining = 0 }]
+        };
+        var catalog = new Dictionary<Guid, CatalogEntry>
+        {
+            [armorId] = Equipment(armorId, "armadura", "Artesanal Caseira", defenseBonus: 2) // not one of the 6 GDD rarities
+        };
+
+        var result = _sut.Calculate(data, catalog);
+
+        result.PassiveDefense.Should().Be(10 + (3 - 2) + 2); // no known ceiling → never "Danificado"
     }
 }
