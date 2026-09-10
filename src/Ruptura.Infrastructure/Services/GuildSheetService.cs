@@ -5,6 +5,7 @@ using Ruptura.Application.Common;
 using Ruptura.Application.Interfaces;
 using Ruptura.Domain.Entities;
 using Ruptura.Domain.Enums;
+using Ruptura.Shared.CharacterSheets;
 using Ruptura.Shared.Guilds;
 
 namespace Ruptura.Infrastructure.Services;
@@ -19,6 +20,7 @@ public class GuildSheetService(
     IExpeditionRepository expeditionRepo,
     IResearchProjectRepository researchRepo,
     ICraftingOrderRepository craftingRepo,
+    ICharacterSheetRepository sheetRepo,
     IGuildStatsCalculator calculator,
     IInterludeCalculator interludeCalculator) : IGuildSheetService
 {
@@ -345,6 +347,11 @@ public class GuildSheetService(
         if (!Enum.TryParse<GuildStaffKind>(request.Kind, out var kind) || !Enum.IsDefined(kind))
             return Result.Failure<GuildStaffResponse>(ErrorCodes.Guild.StaffKindInvalid);
 
+        var dedicationCheck = await ValidateStaffDedicationAsync(
+            campaignId, request.DedicatedCharacterSheetId, request.DedicatedSkillArea, ct);
+        if (dedicationCheck.IsFailure)
+            return Result.Failure<GuildStaffResponse>(dedicationCheck.Error!);
+
         var staff = new GuildStaff
         {
             Id = Guid.NewGuid(),
@@ -357,7 +364,9 @@ public class GuildSheetService(
             DailySalary = Math.Max(0, request.DailySalary),
             IsActive = request.IsActive,
             Efficiency = request.Efficiency,
-            Morale = request.Morale
+            Morale = request.Morale,
+            DedicatedCharacterSheetId = request.DedicatedCharacterSheetId,
+            DedicatedSkillArea = request.DedicatedSkillArea
         };
 
         await staffRepo.AddAsync(staff, ct);
@@ -377,6 +386,11 @@ public class GuildSheetService(
         if (!Enum.TryParse<GuildStaffKind>(request.Kind, out var kind) || !Enum.IsDefined(kind))
             return Result.Failure<GuildStaffResponse>(ErrorCodes.Guild.StaffKindInvalid);
 
+        var dedicationCheck = await ValidateStaffDedicationAsync(
+            campaignId, request.DedicatedCharacterSheetId, request.DedicatedSkillArea, ct);
+        if (dedicationCheck.IsFailure)
+            return Result.Failure<GuildStaffResponse>(dedicationCheck.Error!);
+
         var staff = await staffRepo.GetByIdAsync(staffId, ct);
         // Cross-guild safety: the target must belong to this campaign's guild, else hide its existence.
         if (staff is null || staff.GuildSheetId != guild.Id)
@@ -390,6 +404,8 @@ public class GuildSheetService(
         staff.IsActive = request.IsActive;
         staff.Efficiency = request.Efficiency;
         staff.Morale = request.Morale;
+        staff.DedicatedCharacterSheetId = request.DedicatedCharacterSheetId;
+        staff.DedicatedSkillArea = request.DedicatedSkillArea;
 
         staffRepo.Update(staff);
         await staffRepo.SaveChangesAsync(ct);
@@ -416,6 +432,25 @@ public class GuildSheetService(
         return Result.Success();
     }
 
+    // Validates an Instrutor dedication: an unrecognized Área, or a character sheet that either
+    // doesn't exist or belongs to a different campaign, is rejected. A null characterSheetId/skillArea
+    // means "no dedication" and is always valid (skips its own check).
+    private async Task<Result> ValidateStaffDedicationAsync(
+        Guid campaignId, Guid? characterSheetId, string? skillArea, CancellationToken ct)
+    {
+        if (skillArea is not null && !TrainingReference.AreaNames.Contains(skillArea))
+            return Result.Failure(ErrorCodes.Guild.StaffDedicationInvalid);
+
+        if (characterSheetId is { } id)
+        {
+            var target = await sheetRepo.GetByIdAsync(id, ct);
+            if (target is null || target.CampaignId != campaignId)
+                return Result.Failure(ErrorCodes.Guild.StaffDedicationInvalid);
+        }
+
+        return Result.Success();
+    }
+
     private static GuildStaffResponse MapStaff(GuildStaff s) => new()
     {
         Id = s.Id,
@@ -425,7 +460,9 @@ public class GuildSheetService(
         DailySalary = s.DailySalary,
         IsActive = s.IsActive,
         Efficiency = s.Efficiency,
-        Morale = s.Morale
+        Morale = s.Morale,
+        DedicatedCharacterSheetId = s.DedicatedCharacterSheetId,
+        DedicatedSkillArea = s.DedicatedSkillArea
     };
 
     public async Task<Result<ResearchProjectResponse>> AddResearchAsync(

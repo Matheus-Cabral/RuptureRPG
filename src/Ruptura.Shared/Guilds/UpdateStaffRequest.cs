@@ -15,4 +15,6 @@ public class UpdateStaffRequest
     public bool IsActive { get; set; }
     public int? Efficiency { get; set; }
     public int? Morale { get; set; }
+    public Guid? DedicatedCharacterSheetId { get; set; }
+    public string? DedicatedSkillArea { get; set; }
 }

@@ -200,10 +200,12 @@ public class GuildController(
         return Ok(ApiResponse.Ok());
     }
 
-    // Unknown Kind → 400; missing/cross-guild/non-member → 404.
+    // Unknown Kind or invalid Instrutor dedication → 400; missing/cross-guild/non-member → 404.
     private IActionResult StaffFailure(string error) => error switch
     {
-        ErrorCodes.Guild.StaffKindInvalid => BadRequest(ApiResponse.Fail(localizer[error])),
+        ErrorCodes.Guild.StaffKindInvalid
+            or ErrorCodes.Guild.StaffDedicationInvalid
+            => BadRequest(ApiResponse.Fail(localizer[error])),
         _ => NotFound(ApiResponse.Fail(localizer[error]))
     };
 

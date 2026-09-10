@@ -79,7 +79,7 @@
             }
             else if (_activeTab == "staff")
             {
-                <GuildStaffTab CampaignId="CampaignId" Staff="_guild.Staff" OnChanged="RefreshStaffAsync" />
+                <GuildStaffTab CampaignId="CampaignId" Staff="_guild.Staff" OnChanged="RefreshStaffAsync" IsGameMaster="_isGm" />
             }
             else if (_activeTab == "doctrines")
             {
@@ -150,6 +150,7 @@
     private bool _loading = true;
     private bool _saving;
     private string _activeTab = "capacities";
+    private bool _isGm;
 
     private AutosaveWatcher? _autosave;
     private AutosaveStatus _autosaveState = AutosaveStatus.Idle;
@@ -166,8 +167,8 @@
         // GMs go to /gm/campaigns ("Campaigns"); players go to /dashboard ("Painel" — the
         // player's campaign list lives on their dashboard, there's no separate /campaigns page).
         var state = await AuthState.GetAuthenticationStateAsync();
-        var isGm = state.User.FindFirst("role")?.Value == "GameMaster";
-        var campaignsCrumb = isGm
+        _isGm = state.User.FindFirst("role")?.Value == "GameMaster";
+        var campaignsCrumb = _isGm
             ? new BreadcrumbItem(L["Nav.Campaigns"], "/gm/campaigns")
             : new BreadcrumbItem(L["Nav.Dashboard"], "/dashboard");
         _breadcrumbs =

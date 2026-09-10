@@ -1,8 +1,10 @@
 @using Microsoft.Extensions.Localization
 @using Ruptura.Web.Resources
 @using Ruptura.Shared.Guilds
+@using Ruptura.Shared.CharacterSheets
 @inject IStringLocalizer<AppStrings> L
 @inject IGuildClientService GuildService
+@inject ICharacterSheetClientService SheetService
 @inject ToastService Toast
 @inject ConfirmService Confirm
 
@@ -55,6 +57,31 @@
                 <input type="checkbox" class="form-check-input" id="staff-active" @bind="_editing.IsActive" />
                 <label class="form-check-label" for="staff-active">@L["Guild.Staff.Active"]</label>
             </div>
+            @if (_editing.Kind == "Worker" && _editing.TypeOrRanking == GuildStaffTypes.Instrutor && IsGameMaster)
+            {
+                <div style="display:flex;flex-wrap:wrap;gap:1rem">
+                    <div>
+                        <label class="form-label">@L["Guild.Staff.DedicatedCharacter"]</label>
+                        <select class="form-select" value="@(_editing.DedicatedCharacterSheetId?.ToString() ?? "")" @onchange="OnDedicatedCharacterChanged">
+                            <option value="">@L["Guild.Staff.DedicatedCharacter.None"]</option>
+                            @foreach (var sheet in _campaignSheets)
+                            {
+                                <option value="@sheet.Id">@sheet.CharacterName</option>
+                            }
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">@L["Guild.Staff.DedicatedArea"]</label>
+                        <select class="form-select" @bind="_editing.DedicatedSkillArea">
+                            <option value="">@L["Guild.Staff.DedicatedArea.None"]</option>
+                            @foreach (var area in TrainingReference.AreaNames)
+                            {
+                                <option value="@area">@area</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+            }
             <div style="display:flex;gap:.5rem">
                 <button class="btn btn-primary btn-sm" @onclick="SaveAsync" disabled="@_saving">
                     @if (_saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
@@ -114,6 +141,7 @@
     [Parameter] public Guid CampaignId { get; set; }
     [Parameter] public List<GuildStaffResponse> Staff { get; set; } = [];
     [Parameter] public EventCallback OnChanged { get; set; }
+    [Parameter] public bool IsGameMaster { get; set; }
 
     // Staff kinds (wire value, localization key).
     private static readonly (string Value, string Key)[] Kinds =
@@ -146,6 +174,16 @@
     private StaffForm? _editing;
     private Guid? _editingId;
     private bool _saving;
+    private List<CharacterSheetResponse> _campaignSheets = [];
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (IsGameMaster && _campaignSheets.Count == 0)
+        {
+            var result = await SheetService.GetByCampaignAsync(CampaignId);
+            _campaignSheets = result?.Data?.ToList() ?? [];
+        }
+    }
 
     private static IReadOnlyList<string> OptionsFor(string kind) =>
         kind == "Mercenary" ? GuildStaffReference.MercenaryRankings : GuildStaffReference.WorkerTypes;
@@ -179,7 +217,9 @@
             DailySalary = member.DailySalary,
             IsActive = member.IsActive,
             Efficiency = member.Efficiency,
-            Morale = member.Morale
+            Morale = member.Morale,
+            DedicatedCharacterSheetId = member.DedicatedCharacterSheetId,
+            DedicatedSkillArea = member.DedicatedSkillArea
         };
     }
 
@@ -202,6 +242,13 @@
         if (_editing is null) return;
         _editing.TypeOrRanking = e.Value?.ToString() ?? string.Empty;
         _editing.DailySalary = DefaultSalary(_editing.TypeOrRanking);
+    }
+
+    private void OnDedicatedCharacterChanged(ChangeEventArgs e)
+    {
+        if (_editing is null) return;
+        var value = e.Value?.ToString();
+        _editing.DedicatedCharacterSheetId = string.IsNullOrEmpty(value) ? null : Guid.Parse(value);
     }
 
     private static int DefaultSalary(string type) =>
@@ -231,7 +278,9 @@
                     DailySalary = _editing.DailySalary,
                     IsActive = _editing.IsActive,
                     Efficiency = _editing.Efficiency,
-                    Morale = _editing.Morale
+                    Morale = _editing.Morale,
+                    DedicatedCharacterSheetId = _editing.DedicatedCharacterSheetId,
+                    DedicatedSkillArea = _editing.DedicatedSkillArea
                 });
                 await HandleResult(result?.Data is not null, result?.Message);
             }
@@ -245,7 +294,9 @@
                     DailySalary = _editing.DailySalary,
                     IsActive = _editing.IsActive,
                     Efficiency = _editing.Efficiency,
-                    Morale = _editing.Morale
+                    Morale = _editing.Morale,
+                    DedicatedCharacterSheetId = _editing.DedicatedCharacterSheetId,
+                    DedicatedSkillArea = _editing.DedicatedSkillArea
                 });
                 await HandleResult(result?.Data is not null, result?.Message);
             }
@@ -301,5 +352,7 @@
         public bool IsActive { get; set; } = true;
         public int? Efficiency { get; set; }
         public int? Morale { get; set; }
+        public Guid? DedicatedCharacterSheetId { get; set; }
+        public string? DedicatedSkillArea { get; set; }
     }
 }

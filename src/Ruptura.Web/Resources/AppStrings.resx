@@ -533,6 +533,10 @@
   <data name="Guild.Staff.Efficiency"><value>Efficiency</value></data>
   <data name="Guild.Staff.Morale"><value>Morale</value></data>
   <data name="Guild.Staff.Active"><value>Active</value></data>
+  <data name="Guild.Staff.DedicatedCharacter"><value>Dedicated to character</value></data>
+  <data name="Guild.Staff.DedicatedCharacter.None"><value>(none)</value></data>
+  <data name="Guild.Staff.DedicatedArea"><value>Dedicated Área</value></data>
+  <data name="Guild.Staff.DedicatedArea.None"><value>(none)</value></data>
   <data name="Guild.Staff.Add"><value>Add staff</value></data>
   <data name="Guild.Staff.Save"><value>Save</value></data>
   <data name="Guild.Staff.Saved"><value>Staff saved.</value></data>

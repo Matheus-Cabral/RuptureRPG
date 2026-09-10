@@ -13,4 +13,11 @@ public class GuildStaff
     public bool IsActive { get; set; } = true;
     public int? Efficiency { get; set; }                      // workers only, optional
     public int? Morale { get; set; }                          // workers only, optional
+
+    // Dedicating an Instrutor to a character+área grants that character's Skill Training
+    // calculator (Ruptura.Shared.CharacterSheets.TrainingProjection) a +1 pts/day Bônus de
+    // Instrutor (GDD §6.4) when training a skill in that Área. Bare Guid?/string? — no FK,
+    // matching the repo's soft-reference convention.
+    public Guid? DedicatedCharacterSheetId { get; set; }
+    public string? DedicatedSkillArea { get; set; }        // one of TrainingReference.AreaNames
 }

@@ -4,6 +4,7 @@ using Bogus;
 using FluentAssertions;
 using Ruptura.IntegrationTests.Helpers;
 using Ruptura.Shared.Campaigns;
+using Ruptura.Shared.CharacterSheets;
 using Ruptura.Shared.Common;
 using Ruptura.Shared.Guilds;
 using Ruptura.Shared.Invites;
@@ -236,5 +237,71 @@ public class GuildStaffTests(IntegrationTestFactory factory)
         // Staff A still there under campaign A.
         var guildA = await GetGuildAsync(clientA, campaignA.Id);
         guildA.Staff.Should().ContainSingle(s => s.Id == staffA.Id);
+    }
+
+    [Fact]
+    public async Task AddWorker_WithDedication_PersistsBothFields()
+    {
+        var (client, campaign, _, gmToken) = await SetUpCampaignWithMemberAsync();
+        AuthHelper.SetBearerToken(client, gmToken);
+        await GetGuildAsync(client, campaign.Id);
+
+        var inviteResponse = await client.PostAsync("api/invites", null);
+        var inviteCode = (await inviteResponse.Content.ReadFromJsonAsync<ApiResponse<InviteCodeResponse>>())!.Data!.Code;
+        var otherPlayer = await AuthHelper.RegisterPlayerAsync(client, inviteCode, Faker.Internet.Email());
+        await client.PostAsJsonAsync($"api/campaigns/{campaign.Id}/members", new AssignMemberRequest { PlayerId = otherPlayer.User.Id });
+        AuthHelper.SetBearerToken(client, gmToken);
+        var grantResponse = await client.PostAsJsonAsync($"api/campaigns/{campaign.Id}/character-sheets",
+            new GrantCharacterSheetRequest { PlayerId = otherPlayer.User.Id, CharacterName = "Trainee" });
+        var sheetId = (await grantResponse.Content.ReadFromJsonAsync<ApiResponse<CharacterSheetResponse>>())!.Data!.Id;
+
+        var request = new CreateStaffRequest
+        {
+            Kind = "Worker", TypeOrRanking = GuildStaffTypes.Instrutor, Name = "Mestre Aldo",
+            DailySalary = 5, IsActive = true,
+            DedicatedCharacterSheetId = sheetId, DedicatedSkillArea = "Magia"
+        };
+        var response = await client.PostAsJsonAsync($"api/campaigns/{campaign.Id}/guild/staff", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var body = (await response.Content.ReadFromJsonAsync<ApiResponse<GuildStaffResponse>>())!.Data!;
+        body.DedicatedCharacterSheetId.Should().Be(sheetId);
+        body.DedicatedSkillArea.Should().Be("Magia");
+    }
+
+    [Fact]
+    public async Task AddWorker_WithUnknownArea_Returns400()
+    {
+        var (client, campaign, _, gmToken) = await SetUpCampaignWithMemberAsync();
+        AuthHelper.SetBearerToken(client, gmToken);
+        await GetGuildAsync(client, campaign.Id);
+
+        var request = new CreateStaffRequest
+        {
+            Kind = "Worker", TypeOrRanking = GuildStaffTypes.Instrutor, Name = "Mestre Aldo",
+            DailySalary = 5, IsActive = true, DedicatedSkillArea = "Culinária Extrema"
+        };
+        var response = await client.PostAsJsonAsync($"api/campaigns/{campaign.Id}/guild/staff", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task AddWorker_WithCharacterFromAnotherCampaign_Returns400()
+    {
+        var (client, campaign, _, gmToken) = await SetUpCampaignWithMemberAsync();
+        AuthHelper.SetBearerToken(client, gmToken);
+        await GetGuildAsync(client, campaign.Id);
+
+        // A sheet from a completely different campaign (fresh Guid never granted here).
+        var request = new CreateStaffRequest
+        {
+            Kind = "Worker", TypeOrRanking = GuildStaffTypes.Instrutor, Name = "Mestre Aldo",
+            DailySalary = 5, IsActive = true,
+            DedicatedCharacterSheetId = Guid.NewGuid(), DedicatedSkillArea = "Magia"
+        };
+        var response = await client.PostAsJsonAsync($"api/campaigns/{campaign.Id}/guild/staff", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 }
