@@ -211,6 +211,23 @@ public class CharacterStatsCalculator : ICharacterStatsCalculator
     // GDD §6.7.6 — an item is Danificado once its Golpes de Desgaste (DurabilityRemaining) is
     // exhausted, PROVIDED its Raridade resolves to a known ceiling (an unrecognized Raridade
     // has no ceiling to compare against, so it's never "damaged").
+    //
+    // Retroactive effect on pre-existing equipment (deliberate, documented trade-off — see the
+    // design spec's Decision #4/#7, not a bug): DurabilityRemaining predates this rule and was
+    // left at the C# int default (0) by every AddItem call that shipped before this feature.
+    // That means ALL equipment saved before this feature shipped reads as Danificado on its
+    // very next load — there is no data migration/backfill for it. Going forward,
+    // CharacterSheetEquipmentTab.AddItem seeds NEW entries at full durability, and any
+    // already-affected entry self-heals in one click of the Reparar action. If you're reading
+    // this while investigating "why did everyone's gear suddenly lose Dano/Defesa," this is why.
+    //
+    // Scope of the -1 penalty (GDD §6.7.1 "Bônus Base" nominally covers Ataque/Dano/Defesa, but
+    // this method is only ever consulted against DamageBonus/DefenseBonus, never AttackBonus):
+    // EquipmentItemCatalogData.AttackBonus is confirmed dead code in this calculator — equipment
+    // never contributes to Attack here (see CLAUDE.md's Catalog schema notes on AttackBonus, and
+    // this file's own AttackBonus/CategoryIs usage — weapon AttackBonus in BuildWeaponRow comes
+    // only from attribute + skill grade, never from eqData). So restricting Danificado to
+    // Dano/Defesa only is deliberate and correct, not a missed third of the rule.
     private static bool IsDamaged(CharacterEquipmentEntry entry, EquipmentItemCatalogData data) =>
         EquipmentReference.MaxDurabilityFor(data.Rarity) > 0 && entry.DurabilityRemaining <= 0;
 

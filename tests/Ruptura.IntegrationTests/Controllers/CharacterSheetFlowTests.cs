@@ -127,7 +127,9 @@ public class CharacterSheetFlowTests(IntegrationTestFactory factory)
         sheet.Data.Skills.Add(new CharacterSkillEntry { CatalogEntryId = skill.Id, Points = 50 }); // grade +2
         sheet.Data.Equipment.Add(new CharacterEquipmentEntry
         {
-            CatalogEntryId = weapon.Id, Quantity = 1, IsEquipped = true, LinkedSkillEntryId = skill.Id
+            CatalogEntryId = weapon.Id, Quantity = 1, IsEquipped = true, LinkedSkillEntryId = skill.Id,
+            DurabilityRemaining = 4 // "Incomum" max (GDD §6.7.6) — keeps this item undamaged so the
+                                    // asserted DamageFormula reflects the un-penalized formula
         });
 
         var updateResponse = await client.PutAsJsonAsync($"api/character-sheets/{sheet.Id}", new UpdateCharacterSheetRequest

@@ -59,6 +59,11 @@ else
                             <td data-label="@L["Sheet.Equipment.Durability"]" style="width:160px" @onclick:stopPropagation="true">
                                 <input class="form-control form-control-sm" type="number" min="0"
                                        value="@item.DurabilityRemaining" @onchange="e => item.DurabilityRemaining = ParseInt(e.Value, 0)" />
+                                @* Shown for ANY row meeting the durability condition, equipped or not — deliberate,
+                                   not an oversight: it lets an owner spot and repair gear before equipping it.
+                                   The combat-math penalty itself is applied server-side in CharacterStatsCalculator,
+                                   which separately gates on IsEquipped, so this UI-only choice has no mechanical
+                                   effect on unequipped items, only visibility. Do not add an IsEquipped check here. *@
                                 @if (IsDamaged(item))
                                 {
                                     <div style="margin-top:.25rem;display:flex;align-items:center;gap:.4rem">
