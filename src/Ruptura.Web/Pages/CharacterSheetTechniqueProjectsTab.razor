@@ -31,9 +31,10 @@ else
                 <option value="@category">@L[$"Sheet.Technique.Category.{category}"]</option>
             }
         </select>
-        <input class="form-control" placeholder="@L["Sheet.Technique.Name"]" @bind="_newProjectName" @bind:event="oninput" />
+        <input class="form-control" placeholder="@L["Sheet.Technique.Name"]" maxlength="@MaxNameLength" @bind="_newProjectName" @bind:event="oninput" />
+        <small class="text-muted">@L["Sheet.Technique.NameLengthHint", MinNameLength, MaxNameLength]</small>
         <button class="btn btn-primary btn-sm" @onclick="ValidateAndStartAsync"
-                disabled="@(_validating || _newProjectSkillId == Guid.Empty || string.IsNullOrWhiteSpace(_newProjectName))">
+                disabled="@(_validating || _newProjectSkillId == Guid.Empty || !IsNameLengthValid(_newProjectName))">
             @if (_validating) { <span class="spinner-border spinner-border-sm me-1"></span> }
             @L["Sheet.Technique.ValidateAndStart"]
         </button>
@@ -76,6 +77,7 @@ else
                                 {
                                     <span>@L["Sheet.Technique.AwaitingGm"]</span>
                                 }
+                                <button class="btn btn-outline-secondary btn-sm" @onclick="() => RemoveProject(project)">@L["Sheet.RefList.Remove"]</button>
                             </td>
                         </tr>
                         @if (_resolvingId == project.Id)
@@ -117,6 +119,13 @@ else
     [Parameter] public Guid SheetId { get; set; }
     [Parameter] public bool IsGameMaster { get; set; }
 
+    // Mirrors CreateCatalogEntryRequestValidator's Name bounds exactly (MinimumLength(2),
+    // MaximumLength(150)) — the Sucesso flow POSTs this same project Name to /api/catalog, so a
+    // name outside these bounds must never be allowed to start a project (it would otherwise
+    // strand the project unresolvable forever, since the name isn't editable anywhere else).
+    private const int MinNameLength = 2;
+    private const int MaxNameLength = 150;
+
     private List<CatalogEntryResponse> _allSkills = [];
     private bool _loading = true;
     private Guid _newProjectSkillId;
@@ -140,13 +149,25 @@ else
     private string NameOf(Guid id) => _allSkills.FirstOrDefault(e => e.Id == id)?.Name ?? id.ToString();
     private static int ParseInt(object? value) => int.TryParse(value?.ToString(), out var v) && v > 0 ? v : 1;
 
+    private static bool IsNameLengthValid(string name) =>
+        !string.IsNullOrWhiteSpace(name) && name.Length >= MinNameLength && name.Length <= MaxNameLength;
+
     private async Task ValidateAndStartAsync()
     {
-        if (_newProjectSkillId == Guid.Empty || string.IsNullOrWhiteSpace(_newProjectName)) return;
+        if (_newProjectSkillId == Guid.Empty || !IsNameLengthValid(_newProjectName)) return;
+
+        // Capture the form's values BEFORE the await — the category/skill selects and name
+        // input are not disabled while _validating is true, so the user could otherwise change
+        // them mid-flight and the project would be created with a Category that was never
+        // actually validated (still carrying the OLD RequiredDays from the response).
+        var category = _newProjectCategory;
+        var skillId = _newProjectSkillId;
+        var name = _newProjectName;
+
         _validating = true;
         try
         {
-            var result = await SheetService.ValidateTechniqueProjectStartAsync(SheetId, _newProjectCategory, _newProjectSkillId);
+            var result = await SheetService.ValidateTechniqueProjectStartAsync(SheetId, category, skillId);
             if (result?.Data is null)
             {
                 Toast.Error(result?.Message ?? L["Common.Error"]);
@@ -160,8 +181,8 @@ else
 
             Data.TechniqueProjects.Add(new CharacterTechniqueProject
             {
-                Id = Guid.NewGuid(), Name = _newProjectName, Category = _newProjectCategory,
-                SkillCatalogEntryId = _newProjectSkillId, RequiredDays = result.Data.RequiredDays, DaysInvested = 0
+                Id = Guid.NewGuid(), Name = name, Category = category,
+                SkillCatalogEntryId = skillId, RequiredDays = result.Data.RequiredDays, DaysInvested = 0
             });
             Toast.Success(L["Sheet.Technique.Started"]);
             _newProjectName = string.Empty;
@@ -171,6 +192,13 @@ else
         {
             _validating = false;
         }
+    }
+
+    private void RemoveProject(CharacterTechniqueProject project)
+    {
+        Data.TechniqueProjects.Remove(project);
+        if (_resolvingId == project.Id) _resolvingId = null;
+        _addDays.Remove(project.Id);
     }
 
     // Client-side, no HTTP call — see design spec §2 Decision #6 (no institutional bonus

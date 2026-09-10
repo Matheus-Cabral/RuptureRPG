@@ -307,6 +307,7 @@
   <data name="Sheet.Technique.Category.Reacao"><value>Reação</value></data>
   <data name="Sheet.Technique.Category.Suprema"><value>Técnica Suprema</value></data>
   <data name="Sheet.Technique.Name"><value>Name</value></data>
+  <data name="Sheet.Technique.NameLengthHint"><value>{0}-{1} characters.</value></data>
   <data name="Sheet.Technique.ValidateAndStart"><value>Validate and Start</value></data>
   <data name="Sheet.Technique.Started"><value>Project started.</value></data>
   <data name="Sheet.Technique.Blocked.InsufficientSkill"><value>Skill points are too low for this category.</value></data>

@@ -233,6 +233,10 @@ public class CharacterSheetService(
     private const int MaxTrainingDays = 3650;
     private static readonly string[] ValidCorrelations = ["Alta", "Media", "Baixa", "Nenhuma"];
 
+    // Mirrors NotificationService's RankOrder idiom — a cached array + Array.IndexOf instead of
+    // calling RankProgression.Ordered.ToList().IndexOf(...) (which allocates a new List every call).
+    private static readonly string[] RankOrder = RankProgression.Ordered.ToArray();
+
     public async Task<Result<TrainingProjection>> PreviewTrainingAsync(
         Guid callerId, Guid sheetId, Guid skillCatalogEntryId, int days, string correlation,
         CancellationToken ct = default)
@@ -299,8 +303,8 @@ public class CharacterSheetService(
 
         if (TechniqueReference.MinRankingByCategory[category] is { } minRank)
         {
-            var currentIdx = RankProgression.Ordered.ToList().IndexOf(data.GuildRegistry.Ranking);
-            var minIdx = RankProgression.Ordered.ToList().IndexOf(minRank);
+            var currentIdx = Array.IndexOf(RankOrder, data.GuildRegistry.Ranking);
+            var minIdx = Array.IndexOf(RankOrder, minRank);
             if (currentIdx < minIdx)
                 return Result.Success(new TechniqueProjectValidation
                 {

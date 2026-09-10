@@ -92,6 +92,42 @@ public class CharacterSheetTechniqueProjectTests(IntegrationTestFactory factory)
     }
 
     [Fact]
+    public async Task ValidateStart_Tecnica_SufficientSkill_NoRankingOrInstallationGate_CanStartTrue()
+    {
+        // Especialista (50 points) is Tecnica's minimum — proves the Suprema-only Ranking/
+        // Academia Militar gate does NOT apply to Tecnica (no ranking set, no guild built).
+        var (client, _, sheet, skillId, playerToken, _) = await SetUpCharacterWithSkillAsync(skillPoints: 50);
+        AuthHelper.SetBearerToken(client, playerToken);
+
+        var response = await client.GetAsync(
+            $"api/character-sheets/{sheet.Id}/technique-projects/validate-start?category=Tecnica&skillCatalogEntryId={skillId}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = (await response.Content.ReadFromJsonAsync<ApiResponse<TechniqueProjectValidation>>())!.Data!;
+        body.CanStart.Should().BeTrue();
+        body.RequiredDays.Should().Be(10);
+        body.BlockedReason.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task ValidateStart_Reacao_SufficientSkill_NoRankingOrInstallationGate_CanStartTrue()
+    {
+        // Especialista (50 points) is Reacao's minimum — proves the Suprema-only Ranking/
+        // Academia Militar gate does NOT apply to Reacao (no ranking set, no guild built).
+        var (client, _, sheet, skillId, playerToken, _) = await SetUpCharacterWithSkillAsync(skillPoints: 50);
+        AuthHelper.SetBearerToken(client, playerToken);
+
+        var response = await client.GetAsync(
+            $"api/character-sheets/{sheet.Id}/technique-projects/validate-start?category=Reacao&skillCatalogEntryId={skillId}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = (await response.Content.ReadFromJsonAsync<ApiResponse<TechniqueProjectValidation>>())!.Data!;
+        body.CanStart.Should().BeTrue();
+        body.RequiredDays.Should().Be(10);
+        body.BlockedReason.Should().BeNull();
+    }
+
+    [Fact]
     public async Task ValidateStart_Suprema_SufficientSkillButRankingTooLow_InsufficientRanking()
     {
         // Default Ranking is "Bronze" — below Prata, the Suprema minimum.
