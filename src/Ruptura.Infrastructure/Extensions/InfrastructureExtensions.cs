@@ -59,6 +59,7 @@ public static class InfrastructureExtensions
         services.AddSingleton<IGuildStatsCalculator, GuildStatsCalculator>();  // pure & stateless, like CharacterStatsCalculator
         services.AddSingleton<IInterludeCalculator, InterludeCalculator>();    // pure & stateless
         services.AddSingleton<ICreatureStatsCalculator, CreatureStatsCalculator>(); // pure & stateless
+        services.AddSingleton<ITrainingCalculator, TrainingCalculator>(); // pure & stateless
         services.AddSingleton<IFileStorageService, LocalFileStorageService>();
 
         // Application services
