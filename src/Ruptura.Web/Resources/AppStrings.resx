@@ -355,6 +355,12 @@
   <data name="Sheet.Equipment.Equipped"><value>Equipped</value></data>
   <data name="Sheet.Equipment.LinkedSkill"><value>Linked Skill (weapons only)</value></data>
   <data name="Sheet.Equipment.NoneSkill"><value>— none —</value></data>
+  <data name="Sheet.Equipment.Damaged"><value>Damaged</value></data>
+  <data name="Sheet.Equipment.Repair"><value>Repair</value></data>
+  <data name="Sheet.Equipment.Cancel"><value>Cancel</value></data>
+  <data name="Sheet.Equipment.RepairConfirm.Title"><value>Repair item</value></data>
+  <data name="Sheet.Equipment.RepairConfirm.Message"><value>This takes {0} day(s) of Interlúdio. Apply?</value></data>
+  <data name="Sheet.Equipment.Repaired"><value>Item repaired — remember to save.</value></data>
   <data name="Sheet.Trial.None"><value>No attribute trial in progress.</value></data>
   <data name="Sheet.Trial.Start"><value>Start Trial</value></data>
   <data name="Sheet.Trial.Attribute"><value>Attribute</value></data>

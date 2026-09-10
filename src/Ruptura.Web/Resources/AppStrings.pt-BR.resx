@@ -355,6 +355,12 @@
   <data name="Sheet.Equipment.Equipped"><value>Equipado</value></data>
   <data name="Sheet.Equipment.LinkedSkill"><value>Perícia Vinculada (só armas)</value></data>
   <data name="Sheet.Equipment.NoneSkill"><value>— nenhuma —</value></data>
+  <data name="Sheet.Equipment.Damaged"><value>Danificado</value></data>
+  <data name="Sheet.Equipment.Repair"><value>Reparar</value></data>
+  <data name="Sheet.Equipment.Cancel"><value>Cancelar</value></data>
+  <data name="Sheet.Equipment.RepairConfirm.Title"><value>Reparar item</value></data>
+  <data name="Sheet.Equipment.RepairConfirm.Message"><value>Isso leva {0} dia(s) de Interlúdio. Aplicar?</value></data>
+  <data name="Sheet.Equipment.Repaired"><value>Item reparado — lembre-se de salvar.</value></data>
   <data name="Sheet.Trial.None"><value>Nenhuma Provação de Atributo em andamento.</value></data>
   <data name="Sheet.Trial.Start"><value>Iniciar Provação</value></data>
   <data name="Sheet.Trial.Attribute"><value>Atributo</value></data>

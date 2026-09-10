@@ -4,6 +4,8 @@
 @using Ruptura.Shared.Catalog
 @inject IStringLocalizer<AppStrings> L
 @inject ICatalogClientService CatalogService
+@inject ConfirmService Confirm
+@inject ToastService Toast
 
 @if (_loading)
 {
@@ -54,9 +56,16 @@ else
                                 <input class="form-control form-control-sm" type="number" min="1"
                                        value="@item.Quantity" @onchange="e => item.Quantity = ParseInt(e.Value, 1)" />
                             </td>
-                            <td data-label="@L["Sheet.Equipment.Durability"]" style="width:100px" @onclick:stopPropagation="true">
+                            <td data-label="@L["Sheet.Equipment.Durability"]" style="width:160px" @onclick:stopPropagation="true">
                                 <input class="form-control form-control-sm" type="number" min="0"
                                        value="@item.DurabilityRemaining" @onchange="e => item.DurabilityRemaining = ParseInt(e.Value, 0)" />
+                                @if (IsDamaged(item))
+                                {
+                                    <div style="margin-top:.25rem;display:flex;align-items:center;gap:.4rem">
+                                        <span class="badge-status badge-damaged">@L["Sheet.Equipment.Damaged"]</span>
+                                        <button class="btn btn-outline-secondary btn-sm" @onclick="() => RepairAsync(item)">@L["Sheet.Equipment.Repair"]</button>
+                                    </div>
+                                }
                             </td>
                             <td data-label="@L["Sheet.Equipment.Equipped"]" @onclick:stopPropagation="true"><input type="checkbox" checked="@item.IsEquipped" @onchange="e => item.IsEquipped = (bool)(e.Value ?? false)" /></td>
                             <td data-label="@L["Sheet.Equipment.LinkedSkill"]" @onclick:stopPropagation="true">
@@ -151,6 +160,28 @@ else
         };
     }
 
+    // Same generic-JSON-key lookup as CategoryLabelOf, just for "Rarity" instead of "Category".
+    private string RarityOf(Guid id) =>
+        CatalogEntryData.Parse(_allItems.FirstOrDefault(e => e.Id == id)?.DataJson).GetString("Rarity");
+
+    private bool IsDamaged(CharacterEquipmentEntry item) =>
+        EquipmentReference.MaxDurabilityFor(RarityOf(item.CatalogEntryId)) > 0 && item.DurabilityRemaining <= 0;
+
+    private async Task RepairAsync(CharacterEquipmentEntry item)
+    {
+        var rarity = RarityOf(item.CatalogEntryId);
+        var days = EquipmentReference.RepairDaysFor(rarity);
+        var confirmed = await Confirm.AskAsync(
+            L["Sheet.Equipment.RepairConfirm.Title"],
+            L["Sheet.Equipment.RepairConfirm.Message", days],
+            L["Sheet.Equipment.Repair"],
+            L["Sheet.Equipment.Cancel"]);
+        if (!confirmed) return;
+
+        item.DurabilityRemaining = EquipmentReference.MaxDurabilityFor(rarity);
+        Toast.Success(L["Sheet.Equipment.Repaired"]);
+    }
+
     private void OnRowKey(KeyboardEventArgs e, Guid refId)
     {
         if (e.Key == "Enter" || e.Key == " ") _selectedRefId = refId;
@@ -168,7 +199,13 @@ else
     private void AddItem()
     {
         if (_selectedId == Guid.Empty) return;
-        Data.Equipment.Add(new CharacterEquipmentEntry { CatalogEntryId = _selectedId, Quantity = 1 });
+        // Start at full durability — the int default (0) would otherwise make every
+        // newly-added item immediately "Danificado" under the new Golpes de Desgaste rule.
+        var maxDurability = EquipmentReference.MaxDurabilityFor(RarityOf(_selectedId));
+        Data.Equipment.Add(new CharacterEquipmentEntry
+        {
+            CatalogEntryId = _selectedId, Quantity = 1, DurabilityRemaining = maxDurability
+        });
         _selectedId = Guid.Empty;
     }
 }

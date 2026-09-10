@@ -651,6 +651,7 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 400; color: var(--te
 .badge-active  { background: var(--badge-active-bg);  color: var(--badge-active-text); }
 .badge-used    { background: var(--badge-used-bg);    color: var(--badge-used-text); }
 .badge-expired { background: var(--badge-expired-bg); color: var(--badge-expired-text); }
+.badge-damaged { background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger-border); }
 
 /* Copy button */
 .copy-btn {
