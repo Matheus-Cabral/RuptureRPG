@@ -6,6 +6,8 @@ using Ruptura.Domain.Entities;
 using Ruptura.Domain.Enums;
 using Ruptura.Shared.CharacterSheets;
 using Ruptura.Shared.Catalog;
+using Ruptura.Shared;
+using Ruptura.Shared.Guilds;
 
 namespace Ruptura.Infrastructure.Services;
 
@@ -269,6 +271,56 @@ public class CharacterSheetService(
         return Result.Success(projection);
     }
 
+    public async Task<Result<TechniqueProjectValidation>> ValidateTechniqueProjectStartAsync(
+        Guid callerId, Guid sheetId, string category, Guid skillCatalogEntryId, CancellationToken ct = default)
+    {
+        if (!TechniqueReference.Categories.Contains(category))
+            return Result.Failure<TechniqueProjectValidation>(ErrorCodes.CharacterSheet.CategoryInvalid);
+
+        var authorized = await AuthorizeAccessAsync(callerId, sheetId, ct);
+        if (authorized.IsFailure)
+            return Result.Failure<TechniqueProjectValidation>(authorized.Error!);
+        var sheet = authorized.Value!;
+
+        var skillEntry = await catalogRepo.GetByIdAsync(skillCatalogEntryId, ct);
+        if (skillEntry is null || skillEntry.Type != CatalogEntryType.Skill ||
+            (skillEntry.CampaignId is { } scope && scope != sheet.CampaignId))
+            return Result.Failure<TechniqueProjectValidation>(ErrorCodes.CharacterSheet.SkillNotFound);
+
+        var data = DeserializeSheetData(sheet.DataJson);
+        var currentPoints = data.Skills.FirstOrDefault(s => s.CatalogEntryId == skillCatalogEntryId)?.Points ?? 0;
+        var requiredDays = TechniqueReference.RequiredDaysByCategory[category];
+
+        if (currentPoints < TechniqueReference.MinSkillPointsByCategory[category])
+            return Result.Success(new TechniqueProjectValidation
+            {
+                CanStart = false, BlockedReason = "InsufficientSkill", RequiredDays = requiredDays
+            });
+
+        if (TechniqueReference.MinRankingByCategory[category] is { } minRank)
+        {
+            var currentIdx = RankProgression.Ordered.ToList().IndexOf(data.GuildRegistry.Ranking);
+            var minIdx = RankProgression.Ordered.ToList().IndexOf(minRank);
+            if (currentIdx < minIdx)
+                return Result.Success(new TechniqueProjectValidation
+                {
+                    CanStart = false, BlockedReason = "InsufficientRanking", RequiredDays = requiredDays
+                });
+
+            var guild = await guildRepo.GetByCampaignAsync(sheet.CampaignId, ct);
+            var hasInstallation = guild is not null &&
+                (await buildingRepo.GetByGuildAsync(guild.Id, ct)).Any(b =>
+                    b.CatalogEntryId == GuildCatalogIds.AcademiaMilitar && b.IsActive && b.Level >= 1);
+            if (!hasInstallation)
+                return Result.Success(new TechniqueProjectValidation
+                {
+                    CanStart = false, BlockedReason = "MissingInstallation", RequiredDays = requiredDays
+                });
+        }
+
+        return Result.Success(new TechniqueProjectValidation { CanStart = true, RequiredDays = requiredDays });
+    }
+
     // Mirrors CharacterStatsCalculator.SafeDeserialize — a GM's malformed homebrew Skill
     // DataJson must never 500 a training preview.
     private static SkillCatalogData? SafeDeserializeSkill(string json)
@@ -351,6 +403,7 @@ public class CharacterSheetService(
         data.Equipment ??= [];
         data.Currency ??= new();
         data.GuildRegistry ??= new();
+        data.TechniqueProjects ??= [];
         return data;
     }
 

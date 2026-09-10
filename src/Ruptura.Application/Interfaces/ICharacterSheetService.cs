@@ -32,4 +32,7 @@ public interface ICharacterSheetService
 
     Task<Result<TrainingProjection>> PreviewTrainingAsync(
         Guid callerId, Guid sheetId, Guid skillCatalogEntryId, int days, string correlation, CancellationToken ct = default);
+
+    Task<Result<TechniqueProjectValidation>> ValidateTechniqueProjectStartAsync(
+        Guid callerId, Guid sheetId, string category, Guid skillCatalogEntryId, CancellationToken ct = default);
 }

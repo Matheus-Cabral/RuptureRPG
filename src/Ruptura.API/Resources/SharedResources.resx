@@ -66,6 +66,7 @@
   <data name="CharacterSheet.SkillNotFound"><value>The skill was not found.</value></data>
   <data name="CharacterSheet.TrainingDaysInvalid"><value>The number of training days is invalid.</value></data>
   <data name="CharacterSheet.CorrelationInvalid"><value>The correlation level is invalid.</value></data>
+  <data name="CharacterSheet.CategoryInvalid"><value>The technique category is invalid.</value></data>
   <data name="CharacterSheet.Granted"><value>Character sheet granted successfully.</value></data>
   <data name="CharacterSheet.Updated"><value>Character sheet updated successfully.</value></data>
 

@@ -139,4 +139,21 @@ public class CharacterSheetController(
 
         return Ok(ApiResponse<TrainingProjection>.Ok(result.Value!));
     }
+
+    [HttpGet("character-sheets/{id:guid}/technique-projects/validate-start")]
+    [ProducesResponseType(typeof(ApiResponse<TechniqueProjectValidation>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ValidateTechniqueProjectStart(
+        Guid id, [FromQuery] string category, [FromQuery] Guid skillCatalogEntryId, CancellationToken ct)
+    {
+        var callerId = Guid.Parse(User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
+        var result = await characterSheetService.ValidateTechniqueProjectStartAsync(callerId, id, category, skillCatalogEntryId, ct);
+        if (result.IsFailure)
+            return result.Error is ErrorCodes.CharacterSheet.NotFound or ErrorCodes.CharacterSheet.SkillNotFound
+                ? NotFound(ApiResponse.Fail(localizer[result.Error!]))
+                : BadRequest(ApiResponse.Fail(localizer[result.Error!]));
+
+        return Ok(ApiResponse<TechniqueProjectValidation>.Ok(result.Value!));
+    }
 }

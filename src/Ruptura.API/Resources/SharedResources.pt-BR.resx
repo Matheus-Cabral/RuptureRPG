@@ -66,6 +66,7 @@
   <data name="CharacterSheet.SkillNotFound"><value>A perícia não foi encontrada.</value></data>
   <data name="CharacterSheet.TrainingDaysInvalid"><value>O número de dias de treinamento é inválido.</value></data>
   <data name="CharacterSheet.CorrelationInvalid"><value>O nível de correlação é inválido.</value></data>
+  <data name="CharacterSheet.CategoryInvalid"><value>A categoria de técnica é inválida.</value></data>
   <data name="CharacterSheet.Granted"><value>Ficha de personagem concedida com sucesso.</value></data>
   <data name="CharacterSheet.Updated"><value>Ficha de personagem atualizada com sucesso.</value></data>
 
