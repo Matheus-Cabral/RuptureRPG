@@ -13,6 +13,7 @@ public class CharacterSheetData
     public CharacterCurrency Currency { get; set; } = new();
     public CharacterAttributeTrial? AttributeTrial { get; set; }
     public CharacterGuildRegistry GuildRegistry { get; set; } = new();
+    public List<CharacterTechniqueProject> TechniqueProjects { get; set; } = [];
 }
 
 // Module 1: Identidade. Origin/Background/Lineage/Aptitude/InitialTalent are CatalogEntry
@@ -109,4 +110,20 @@ public class CharacterGuildRegistry
     public string State { get; set; } = string.Empty;
     public int Expeditions { get; set; }
     public int FloorsCleared { get; set; }
+}
+
+// Module: Projetos de Técnica (GDD §6.6.7). A project has no CatalogEntryId of its own — the
+// Technique it will become doesn't exist in the catalog until the GM resolves the Teste
+// Absoluto as Sucesso (CharacterSheetTechniqueProjectsTab handles that by POSTing a new
+// homebrew CatalogEntry and adding a CharacterCatalogRefEntry to Techniques, then removing
+// this project). "Ready for test" is DaysInvested >= RequiredDays — no separate Status field,
+// same "derive, don't duplicate" posture as Equipment's computed-live Danificado state.
+public class CharacterTechniqueProject
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Category { get; set; } = string.Empty;       // TechniqueReference.Categories value
+    public Guid SkillCatalogEntryId { get; set; }               // the arma/estilo Perícia this project is tied to
+    public int RequiredDays { get; set; }                        // server-derived at creation, never client-computed
+    public int DaysInvested { get; set; }
 }
