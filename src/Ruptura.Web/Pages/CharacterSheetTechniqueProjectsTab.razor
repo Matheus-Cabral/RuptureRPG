@@ -1,0 +1,226 @@
+@using System.Text.Json
+@using Microsoft.Extensions.Localization
+@using Ruptura.Web.Resources
+@using Ruptura.Shared.CharacterSheets
+@using Ruptura.Shared.Catalog
+@inject IStringLocalizer<AppStrings> L
+@inject ICharacterSheetClientService SheetService
+@inject ICatalogClientService CatalogService
+@inject ToastService Toast
+@inject ConfirmService Confirm
+
+@if (_loading)
+{
+    <LoadingIndicator Text="@L["Common.Loading"]" />
+}
+else
+{
+<div style="display:flex;flex-direction:column;gap:1.5rem">
+    <div style="border:1px solid var(--border);border-radius:6px;padding:1rem;max-width:640px;display:flex;flex-direction:column;gap:.5rem">
+        <h4>@L["Sheet.Technique.StartProject"]</h4>
+        <select class="form-select" @bind="_newProjectSkillId">
+            <option value="">@L["Sheet.Technique.SelectSkill"]</option>
+            @foreach (var skill in Data.Skills)
+            {
+                <option value="@skill.CatalogEntryId">@NameOf(skill.CatalogEntryId)</option>
+            }
+        </select>
+        <select class="form-select" @bind="_newProjectCategory">
+            @foreach (var category in TechniqueReference.Categories)
+            {
+                <option value="@category">@L[$"Sheet.Technique.Category.{category}"]</option>
+            }
+        </select>
+        <input class="form-control" placeholder="@L["Sheet.Technique.Name"]" @bind="_newProjectName" @bind:event="oninput" />
+        <button class="btn btn-primary btn-sm" @onclick="ValidateAndStartAsync"
+                disabled="@(_validating || _newProjectSkillId == Guid.Empty || string.IsNullOrWhiteSpace(_newProjectName))">
+            @if (_validating) { <span class="spinner-border spinner-border-sm me-1"></span> }
+            @L["Sheet.Technique.ValidateAndStart"]
+        </button>
+    </div>
+
+    @if (Data.TechniqueProjects.Count == 0)
+    {
+        <p>@L["Sheet.Technique.NoProjects"]</p>
+    }
+    else
+    {
+        <div class="ledger-table-wrap">
+            <table class="ledger-table stack-mobile">
+                <thead>
+                    <tr>
+                        <th>@L["Sheet.Technique.Name"]</th>
+                        <th>@L["Gm.CampaignDetail.Col.Name"]</th>
+                        <th>@L["Sheet.Technique.Progress"]</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var project in Data.TechniqueProjects)
+                    {
+                        <tr>
+                            <td data-label="@L["Sheet.Technique.Name"]">@project.Name</td>
+                            <td data-label="@L["Gm.CampaignDetail.Col.Name"]">@L[$"Sheet.Technique.Category.{project.Category}"]</td>
+                            <td data-label="@L["Sheet.Technique.Progress"]">@project.DaysInvested / @project.RequiredDays</td>
+                            <td data-label="">
+                                @if (project.DaysInvested < project.RequiredDays)
+                                {
+                                    <input type="number" class="form-control form-control-sm" style="width:80px;display:inline-block" min="1" value="1" @onchange="e => _addDays[project.Id] = ParseInt(e.Value)" />
+                                    <button class="btn btn-outline-secondary btn-sm" @onclick="() => AdvanceDays(project)">@L["Sheet.Technique.AdvanceDays"]</button>
+                                }
+                                else if (IsGameMaster)
+                                {
+                                    <button class="btn btn-primary btn-sm" @onclick="() => _resolvingId = project.Id">@L["Sheet.Technique.ResolveTest"]</button>
+                                }
+                                else
+                                {
+                                    <span>@L["Sheet.Technique.AwaitingGm"]</span>
+                                }
+                            </td>
+                        </tr>
+                        @if (_resolvingId == project.Id)
+                        {
+                            <tr>
+                                <td colspan="4">
+                                    <div style="border:1px solid var(--border);border-radius:6px;padding:1rem;display:flex;flex-direction:column;gap:.5rem;max-width:480px">
+                                        <input class="form-control" placeholder="@L["Sheet.Technique.PaCost"]" @bind="_resolvePaCost" @bind:event="oninput" />
+                                        <textarea class="form-control" placeholder="@L["Sheet.Technique.Damage"]" @bind="_resolveDamage"></textarea>
+                                        <textarea class="form-control" placeholder="@L["Sheet.Technique.Effect"]" @bind="_resolveEffect"></textarea>
+                                        <select class="form-select" @bind="_resolvePowerTier">
+                                            <option value="comum">@L["Gm.Catalog.PowerTier.Common"]</option>
+                                            <option value="avançada">@L["Gm.Catalog.PowerTier.Advanced"]</option>
+                                            <option value="suprema">@L["Gm.Catalog.PowerTier.Supreme"]</option>
+                                        </select>
+                                        <div style="display:flex;gap:.5rem">
+                                            <button class="btn btn-primary btn-sm" @onclick="() => ResolveSuccessAsync(project)" disabled="@_resolving">
+                                                @if (_resolving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                                                @L["Sheet.Technique.Sucesso"]
+                                            </button>
+                                            <button class="btn btn-outline-danger btn-sm" @onclick="() => ResolveFailureAsync(project)">@L["Sheet.Technique.Falha"]</button>
+                                            <button class="btn btn-outline-secondary btn-sm" @onclick="() => _resolvingId = null">@L["Sheet.Equipment.Cancel"]</button>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+}
+
+@code {
+    [Parameter] public CharacterSheetData Data { get; set; } = new();
+    [Parameter] public Guid CampaignId { get; set; }
+    [Parameter] public Guid SheetId { get; set; }
+    [Parameter] public bool IsGameMaster { get; set; }
+
+    private List<CatalogEntryResponse> _allSkills = [];
+    private bool _loading = true;
+    private Guid _newProjectSkillId;
+    private string _newProjectCategory = TechniqueReference.Categories[0];
+    private string _newProjectName = string.Empty;
+    private bool _validating;
+    private readonly Dictionary<Guid, int> _addDays = [];
+    private Guid? _resolvingId;
+    private bool _resolving;
+    private string _resolvePaCost = string.Empty;
+    private string _resolveDamage = string.Empty;
+    private string _resolveEffect = string.Empty;
+    private string _resolvePowerTier = "comum";
+
+    protected override async Task OnInitializedAsync()
+    {
+        _allSkills = (await CatalogService.GetByTypeAsync("Skill", CampaignId, includeArchived: true))?.Data?.ToList() ?? [];
+        _loading = false;
+    }
+
+    private string NameOf(Guid id) => _allSkills.FirstOrDefault(e => e.Id == id)?.Name ?? id.ToString();
+    private static int ParseInt(object? value) => int.TryParse(value?.ToString(), out var v) && v > 0 ? v : 1;
+
+    private async Task ValidateAndStartAsync()
+    {
+        if (_newProjectSkillId == Guid.Empty || string.IsNullOrWhiteSpace(_newProjectName)) return;
+        _validating = true;
+        try
+        {
+            var result = await SheetService.ValidateTechniqueProjectStartAsync(SheetId, _newProjectCategory, _newProjectSkillId);
+            if (result?.Data is null)
+            {
+                Toast.Error(result?.Message ?? L["Common.Error"]);
+                return;
+            }
+            if (!result.Data.CanStart)
+            {
+                Toast.Error(L[$"Sheet.Technique.Blocked.{result.Data.BlockedReason}"]);
+                return;
+            }
+
+            Data.TechniqueProjects.Add(new CharacterTechniqueProject
+            {
+                Id = Guid.NewGuid(), Name = _newProjectName, Category = _newProjectCategory,
+                SkillCatalogEntryId = _newProjectSkillId, RequiredDays = result.Data.RequiredDays, DaysInvested = 0
+            });
+            Toast.Success(L["Sheet.Technique.Started"]);
+            _newProjectName = string.Empty;
+            _newProjectSkillId = Guid.Empty;
+        }
+        finally
+        {
+            _validating = false;
+        }
+    }
+
+    // Client-side, no HTTP call — see design spec §2 Decision #6 (no institutional bonus
+    // affects Técnica project speed, unlike Skill Training).
+    private void AdvanceDays(CharacterTechniqueProject project)
+    {
+        var days = _addDays.GetValueOrDefault(project.Id, 1);
+        project.DaysInvested = Math.Min(project.RequiredDays, project.DaysInvested + days);
+    }
+
+    private async Task ResolveSuccessAsync(CharacterTechniqueProject project)
+    {
+        _resolving = true;
+        try
+        {
+            var dataJson = JsonSerializer.Serialize(new TechniqueCatalogData
+            {
+                Style = NameOf(project.SkillCatalogEntryId), Category = project.Category,
+                PaCost = _resolvePaCost, Damage = _resolveDamage, Effect = _resolveEffect, PowerTier = _resolvePowerTier
+            });
+            var result = await CatalogService.CreateAsync(new CreateCatalogEntryRequest
+            {
+                CampaignId = CampaignId, Type = "Technique", Name = project.Name, DataJson = dataJson
+            });
+            if (result?.Data is null)
+            {
+                Toast.Error(result?.Message ?? L["Common.Error"]);
+                return;
+            }
+
+            Data.Techniques.Add(new CharacterCatalogRefEntry { CatalogEntryId = result.Data.Id });
+            Data.TechniqueProjects.Remove(project);
+            _resolvingId = null;
+            Toast.Success(L["Sheet.Technique.Success"]);
+        }
+        finally
+        {
+            _resolving = false;
+        }
+    }
+
+    private async Task ResolveFailureAsync(CharacterTechniqueProject project)
+    {
+        var confirmed = await Confirm.AskAsync(
+            L["Sheet.Technique.FailureConfirm.Title"], L["Sheet.Technique.FailureConfirm.Message"],
+            L["Sheet.Technique.Falha"], L["Sheet.Equipment.Cancel"]);
+        if (!confirmed) return;
+
+        project.DaysInvested = 0;
+        _resolvingId = null;
+        Toast.Success(L["Sheet.Technique.Failed"]);
+    }
+}
