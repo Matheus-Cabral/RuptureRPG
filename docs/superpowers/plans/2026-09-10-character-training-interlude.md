@@ -589,7 +589,7 @@ public static class TrainingReference
     ];
 
     private static readonly TrainingInstallationMapping Combat =
-        new(GuildCatalogIds.CampoDeTreinamento, null);
+        new(GuildCatalogIds.CampoDeTreinamento, GuildCatalogIds.AcademiaMilitar);
 
     // Área → installation mapping (GDD §6.5). "Social" is deliberately absent — it has no
     // installation at all in the normal case (handled as a special case, see spec §4/Key
