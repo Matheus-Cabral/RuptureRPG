@@ -347,8 +347,9 @@ public class GuildSheetService(
         if (!Enum.TryParse<GuildStaffKind>(request.Kind, out var kind) || !Enum.IsDefined(kind))
             return Result.Failure<GuildStaffResponse>(ErrorCodes.Guild.StaffKindInvalid);
 
+        var dedicatedArea = NormalizeArea(request.DedicatedSkillArea);
         var dedicationCheck = await ValidateStaffDedicationAsync(
-            campaignId, request.DedicatedCharacterSheetId, request.DedicatedSkillArea, ct);
+            campaignId, request.DedicatedCharacterSheetId, dedicatedArea, ct);
         if (dedicationCheck.IsFailure)
             return Result.Failure<GuildStaffResponse>(dedicationCheck.Error!);
 
@@ -366,7 +367,7 @@ public class GuildSheetService(
             Efficiency = request.Efficiency,
             Morale = request.Morale,
             DedicatedCharacterSheetId = request.DedicatedCharacterSheetId,
-            DedicatedSkillArea = request.DedicatedSkillArea
+            DedicatedSkillArea = dedicatedArea
         };
 
         await staffRepo.AddAsync(staff, ct);
@@ -386,8 +387,9 @@ public class GuildSheetService(
         if (!Enum.TryParse<GuildStaffKind>(request.Kind, out var kind) || !Enum.IsDefined(kind))
             return Result.Failure<GuildStaffResponse>(ErrorCodes.Guild.StaffKindInvalid);
 
+        var dedicatedArea = NormalizeArea(request.DedicatedSkillArea);
         var dedicationCheck = await ValidateStaffDedicationAsync(
-            campaignId, request.DedicatedCharacterSheetId, request.DedicatedSkillArea, ct);
+            campaignId, request.DedicatedCharacterSheetId, dedicatedArea, ct);
         if (dedicationCheck.IsFailure)
             return Result.Failure<GuildStaffResponse>(dedicationCheck.Error!);
 
@@ -405,7 +407,7 @@ public class GuildSheetService(
         staff.Efficiency = request.Efficiency;
         staff.Morale = request.Morale;
         staff.DedicatedCharacterSheetId = request.DedicatedCharacterSheetId;
-        staff.DedicatedSkillArea = request.DedicatedSkillArea;
+        staff.DedicatedSkillArea = dedicatedArea;
 
         staffRepo.Update(staff);
         await staffRepo.SaveChangesAsync(ct);
@@ -432,13 +434,20 @@ public class GuildSheetService(
         return Result.Success();
     }
 
+    // Blazor's @bind on a "(nenhuma)" <select> option sends "" (empty string), not null — and a
+    // non-UI client might send "" directly too. Treat blank the same as "no dedication" rather
+    // than rejecting it, so a dedication can actually be cleared.
+    private static string? NormalizeArea(string? skillArea) =>
+        string.IsNullOrWhiteSpace(skillArea) ? null : skillArea;
+
     // Validates an Instrutor dedication: an unrecognized Área, or a character sheet that either
     // doesn't exist or belongs to a different campaign, is rejected. A null characterSheetId/skillArea
-    // means "no dedication" and is always valid (skips its own check).
+    // means "no dedication" and is always valid (skips its own check). Callers must pass skillArea
+    // through NormalizeArea first so "" isn't rejected as an unrecognized Área.
     private async Task<Result> ValidateStaffDedicationAsync(
         Guid campaignId, Guid? characterSheetId, string? skillArea, CancellationToken ct)
     {
-        if (skillArea is not null && !TrainingReference.AreaNames.Contains(skillArea))
+        if (!string.IsNullOrWhiteSpace(skillArea) && !TrainingReference.AreaNames.Contains(skillArea, StringComparer.OrdinalIgnoreCase))
             return Result.Failure(ErrorCodes.Guild.StaffDedicationInvalid);
 
         if (characterSheetId is { } id)

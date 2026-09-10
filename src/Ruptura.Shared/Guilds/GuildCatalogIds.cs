@@ -11,6 +11,7 @@ public static class GuildCatalogIds
     public static readonly Guid CampoDeTreinamento = Guid.Parse("d0000000-0000-0000-0000-000000000004");
     public static readonly Guid Biblioteca = Guid.Parse("d0000000-0000-0000-0000-000000000007");
     public static readonly Guid Oficina = Guid.Parse("d0000000-0000-0000-0000-000000000006");
+    public static readonly Guid OficinaDeRunas = Guid.Parse("d0000000-0000-0000-0000-000000000012");
     public static readonly Guid Enfermaria = Guid.Parse("d0000000-0000-0000-0000-000000000008");
     public static readonly Guid LaboratorioArcano = Guid.Parse("d0000000-0000-0000-0000-000000000009");
     public static readonly Guid AcademiaMilitar = Guid.Parse("d0000000-0000-0000-0000-000000000010");

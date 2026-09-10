@@ -267,6 +267,12 @@ public class GuildStaffTests(IntegrationTestFactory factory)
         var body = (await response.Content.ReadFromJsonAsync<ApiResponse<GuildStaffResponse>>())!.Data!;
         body.DedicatedCharacterSheetId.Should().Be(sheetId);
         body.DedicatedSkillArea.Should().Be("Magia");
+
+        // Confirm the columns actually persisted to the DB and round-trip — not just that
+        // MapStaff echoed the in-memory entity back on the POST response.
+        var guild = await GetGuildAsync(client, campaign.Id);
+        guild.Staff.Should().ContainSingle(s => s.Id == body.Id
+            && s.DedicatedCharacterSheetId == sheetId && s.DedicatedSkillArea == "Magia");
     }
 
     [Fact]
@@ -293,15 +299,71 @@ public class GuildStaffTests(IntegrationTestFactory factory)
         AuthHelper.SetBearerToken(client, gmToken);
         await GetGuildAsync(client, campaign.Id);
 
-        // A sheet from a completely different campaign (fresh Guid never granted here).
+        // A REAL, granted character sheet — but belonging to a second, completely separate
+        // campaign — exercises the "target.CampaignId != campaignId" half of the validation's
+        // OR-condition (a fresh, never-granted Guid only exercises the "target is null" half).
+        var campaignBResponse = await client.PostAsJsonAsync("api/campaigns", new CreateCampaignRequest { Name = "Campaign B" });
+        var campaignB = (await campaignBResponse.Content.ReadFromJsonAsync<ApiResponse<CampaignResponse>>())!.Data!;
+
+        var inviteResponse = await client.PostAsync("api/invites", null);
+        var inviteCode = (await inviteResponse.Content.ReadFromJsonAsync<ApiResponse<InviteCodeResponse>>())!.Data!.Code;
+        var otherPlayer = await AuthHelper.RegisterPlayerAsync(client, inviteCode, Faker.Internet.Email());
+        AuthHelper.SetBearerToken(client, gmToken);
+        await client.PostAsJsonAsync($"api/campaigns/{campaignB.Id}/members", new AssignMemberRequest { PlayerId = otherPlayer.User.Id });
+        var grantResponse = await client.PostAsJsonAsync($"api/campaigns/{campaignB.Id}/character-sheets",
+            new GrantCharacterSheetRequest { PlayerId = otherPlayer.User.Id, CharacterName = "Foreign Trainee" });
+        var foreignSheetId = (await grantResponse.Content.ReadFromJsonAsync<ApiResponse<CharacterSheetResponse>>())!.Data!.Id;
+
+        // Dedicate the FIRST campaign's staff member to that real-but-foreign sheet.
         var request = new CreateStaffRequest
         {
             Kind = "Worker", TypeOrRanking = GuildStaffTypes.Instrutor, Name = "Mestre Aldo",
             DailySalary = 5, IsActive = true,
-            DedicatedCharacterSheetId = Guid.NewGuid(), DedicatedSkillArea = "Magia"
+            DedicatedCharacterSheetId = foreignSheetId, DedicatedSkillArea = "Magia"
         };
         var response = await client.PostAsJsonAsync($"api/campaigns/{campaign.Id}/guild/staff", request);
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task UpdateWorker_ClearingDedicationWithEmptyString_Returns200()
+    {
+        var (client, campaign, _, gmToken) = await SetUpCampaignWithMemberAsync();
+        AuthHelper.SetBearerToken(client, gmToken);
+        await GetGuildAsync(client, campaign.Id);
+
+        var inviteResponse = await client.PostAsync("api/invites", null);
+        var inviteCode = (await inviteResponse.Content.ReadFromJsonAsync<ApiResponse<InviteCodeResponse>>())!.Data!.Code;
+        var otherPlayer = await AuthHelper.RegisterPlayerAsync(client, inviteCode, Faker.Internet.Email());
+        await client.PostAsJsonAsync($"api/campaigns/{campaign.Id}/members", new AssignMemberRequest { PlayerId = otherPlayer.User.Id });
+        AuthHelper.SetBearerToken(client, gmToken);
+        var grantResponse = await client.PostAsJsonAsync($"api/campaigns/{campaign.Id}/character-sheets",
+            new GrantCharacterSheetRequest { PlayerId = otherPlayer.User.Id, CharacterName = "Trainee" });
+        var sheetId = (await grantResponse.Content.ReadFromJsonAsync<ApiResponse<CharacterSheetResponse>>())!.Data!.Id;
+
+        var created = await client.PostAsJsonAsync($"api/campaigns/{campaign.Id}/guild/staff", new CreateStaffRequest
+        {
+            Kind = "Worker", TypeOrRanking = GuildStaffTypes.Instrutor, Name = "Mestre Aldo",
+            DailySalary = 5, IsActive = true,
+            DedicatedCharacterSheetId = sheetId, DedicatedSkillArea = "Magia"
+        });
+        var createdBody = (await created.Content.ReadFromJsonAsync<ApiResponse<GuildStaffResponse>>())!.Data!;
+
+        // Simulates what the UI now sends after normalization would actually already be null on
+        // the wire, but this exercises the raw API accepting "" directly too — a non-UI client
+        // might send it, and the server-side normalization in ValidateStaffDedicationAsync must
+        // treat it the same as "no dedication" rather than rejecting it as an unrecognized Área.
+        var update = new UpdateStaffRequest
+        {
+            Kind = "Worker", TypeOrRanking = GuildStaffTypes.Instrutor, Name = "Mestre Aldo",
+            DailySalary = 5, IsActive = true,
+            DedicatedCharacterSheetId = null, DedicatedSkillArea = ""
+        };
+        var response = await client.PutAsJsonAsync($"api/campaigns/{campaign.Id}/guild/staff/{createdBody.Id}", update);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = (await response.Content.ReadFromJsonAsync<ApiResponse<GuildStaffResponse>>())!.Data!;
+        body.DedicatedSkillArea.Should().BeNullOrEmpty();
     }
 }

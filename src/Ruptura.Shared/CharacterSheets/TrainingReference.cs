@@ -32,7 +32,7 @@ public static class TrainingReference
             ["Exploração"] = new TrainingInstallationMapping(GuildCatalogIds.CampoDeTreinamento, null, HalvedAgain: true),
             ["Conhecimento"] = new TrainingInstallationMapping(GuildCatalogIds.Biblioteca, null),
             ["Cura"] = new TrainingInstallationMapping(GuildCatalogIds.Enfermaria, null),
-            ["Artesanato"] = new TrainingInstallationMapping(GuildCatalogIds.Oficina, null),
+            ["Artesanato"] = new TrainingInstallationMapping(GuildCatalogIds.Oficina, GuildCatalogIds.OficinaDeRunas),
             ["Alquimia"] = new TrainingInstallationMapping(GuildCatalogIds.JardimAlquimico, null, FallbackId: GuildCatalogIds.Oficina),
             ["Magia"] = new TrainingInstallationMapping(GuildCatalogIds.LaboratorioArcano, GuildCatalogIds.TorreDosMagos)
         };

@@ -57,11 +57,39 @@ public class TrainingCalculatorTests
     }
 
     [Fact]
+    public void AdvancedInstallation_NeverScoresLowerThanNormalTier()
+    {
+        // Campo de Treinamento V (5 × 0.5 = 2.5) vs. a freshly-built Academia Militar I
+        // (1 × 1.0 = 1.0). The "avançada dobra o bônus" rule must never make the result WORSE
+        // than staying on the normal tier — regression guard for the bug where any AdvancedId
+        // built at all (even Level 1) unconditionally short-circuited to the advanced value.
+        var buildings = new List<GuildBuilding>
+        {
+            Building(GuildCatalogIds.CampoDeTreinamento, 5), Building(GuildCatalogIds.AcademiaMilitar, 1)
+        };
+        var p = _calc.Project(SkillId, "Espadas", "Combate — Armas", 15, buildings, [], CharacterId, 1, "Media");
+        // (1 + 2.5 + 0) × 1.0 = 3.5, NOT (1 + 1.0 + 0) × 1.0 = 2.
+        p.PointsPerDay.Should().Be(3.5);
+    }
+
+    [Fact]
     public void Exploracao_HalvesTheNormalInstallationBonusAgain()
     {
         var buildings = new List<GuildBuilding> { Building(GuildCatalogIds.CampoDeTreinamento, 4) };
         var p = _calc.Project(SkillId, "Rastreamento", "Exploração", 15, buildings, [], CharacterId, 1, "Media");
         p.PointsPerDay.Should().Be(2); // 1 + (4 × 0.25)
+    }
+
+    [Fact]
+    public void OficinaDeRunas_DoublesTheInstallationBonus_ForArtesanato()
+    {
+        var buildings = new List<GuildBuilding>
+        {
+            Building(GuildCatalogIds.Oficina, 5), Building(GuildCatalogIds.OficinaDeRunas, 3)
+        };
+        var p = _calc.Project(SkillId, "Ferraria", "Artesanato", 15, buildings, [], CharacterId, 1, "Media");
+        // Oficina de Runas (avançada) wins: Level 3 × 1.0 = 3, not Oficina's 5 × 0.5 = 2.5.
+        p.PointsPerDay.Should().Be(4); // 1 + 3
     }
 
     [Fact]
@@ -91,19 +119,18 @@ public class TrainingCalculatorTests
     }
 
     // GDD §6.5 "Sem Treinamento" tier (Points 0-9): Instalação/Instrutor are ignored entirely,
-    // so the rate is just 1 × MultCorrelação, clamped by the "Teto por Correlação" table
-    // (Nenhuma=1/Baixa=2/Média=3/Alta=5 — see SemTreinamentoCeiling). A built Campo de
-    // Treinamento V is present here specifically to prove it has NO effect in this tier.
-    // Note the ceiling never actually binds for any of the 4 correlations (1×mult is always
-    // strictly below its own ceiling: 0.25<1, 0.5<2, 1.0<3, 1.5<5) — the MIN is implemented
-    // anyway per the project convention of reproducing FECHADO tables literally, but there is
-    // no reachable input that exercises the ceiling actually clamping something.
+    // and the rate IS the Teto value directly (not a correlation-multiplied-and-capped rate —
+    // that older reading was mathematically almost inert, since 1×MultCorrelação never actually
+    // reached its own ceiling, and it didn't match the GDD's own "Dias até Básico" column). Using
+    // the Teto directly reconciles exactly: Nenhuma=10d → 10÷1=10✓, Baixa=5d → 10÷2=5✓,
+    // Média=~4d → 10÷3≈3.3✓ (rounded), Alta=2d → 10÷5=2✓. A built Campo de Treinamento V is
+    // present here specifically to prove it has NO effect in this tier.
     [Theory]
-    [InlineData("Nenhuma", 0.25)]
-    [InlineData("Baixa", 0.5)]
-    [InlineData("Media", 1.0)]
-    [InlineData("Alta", 1.5)]
-    public void SemTreinamento_IgnoresInstallationBonus_UsesCorrelationMultiplierOnly(string correlation, double expectedRate)
+    [InlineData("Nenhuma", 1.0)]
+    [InlineData("Baixa", 2.0)]
+    [InlineData("Media", 3.0)]
+    [InlineData("Alta", 5.0)]
+    public void SemTreinamento_IgnoresInstallationBonus_UsesCeilingDirectly(string correlation, double expectedRate)
     {
         var buildings = new List<GuildBuilding> { Building(GuildCatalogIds.CampoDeTreinamento, 5) };
         var p = _calc.Project(SkillId, "Espadas", "Combate — Armas", 5, buildings, [], CharacterId, 1, correlation);

@@ -268,6 +268,10 @@
 
         try
         {
+            // Blazor's @bind on the "(nenhuma)" <select> option sends "" (empty string), not
+            // null — normalize it here so clearing a dedication actually clears it server-side.
+            var dedicatedArea = string.IsNullOrWhiteSpace(_editing.DedicatedSkillArea) ? null : _editing.DedicatedSkillArea;
+
             if (_editingId is null)
             {
                 var result = await GuildService.AddStaffAsync(CampaignId, new CreateStaffRequest
@@ -280,7 +284,7 @@
                     Efficiency = _editing.Efficiency,
                     Morale = _editing.Morale,
                     DedicatedCharacterSheetId = _editing.DedicatedCharacterSheetId,
-                    DedicatedSkillArea = _editing.DedicatedSkillArea
+                    DedicatedSkillArea = dedicatedArea
                 });
                 await HandleResult(result?.Data is not null, result?.Message);
             }
@@ -296,7 +300,7 @@
                     Efficiency = _editing.Efficiency,
                     Morale = _editing.Morale,
                     DedicatedCharacterSheetId = _editing.DedicatedCharacterSheetId,
-                    DedicatedSkillArea = _editing.DedicatedSkillArea
+                    DedicatedSkillArea = dedicatedArea
                 });
                 await HandleResult(result?.Data is not null, result?.Message);
             }

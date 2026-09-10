@@ -100,7 +100,11 @@ public class CharacterSheetTrainingTests(IntegrationTestFactory factory)
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = (await response.Content.ReadFromJsonAsync<ApiResponse<TrainingProjection>>())!.Data!;
-        body.PointsPerDay.Should().Be(1);
+        // The skill isn't yet in Skills[], so CurrentPoints defaults to 0 — this falls in the
+        // "Sem Treinamento" tier (Points < 10, GDD §6.5), where the rate is the Teto value for
+        // the correlation directly (Média = 3), regardless of the missing Guild entirely — not
+        // a "1 x MultCorrelação" base rate (that reading only applied outside this tier).
+        body.PointsPerDay.Should().Be(3);
     }
 
     [Fact]
@@ -139,6 +143,61 @@ public class CharacterSheetTrainingTests(IntegrationTestFactory factory)
             $"api/character-sheets/{sheetId}/training/preview?skillCatalogEntryId={Guid.NewGuid()}&days=1&correlation=Media");
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task Preview_WithDedicatedInstrutor_IncludesInstrutorBonus()
+    {
+        var (client, campaign, sheetId, playerToken, gmToken) = await SetUpCharacterAsync();
+        var skillId = await CreateSkillAsync(client, campaign.Id, "Bola de Fogo", "Magia", gmToken);
+
+        AuthHelper.SetBearerToken(client, gmToken);
+        // GDD §6.5 "Sem Treinamento": below 10 Points, instructor/installation bonuses are
+        // ignored entirely — give the skill 15 Points so the Instrutor bonus this test is
+        // actually named for has a chance to apply.
+        await client.PutAsJsonAsync($"api/character-sheets/{sheetId}", new UpdateCharacterSheetRequest
+        {
+            CharacterName = "Trainee",
+            DataJson = $"{{\"Skills\":[{{\"CatalogEntryId\":\"{skillId}\",\"Points\":15}}]}}"
+        });
+
+        await client.GetAsync($"api/campaigns/{campaign.Id}/guild"); // get-or-create, no installations built
+        await client.PostAsJsonAsync($"api/campaigns/{campaign.Id}/guild/staff", new CreateStaffRequest
+        {
+            Kind = "Worker", TypeOrRanking = GuildStaffTypes.Instrutor, Name = "Mestre Aldo",
+            DailySalary = 5, IsActive = true,
+            DedicatedCharacterSheetId = sheetId, DedicatedSkillArea = "Magia"
+        });
+
+        AuthHelper.SetBearerToken(client, playerToken);
+        var response = await client.GetAsync(
+            $"api/character-sheets/{sheetId}/training/preview?skillCatalogEntryId={skillId}&days=1&correlation=Media");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = (await response.Content.ReadFromJsonAsync<ApiResponse<TrainingProjection>>())!.Data!;
+        // Base 1 + Instrutor 1, no installations built, Média correlação (×1.0) = 2/day.
+        body.PointsPerDay.Should().Be(2);
+
+        // Prove the +1 specifically comes from the dedication by comparing against a preview for
+        // a DIFFERENT character sheet with no dedication under the same guild.
+        AuthHelper.SetBearerToken(client, gmToken);
+        var inviteResponse = await client.PostAsync("api/invites", null);
+        var inviteCode = (await inviteResponse.Content.ReadFromJsonAsync<ApiResponse<InviteCodeResponse>>())!.Data!.Code;
+        var otherPlayer = await AuthHelper.RegisterPlayerAsync(client, inviteCode, Faker.Internet.Email());
+        await client.PostAsJsonAsync($"api/campaigns/{campaign.Id}/members", new AssignMemberRequest { PlayerId = otherPlayer.User.Id });
+        var grantResponse = await client.PostAsJsonAsync($"api/campaigns/{campaign.Id}/character-sheets",
+            new GrantCharacterSheetRequest { PlayerId = otherPlayer.User.Id, CharacterName = "Undedicated" });
+        var otherSheetId = (await grantResponse.Content.ReadFromJsonAsync<ApiResponse<CharacterSheetResponse>>())!.Data!.Id;
+        await client.PutAsJsonAsync($"api/character-sheets/{otherSheetId}", new UpdateCharacterSheetRequest
+        {
+            CharacterName = "Undedicated",
+            DataJson = $"{{\"Skills\":[{{\"CatalogEntryId\":\"{skillId}\",\"Points\":15}}]}}"
+        });
+
+        var otherResponse = await client.GetAsync(
+            $"api/character-sheets/{otherSheetId}/training/preview?skillCatalogEntryId={skillId}&days=1&correlation=Media");
+        var otherBody = (await otherResponse.Content.ReadFromJsonAsync<ApiResponse<TrainingProjection>>())!.Data!;
+        otherBody.PointsPerDay.Should().Be(1); // Base only — no dedicated Instrutor for this sheet.
     }
 
     [Fact]

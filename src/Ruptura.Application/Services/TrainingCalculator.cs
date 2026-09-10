@@ -41,11 +41,11 @@ public class TrainingCalculator : ITrainingCalculator
     {
         var multiplier = CorrelationMultiplier(currentPoints, correlation);
 
+        // "Sem Treinamento" tier (Points < 10): the rate IS the Teto value directly — this is
+        // the only reading that reconciles with the GDD's own "Dias até Básico" column (e.g.
+        // Nenhuma=10d -> 10/1=10, Baixa=5d -> 10/2=5, Média=~4d -> 10/3≈3.3, Alta=2d -> 10/5=2).
         if (currentPoints < 10)
-        {
-            var ceiling = SemTreinamentoCeiling.GetValueOrDefault(correlation, 1);
-            return Math.Min(1 * multiplier, ceiling);
-        }
+            return SemTreinamentoCeiling.GetValueOrDefault(correlation, 1);
 
         var installationBonus = InstallationBonus(area, skillName, buildings);
         var instructorBonus = HasDedicatedInstructor(area, staff, characterSheetId) ? 1 : 0;
@@ -71,17 +71,18 @@ public class TrainingCalculator : ITrainingCalculator
         if (!TrainingReference.InstallationByArea.TryGetValue(area.Trim(), out var mapping))
             return 0;
 
-        if (mapping.AdvancedId is { } advancedId)
-        {
-            var advancedLevel = LevelOf(buildings, advancedId);
-            if (advancedLevel > 0) return advancedLevel * 1.0;
-        }
-
         var normalLevel = LevelOf(buildings, mapping.NormalId);
         if (normalLevel == 0 && mapping.FallbackId is { } fallbackId)
             normalLevel = LevelOf(buildings, fallbackId);
+        var normalBonus = normalLevel * (mapping.HalvedAgain ? 0.25 : 0.5);
 
-        return normalLevel * (mapping.HalvedAgain ? 0.25 : 0.5);
+        var advancedBonus = 0.0;
+        if (mapping.AdvancedId is { } advancedId)
+            advancedBonus = LevelOf(buildings, advancedId) * 1.0;
+
+        // "Avançada dobra o bônus" (GDD) — doubling can never reduce the result, so take
+        // whichever tier scores higher rather than unconditionally preferring the advanced one.
+        return Math.Max(normalBonus, advancedBonus);
     }
 
     private static int LevelOf(IReadOnlyList<GuildBuilding> buildings, Guid catalogEntryId) =>

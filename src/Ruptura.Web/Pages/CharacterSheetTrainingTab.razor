@@ -194,7 +194,10 @@ else
             entry = new CharacterSkillEntry { CatalogEntryId = _projection.SkillCatalogEntryId, Points = 0 };
             Data.Skills.Add(entry);
         }
-        entry.Points = _projection.ProjectedTotalPoints;
+        // Adds the projected delta rather than overwriting with ProjectedTotalPoints (server's
+        // snapshot at preview time) — an overwrite would discard any local unsaved edit to
+        // Points made since the preview (design spec §5.3).
+        entry.Points += _projection.PointsToAdd;
         Toast.Success(L["Sheet.Training.Applied"]);
         _projection = null;
     }
