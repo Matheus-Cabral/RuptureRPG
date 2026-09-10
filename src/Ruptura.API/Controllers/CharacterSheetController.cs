@@ -121,4 +121,22 @@ public class CharacterSheetController(
 
         return Ok(ApiResponse<CharacterSheetResponse>.Ok(result.Value!, localizer["CharacterSheet.Updated"]));
     }
+
+    [HttpGet("character-sheets/{id:guid}/training/preview")]
+    [ProducesResponseType(typeof(ApiResponse<TrainingProjection>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> PreviewTraining(
+        Guid id, [FromQuery] Guid skillCatalogEntryId, [FromQuery] int days, [FromQuery] string correlation,
+        CancellationToken ct)
+    {
+        var callerId = Guid.Parse(User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
+        var result = await characterSheetService.PreviewTrainingAsync(callerId, id, skillCatalogEntryId, days, correlation, ct);
+        if (result.IsFailure)
+            return result.Error is ErrorCodes.CharacterSheet.NotFound or ErrorCodes.CharacterSheet.SkillNotFound
+                ? NotFound(ApiResponse.Fail(localizer[result.Error!]))
+                : BadRequest(ApiResponse.Fail(localizer[result.Error!]));
+
+        return Ok(ApiResponse<TrainingProjection>.Ok(result.Value!));
+    }
 }

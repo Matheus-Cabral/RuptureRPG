@@ -3,7 +3,9 @@ using Microsoft.EntityFrameworkCore;
 using Ruptura.Application.Common;
 using Ruptura.Application.Interfaces;
 using Ruptura.Domain.Entities;
+using Ruptura.Domain.Enums;
 using Ruptura.Shared.CharacterSheets;
+using Ruptura.Shared.Catalog;
 
 namespace Ruptura.Infrastructure.Services;
 
@@ -12,6 +14,10 @@ public class CharacterSheetService(
     ICampaignRepository campaignRepo,
     ICampaignMembershipRepository membershipRepo,
     ICatalogEntryRepository catalogRepo,
+    IGuildSheetRepository guildRepo,
+    IGuildBuildingRepository buildingRepo,
+    IGuildStaffRepository staffRepo,
+    ITrainingCalculator trainingCalculator,
     ICharacterStatsCalculator calculator) : ICharacterSheetService
 {
     public async Task<Result<CharacterSheetResponse>> CreateAsync(
@@ -220,6 +226,61 @@ public class CharacterSheetService(
         }
 
         return Result.Success(await MapToResponseAsync(sheet, ct));
+    }
+
+    private const int MaxTrainingDays = 3650;
+    private static readonly string[] ValidCorrelations = ["Alta", "Media", "Baixa", "Nenhuma"];
+
+    public async Task<Result<TrainingProjection>> PreviewTrainingAsync(
+        Guid callerId, Guid sheetId, Guid skillCatalogEntryId, int days, string correlation,
+        CancellationToken ct = default)
+    {
+        if (days < 1 || days > MaxTrainingDays)
+            return Result.Failure<TrainingProjection>(ErrorCodes.CharacterSheet.TrainingDaysInvalid);
+
+        if (!ValidCorrelations.Contains(correlation))
+            return Result.Failure<TrainingProjection>(ErrorCodes.CharacterSheet.CorrelationInvalid);
+
+        var authorized = await AuthorizeAccessAsync(callerId, sheetId, ct);
+        if (authorized.IsFailure)
+            return Result.Failure<TrainingProjection>(authorized.Error!);
+        var sheet = authorized.Value!;
+
+        var skillEntry = await catalogRepo.GetByIdAsync(skillCatalogEntryId, ct);
+        if (skillEntry is null || skillEntry.Type != CatalogEntryType.Skill ||
+            (skillEntry.CampaignId is { } scope && scope != sheet.CampaignId))
+            return Result.Failure<TrainingProjection>(ErrorCodes.CharacterSheet.SkillNotFound);
+
+        var area = SafeDeserializeSkill(skillEntry.DataJson)?.Area ?? string.Empty;
+        var data = DeserializeSheetData(sheet.DataJson);
+        var currentPoints = data.Skills.FirstOrDefault(s => s.CatalogEntryId == skillCatalogEntryId)?.Points ?? 0;
+
+        var guild = await guildRepo.GetByCampaignAsync(sheet.CampaignId, ct);
+        var buildings = guild is null
+            ? new List<GuildBuilding>()
+            : (await buildingRepo.GetByGuildAsync(guild.Id, ct)).ToList();
+        var staff = guild is null
+            ? new List<GuildStaff>()
+            : (await staffRepo.GetByGuildAsync(guild.Id, ct)).ToList();
+
+        var projection = trainingCalculator.Project(
+            skillCatalogEntryId, skillEntry.Name, area, currentPoints, buildings, staff, sheetId, days, correlation);
+
+        return Result.Success(projection);
+    }
+
+    // Mirrors CharacterStatsCalculator.SafeDeserialize — a GM's malformed homebrew Skill
+    // DataJson must never 500 a training preview.
+    private static SkillCatalogData? SafeDeserializeSkill(string json)
+    {
+        try
+        {
+            return JsonSerializer.Deserialize<SkillCatalogData>(json);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 
     // ── Private helpers (shared with Tasks 7-8) ─────────────────────────────

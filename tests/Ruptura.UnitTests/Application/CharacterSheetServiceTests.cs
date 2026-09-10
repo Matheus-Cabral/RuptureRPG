@@ -16,6 +16,10 @@ public class CharacterSheetServiceTests
     private readonly Mock<ICampaignRepository> _campaignRepoMock = new();
     private readonly Mock<ICampaignMembershipRepository> _membershipRepoMock = new();
     private readonly Mock<ICatalogEntryRepository> _catalogRepoMock = new();
+    private readonly Mock<IGuildSheetRepository> _guildRepoMock = new();
+    private readonly Mock<IGuildBuildingRepository> _buildingRepoMock = new();
+    private readonly Mock<IGuildStaffRepository> _staffRepoMock = new();
+    private readonly Mock<ITrainingCalculator> _trainingCalculatorMock = new();
     private readonly Mock<ICharacterStatsCalculator> _calculatorMock = new();
     private readonly CharacterSheetService _sut;
 
@@ -29,7 +33,8 @@ public class CharacterSheetServiceTests
 
         _sut = new CharacterSheetService(
             _sheetRepoMock.Object, _campaignRepoMock.Object, _membershipRepoMock.Object,
-            _catalogRepoMock.Object, _calculatorMock.Object);
+            _catalogRepoMock.Object, _guildRepoMock.Object, _buildingRepoMock.Object,
+            _staffRepoMock.Object, _trainingCalculatorMock.Object, _calculatorMock.Object);
     }
 
     [Fact]

@@ -29,4 +29,7 @@ public interface ICharacterSheetService
 
     Task<Result<CharacterSheetResponse>> UpdateAsync(
         Guid callerId, Guid sheetId, UpdateCharacterSheetRequest request, CancellationToken ct = default);
+
+    Task<Result<TrainingProjection>> PreviewTrainingAsync(
+        Guid callerId, Guid sheetId, Guid skillCatalogEntryId, int days, string correlation, CancellationToken ct = default);
 }

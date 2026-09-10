@@ -43,6 +43,9 @@ public static class ErrorCodes
         public const string PlayerNotMember = "CharacterSheet.PlayerNotMember";
         public const string AlreadyHasAliveCharacter = "CharacterSheet.AlreadyHasAliveCharacter";
         public const string OnlyGameMasterCanChangeStatus = "CharacterSheet.OnlyGameMasterCanChangeStatus";
+        public const string SkillNotFound = "CharacterSheet.SkillNotFound";
+        public const string TrainingDaysInvalid = "CharacterSheet.TrainingDaysInvalid";
+        public const string CorrelationInvalid = "CharacterSheet.CorrelationInvalid";
     }
 
     public static class Guild
