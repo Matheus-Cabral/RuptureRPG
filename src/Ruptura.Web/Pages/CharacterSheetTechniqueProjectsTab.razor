@@ -50,7 +50,7 @@ else
                 <thead>
                     <tr>
                         <th>@L["Sheet.Technique.Name"]</th>
-                        <th>@L["Gm.CampaignDetail.Col.Name"]</th>
+                        <th>@L["Sheet.Equipment.Category"]</th>
                         <th>@L["Sheet.Technique.Progress"]</th>
                         <th></th>
                     </tr>
@@ -60,7 +60,7 @@ else
                     {
                         <tr>
                             <td data-label="@L["Sheet.Technique.Name"]">@project.Name</td>
-                            <td data-label="@L["Gm.CampaignDetail.Col.Name"]">@L[$"Sheet.Technique.Category.{project.Category}"]</td>
+                            <td data-label="@L["Sheet.Equipment.Category"]">@L[$"Sheet.Technique.Category.{project.Category}"]</td>
                             <td data-label="@L["Sheet.Technique.Progress"]">@project.DaysInvested / @project.RequiredDays</td>
                             <td data-label="">
                                 @if (project.DaysInvested < project.RequiredDays)
