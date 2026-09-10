@@ -10,4 +10,5 @@ public interface ICharacterSheetClientService
     Task<ApiResponse<CharacterSheetResponse>?> GetMineAsync(Guid campaignId);
     Task<ApiResponse<CharacterSheetResponse>?> GetAsync(Guid id);
     Task<ApiResponse<CharacterSheetResponse>?> UpdateAsync(Guid id, UpdateCharacterSheetRequest request);
+    Task<ApiResponse<TrainingProjection>?> PreviewTrainingAsync(Guid sheetId, Guid skillCatalogEntryId, int days, string correlation);
 }

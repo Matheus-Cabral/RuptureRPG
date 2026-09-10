@@ -81,6 +81,10 @@ else
         {
             <CharacterSheetSkillsTab Data="_data" Derived="_derived" CampaignId="CampaignId" />
         }
+        else if (_activeTab == "training")
+        {
+            <CharacterSheetTrainingTab Data="_data" CampaignId="CampaignId" SheetId="SheetId" IsGameMaster="CanEditStatus" />
+        }
         else if (_activeTab == "talents")
         {
             <CharacterSheetCatalogRefListTab Entries="_data.Talents" CampaignId="CampaignId" CatalogType="Talent" />
@@ -125,6 +129,7 @@ else
         ["attributes"] = "Sheet.Tab.Attributes",
         ["combat"] = "Sheet.Tab.Combat",
         ["skills"] = "Sheet.Tab.Skills",
+        ["training"] = "Sheet.Tab.Training",
         ["talents"] = "Sheet.Tab.Talents",
         ["spells"] = "Sheet.Tab.Spells",
         ["techniques"] = "Sheet.Tab.Techniques",

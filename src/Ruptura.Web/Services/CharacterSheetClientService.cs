@@ -38,4 +38,12 @@ public class CharacterSheetClientService(IHttpClientFactory factory) : ICharacte
         var response = await Http.PutAsJsonAsync($"api/character-sheets/{id}", request);
         return await response.Content.ReadFromJsonAsync<ApiResponse<CharacterSheetResponse>>();
     }
+
+    public async Task<ApiResponse<TrainingProjection>?> PreviewTrainingAsync(
+        Guid sheetId, Guid skillCatalogEntryId, int days, string correlation)
+    {
+        var response = await Http.GetAsync(
+            $"api/character-sheets/{sheetId}/training/preview?skillCatalogEntryId={skillCatalogEntryId}&days={days}&correlation={correlation}");
+        return await response.Content.ReadFromJsonAsync<ApiResponse<TrainingProjection>>();
+    }
 }

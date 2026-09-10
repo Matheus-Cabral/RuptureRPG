@@ -1,0 +1,201 @@
+@using System.Text.Json
+@using Microsoft.Extensions.Localization
+@using Ruptura.Web.Resources
+@using Ruptura.Shared.CharacterSheets
+@using Ruptura.Shared.Catalog
+@inject IStringLocalizer<AppStrings> L
+@inject ICharacterSheetClientService SheetService
+@inject ICatalogClientService CatalogService
+@inject ToastService Toast
+
+@if (_loading)
+{
+    <LoadingIndicator Text="@L["Common.Loading"]" />
+}
+else
+{
+<div style="display:flex;flex-direction:column;gap:1rem;max-width:640px">
+    <div>
+        <label class="form-label">@L["Sheet.Training.Skill"]</label>
+        <select class="form-select" @bind="_selectedSkillId">
+            <optgroup label="@L["Sheet.Training.KnownSkills"]">
+                @foreach (var skill in Data.Skills)
+                {
+                    <option value="@skill.CatalogEntryId">@NameOf(skill.CatalogEntryId)</option>
+                }
+            </optgroup>
+            <optgroup label="@L["Sheet.Training.OtherSkills"]">
+                @foreach (var entry in _available)
+                {
+                    <option value="@entry.Id">@entry.Name</option>
+                }
+            </optgroup>
+        </select>
+    </div>
+
+    @if (IsGameMaster)
+    {
+        <div>
+            <button class="btn btn-outline-secondary btn-sm" @onclick="() => _creatingSkill = !_creatingSkill">
+                @L["Sheet.Training.NewSkill"]
+            </button>
+            @if (_creatingSkill)
+            {
+                <div style="border:1px solid var(--border);border-radius:6px;padding:1rem;margin-top:.5rem;display:flex;flex-direction:column;gap:.5rem">
+                    <input class="form-control" placeholder="@L["Sheet.Training.NewSkill.Name"]" @bind="_newSkillName" @bind:event="oninput" />
+                    <select class="form-select" @bind="_newSkillArea">
+                        @foreach (var area in TrainingReference.AreaNames)
+                        {
+                            <option value="@area">@area</option>
+                        }
+                    </select>
+                    <input class="form-control" placeholder="@L["Sheet.Training.NewSkill.Attribute"]" @bind="_newSkillAttribute" @bind:event="oninput" />
+                    <button class="btn btn-primary btn-sm" @onclick="CreateSkillAsync" disabled="@(_savingNewSkill || string.IsNullOrWhiteSpace(_newSkillName))">
+                        @if (_savingNewSkill) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                        @L["Sheet.Training.NewSkill.Create"]
+                    </button>
+                </div>
+            }
+        </div>
+    }
+
+    <div style="display:flex;gap:1rem;flex-wrap:wrap">
+        <div>
+            <label class="form-label">@L["Sheet.Training.Days"]</label>
+            <input type="number" class="form-control" style="max-width:120px" min="1" max="3650" @bind="_days" />
+        </div>
+        <div>
+            <label class="form-label">@L["Sheet.Training.Correlation"]</label>
+            <select class="form-select" @bind="_correlation">
+                <option value="Alta">@L["Sheet.Training.Correlation.Alta"]</option>
+                <option value="Media">@L["Sheet.Training.Correlation.Media"]</option>
+                <option value="Baixa">@L["Sheet.Training.Correlation.Baixa"]</option>
+                <option value="Nenhuma">@L["Sheet.Training.Correlation.Nenhuma"]</option>
+            </select>
+        </div>
+    </div>
+
+    <div style="display:flex;gap:.5rem">
+        <button class="btn btn-outline-primary btn-sm" @onclick="PreviewAsync" disabled="@(_previewing || _selectedSkillId == Guid.Empty)">
+            @if (_previewing) { <span class="spinner-border spinner-border-sm me-1"></span> }
+            @L["Sheet.Training.Preview"]
+        </button>
+        @if (_projection is not null)
+        {
+            <button class="btn btn-primary btn-sm" @onclick="Apply">@L["Sheet.Training.Apply"]</button>
+        }
+    </div>
+
+    @if (_projection is not null)
+    {
+        <div style="border:1px solid var(--border);border-radius:6px;padding:1rem">
+            <p>@L["Sheet.Training.PointsPerDay"]: @_projection.PointsPerDay</p>
+            <p>@L["Sheet.Training.PointsToAdd"]: @_projection.PointsToAdd</p>
+            <p>@L["Sheet.Training.ProjectedTotal"]: @_projection.ProjectedTotalPoints</p>
+        </div>
+    }
+</div>
+}
+
+@code {
+    [Parameter] public CharacterSheetData Data { get; set; } = new();
+    [Parameter] public Guid CampaignId { get; set; }
+    [Parameter] public Guid SheetId { get; set; }
+    [Parameter] public bool IsGameMaster { get; set; }
+
+    private List<CatalogEntryResponse> _all = [];
+    private bool _loading = true;
+    private Guid _selectedSkillId;
+    private int _days = 1;
+    private string _correlation = "Media";
+    private TrainingProjection? _projection;
+    private bool _previewing;
+    private bool _creatingSkill;
+    private bool _savingNewSkill;
+    private string _newSkillName = string.Empty;
+    private string _newSkillArea = TrainingReference.AreaNames[0];
+    private string _newSkillAttribute = string.Empty;
+
+    private IEnumerable<CatalogEntryResponse> _available =>
+        _all.Where(e => !e.IsArchived && Data.Skills.All(s => s.CatalogEntryId != e.Id));
+
+    protected override async Task OnInitializedAsync()
+    {
+        _all = (await CatalogService.GetByTypeAsync("Skill", CampaignId, includeArchived: true))?.Data?.ToList() ?? [];
+        _loading = false;
+    }
+
+    private string NameOf(Guid id) => _all.FirstOrDefault(e => e.Id == id)?.Name ?? id.ToString();
+
+    private async Task CreateSkillAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_newSkillName)) return;
+        _savingNewSkill = true;
+        try
+        {
+            var dataJson = JsonSerializer.Serialize(new SkillCatalogData
+            {
+                Area = _newSkillArea, RelatedAttribute = _newSkillAttribute
+            });
+            var result = await CatalogService.CreateAsync(new CreateCatalogEntryRequest
+            {
+                CampaignId = CampaignId, Type = "Skill", Name = _newSkillName, DataJson = dataJson
+            });
+            if (result?.Data is null)
+            {
+                Toast.Error(result?.Message ?? L["Common.Error"]);
+                return;
+            }
+            _all.Add(result.Data);
+            _selectedSkillId = result.Data.Id;
+            _creatingSkill = false;
+            _newSkillName = string.Empty;
+            _newSkillAttribute = string.Empty;
+        }
+        finally
+        {
+            _savingNewSkill = false;
+        }
+    }
+
+    private async Task PreviewAsync()
+    {
+        if (_selectedSkillId == Guid.Empty) return;
+        _previewing = true;
+        try
+        {
+            var result = await SheetService.PreviewTrainingAsync(SheetId, _selectedSkillId, _days, _correlation);
+            if (result?.Data is null)
+            {
+                Toast.Error(result?.Message ?? L["Common.Error"]);
+                _projection = null;
+                return;
+            }
+            _projection = result.Data;
+        }
+        finally
+        {
+            _previewing = false;
+        }
+    }
+
+    // Client-side apply — see design spec §5.3. Mutates the shared Data.Skills the rest of the
+    // editor manages; the existing AutosaveWatcher/Save button persists it like any other edit.
+    // Note: re-Previewing immediately after Apply (before autosave has round-tripped) reads
+    // stale server-side Points — harmless (the owner can already set Points to anything
+    // directly), but the UI clears _projection after Apply so a second click can't double-apply
+    // the SAME projection.
+    private void Apply()
+    {
+        if (_projection is null) return;
+        var entry = Data.Skills.FirstOrDefault(s => s.CatalogEntryId == _projection.SkillCatalogEntryId);
+        if (entry is null)
+        {
+            entry = new CharacterSkillEntry { CatalogEntryId = _projection.SkillCatalogEntryId, Points = 0 };
+            Data.Skills.Add(entry);
+        }
+        entry.Points = _projection.ProjectedTotalPoints;
+        Toast.Success(L["Sheet.Training.Applied"]);
+        _projection = null;
+    }
+}
