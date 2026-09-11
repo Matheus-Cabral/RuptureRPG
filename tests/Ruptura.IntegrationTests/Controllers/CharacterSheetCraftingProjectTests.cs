@@ -144,6 +144,26 @@ public class CharacterSheetCraftingProjectTests(IntegrationTestFactory factory)
     }
 
     [Fact]
+    public async Task ValidateStart_RarityWithWhitespace_DoesNotThrow_ResolvesNormally()
+    {
+        var (client, campaign, sheet, recipeId, playerToken, gmToken) = await SetUpCharacterWithRecipeAsync("  Épico  ");
+
+        AuthHelper.SetBearerToken(client, gmToken);
+        await client.GetAsync($"api/campaigns/{campaign.Id}/guild");
+        await client.PostAsJsonAsync($"api/campaigns/{campaign.Id}/guild/buildings",
+            new CreateBuildingRequest { CatalogEntryId = GuildCatalogIds.Ferraria, Level = 3, IsActive = true });
+
+        AuthHelper.SetBearerToken(client, playerToken);
+        var response = await client.GetAsync(
+            $"api/character-sheets/{sheet.Id}/crafting-projects/validate-start?recipeCatalogEntryId={recipeId}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = (await response.Content.ReadFromJsonAsync<ApiResponse<TechniqueProjectValidation>>())!.Data!;
+        body.CanStart.Should().BeTrue();
+        body.RequiredDays.Should().Be(14);
+    }
+
+    [Fact]
     public async Task ValidateStart_DivinoRarityRecipe_Returns404()
     {
         var (client, _, sheet, recipeId, playerToken, _) = await SetUpCharacterWithRecipeAsync("Divino");

@@ -64,7 +64,7 @@ else
 @code {
     [Parameter] public List<CharacterCatalogRefEntry> Entries { get; set; } = [];
     [Parameter] public Guid CampaignId { get; set; }
-    [Parameter] public string CatalogType { get; set; } = string.Empty; // "Talent" | "Spell" | "Technique"
+    [Parameter] public string CatalogType { get; set; } = string.Empty; // "Talent" | "Spell" | "Technique" | "EquipmentItem" (Known Recipes, Equipment tab)
 
     // Full list (including archived) — used for resolving the NAME of an already-referenced
     // entry, so an archived-but-referenced entry still shows its real name instead of a raw GUID.

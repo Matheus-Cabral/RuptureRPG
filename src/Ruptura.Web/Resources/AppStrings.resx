@@ -333,7 +333,8 @@
   <data name="Sheet.Crafting.Started"><value>Project started.</value></data>
   <data name="Sheet.Crafting.NoProjects"><value>No crafting projects in progress.</value></data>
   <data name="Sheet.Crafting.Success"><value>Item crafted!</value></data>
-  <data name="Sheet.Technique.Blocked.RecipeNotKnown"><value>This recipe is not known.</value></data>
+  <data name="Sheet.Crafting.Blocked.MissingInstallation"><value>Requires the proper workshop or forge, built at the required level.</value></data>
+  <data name="Sheet.Crafting.Blocked.RecipeNotKnown"><value>This recipe is not known.</value></data>
   <data name="Sheet.Tab.Talents"><value>Talents</value></data>
   <data name="Sheet.Tab.Spells"><value>Spells</value></data>
   <data name="Sheet.Tab.Techniques"><value>Techniques</value></data>

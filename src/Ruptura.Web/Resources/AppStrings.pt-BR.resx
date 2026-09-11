@@ -333,7 +333,8 @@
   <data name="Sheet.Crafting.Started"><value>Projeto iniciado.</value></data>
   <data name="Sheet.Crafting.NoProjects"><value>Nenhum projeto de fabricação em andamento.</value></data>
   <data name="Sheet.Crafting.Success"><value>Item fabricado!</value></data>
-  <data name="Sheet.Technique.Blocked.RecipeNotKnown"><value>Essa receita não é conhecida.</value></data>
+  <data name="Sheet.Crafting.Blocked.MissingInstallation"><value>Exige a oficina ou forja adequada, construída no nível necessário.</value></data>
+  <data name="Sheet.Crafting.Blocked.RecipeNotKnown"><value>Essa receita não é conhecida.</value></data>
   <data name="Sheet.Tab.Talents"><value>Talentos</value></data>
   <data name="Sheet.Tab.Spells"><value>Magias</value></data>
   <data name="Sheet.Tab.Techniques"><value>Técnicas</value></data>

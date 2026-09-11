@@ -119,7 +119,7 @@ else
             }
             if (!result.Data.CanStart)
             {
-                Toast.Error(L[$"Sheet.Technique.Blocked.{result.Data.BlockedReason}"]);
+                Toast.Error(L[$"Sheet.Crafting.Blocked.{result.Data.BlockedReason}"]);
                 return;
             }
 
@@ -148,6 +148,9 @@ else
         project.DaysInvested = Math.Min(project.RequiredDays, project.DaysInvested + days);
     }
 
+    // Synchronous despite the "Async" name (kept for naming symmetry with ResolveFailureAsync):
+    // unlike Technique Creation's Sucesso, crafting's Sucesso makes no server call at all — the
+    // recipe already exists in the catalog, so there's nothing to await here.
     private void ResolveSuccessAsync(CharacterCraftingProject project)
     {
         var maxDurability = EquipmentReference.MaxDurabilityFor(RarityOf(project.RecipeCatalogEntryId));
@@ -156,6 +159,7 @@ else
             CatalogEntryId = project.RecipeCatalogEntryId, Quantity = 1, DurabilityRemaining = maxDurability
         });
         Data.CraftingProjects.Remove(project);
+        _addDays.Remove(project.Id);
         Toast.Success(L["Sheet.Crafting.Success"]);
     }
 

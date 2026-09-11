@@ -257,7 +257,7 @@ public class CharacterSheetService(
             (skillEntry.CampaignId is { } scope && scope != sheet.CampaignId))
             return Result.Failure<TrainingProjection>(ErrorCodes.CharacterSheet.SkillNotFound);
 
-        var area = SafeDeserializeSkill(skillEntry.DataJson)?.Area ?? string.Empty;
+        var area = SafeDeserialize<SkillCatalogData>(skillEntry.DataJson)?.Area ?? string.Empty;
         var data = DeserializeSheetData(sheet.DataJson);
         var currentPoints = data.Skills.FirstOrDefault(s => s.CatalogEntryId == skillCatalogEntryId)?.Points ?? 0;
 
@@ -334,7 +334,7 @@ public class CharacterSheetService(
         var sheet = authorized.Value!;
 
         var recipeEntry = await catalogRepo.GetByIdAsync(recipeCatalogEntryId, ct);
-        var rarity = recipeEntry is not null ? SafeDeserializeEquipment(recipeEntry.DataJson)?.Rarity ?? string.Empty : string.Empty;
+        var rarity = (recipeEntry is not null ? SafeDeserialize<EquipmentItemCatalogData>(recipeEntry.DataJson)?.Rarity : null)?.Trim() ?? string.Empty;
         if (recipeEntry is null || recipeEntry.Type != CatalogEntryType.EquipmentItem ||
             (recipeEntry.CampaignId is { } scope && scope != sheet.CampaignId) ||
             !CraftingReference.IsCraftable(rarity))
@@ -363,27 +363,14 @@ public class CharacterSheetService(
         return Result.Success(new TechniqueProjectValidation { CanStart = true, RequiredDays = requiredDays });
     }
 
-    // Mirrors CharacterStatsCalculator.SafeDeserialize / SafeDeserializeSkill — a GM's
-    // malformed homebrew EquipmentItem DataJson must never 500 a crafting validation.
-    private static EquipmentItemCatalogData? SafeDeserializeEquipment(string json)
+    // Mirrors CharacterStatsCalculator.SafeDeserialize — a GM's malformed homebrew catalog
+    // DataJson (Skill, EquipmentItem, ...) must never 500 a training preview or crafting
+    // validation.
+    private static T? SafeDeserialize<T>(string json) where T : class
     {
         try
         {
-            return JsonSerializer.Deserialize<EquipmentItemCatalogData>(json);
-        }
-        catch (JsonException)
-        {
-            return null;
-        }
-    }
-
-    // Mirrors CharacterStatsCalculator.SafeDeserialize — a GM's malformed homebrew Skill
-    // DataJson must never 500 a training preview.
-    private static SkillCatalogData? SafeDeserializeSkill(string json)
-    {
-        try
-        {
-            return JsonSerializer.Deserialize<SkillCatalogData>(json);
+            return JsonSerializer.Deserialize<T>(json);
         }
         catch (JsonException)
         {
