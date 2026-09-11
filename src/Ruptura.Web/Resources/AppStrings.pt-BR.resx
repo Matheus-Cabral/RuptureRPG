@@ -327,6 +327,13 @@
   <data name="Sheet.Technique.FailureConfirm.Title"><value>Marcar como falha</value></data>
   <data name="Sheet.Technique.FailureConfirm.Message"><value>Isso zera os dias investidos do projeto. O jogador pode tentar de novo.</value></data>
   <data name="Sheet.Technique.Failed"><value>Teste falhou — dias zerados.</value></data>
+  <data name="Sheet.Crafting.StartProject"><value>Iniciar Projeto de Fabricação</value></data>
+  <data name="Sheet.Crafting.SelectRecipe"><value>— selecione uma receita —</value></data>
+  <data name="Sheet.Crafting.ValidateAndStart"><value>Validar e Iniciar</value></data>
+  <data name="Sheet.Crafting.Started"><value>Projeto iniciado.</value></data>
+  <data name="Sheet.Crafting.NoProjects"><value>Nenhum projeto de fabricação em andamento.</value></data>
+  <data name="Sheet.Crafting.Success"><value>Item fabricado!</value></data>
+  <data name="Sheet.Technique.Blocked.RecipeNotKnown"><value>Essa receita não é conhecida.</value></data>
   <data name="Sheet.Tab.Talents"><value>Talentos</value></data>
   <data name="Sheet.Tab.Spells"><value>Magias</value></data>
   <data name="Sheet.Tab.Techniques"><value>Técnicas</value></data>
@@ -382,6 +389,7 @@
   <data name="Sheet.Equipment.Equipped"><value>Equipado</value></data>
   <data name="Sheet.Equipment.LinkedSkill"><value>Perícia Vinculada (só armas)</value></data>
   <data name="Sheet.Equipment.NoneSkill"><value>— nenhuma —</value></data>
+  <data name="Sheet.Crafting.KnownRecipes"><value>Receitas Conhecidas</value></data>
   <data name="Sheet.Equipment.Damaged"><value>Danificado</value></data>
   <data name="Sheet.Equipment.Repair"><value>Reparar</value></data>
   <data name="Sheet.Equipment.Cancel"><value>Cancelar</value></data>

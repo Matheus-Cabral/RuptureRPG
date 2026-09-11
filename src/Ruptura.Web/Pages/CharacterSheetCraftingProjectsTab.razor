@@ -1,0 +1,172 @@
+@using Microsoft.Extensions.Localization
+@using Ruptura.Web.Resources
+@using Ruptura.Shared.CharacterSheets
+@using Ruptura.Shared.Catalog
+@inject IStringLocalizer<AppStrings> L
+@inject ICharacterSheetClientService SheetService
+@inject ICatalogClientService CatalogService
+@inject ToastService Toast
+@inject ConfirmService Confirm
+
+@if (_loading)
+{
+    <LoadingIndicator Text="@L["Common.Loading"]" />
+}
+else
+{
+<div style="display:flex;flex-direction:column;gap:1.5rem">
+    <div style="border:1px solid var(--border);border-radius:6px;padding:1rem;max-width:640px;display:flex;flex-direction:column;gap:.5rem">
+        <h4>@L["Sheet.Crafting.StartProject"]</h4>
+        <select class="form-select" @bind="_newProjectRecipeId">
+            <option value="">@L["Sheet.Crafting.SelectRecipe"]</option>
+            @foreach (var recipe in Data.KnownRecipes)
+            {
+                <option value="@recipe.CatalogEntryId">@NameOf(recipe.CatalogEntryId)</option>
+            }
+        </select>
+        <button class="btn btn-primary btn-sm" @onclick="ValidateAndStartAsync" disabled="@(_validating || _newProjectRecipeId == Guid.Empty)">
+            @if (_validating) { <span class="spinner-border spinner-border-sm me-1"></span> }
+            @L["Sheet.Crafting.ValidateAndStart"]
+        </button>
+    </div>
+
+    @if (Data.CraftingProjects.Count == 0)
+    {
+        <p>@L["Sheet.Crafting.NoProjects"]</p>
+    }
+    else
+    {
+        <div class="ledger-table-wrap">
+            <table class="ledger-table stack-mobile">
+                <thead>
+                    <tr>
+                        <th>@L["Gm.CampaignDetail.Col.Name"]</th>
+                        <th>@L["Sheet.Technique.Progress"]</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var project in Data.CraftingProjects)
+                    {
+                        <tr>
+                            <td data-label="@L["Gm.CampaignDetail.Col.Name"]">@NameOf(project.RecipeCatalogEntryId)</td>
+                            <td data-label="@L["Sheet.Technique.Progress"]">@project.DaysInvested / @project.RequiredDays</td>
+                            <td data-label="">
+                                @if (project.DaysInvested < project.RequiredDays)
+                                {
+                                    <input type="number" class="form-control form-control-sm" style="width:80px;display:inline-block" min="1" value="1" @onchange="e => _addDays[project.Id] = ParseInt(e.Value)" />
+                                    <button class="btn btn-outline-secondary btn-sm" @onclick="() => AdvanceDays(project)">@L["Sheet.Technique.AdvanceDays"]</button>
+                                }
+                                else if (IsGameMaster)
+                                {
+                                    <button class="btn btn-primary btn-sm" @onclick="() => ResolveSuccessAsync(project)">@L["Sheet.Technique.Sucesso"]</button>
+                                    <button class="btn btn-outline-danger btn-sm" @onclick="() => ResolveFailureAsync(project)">@L["Sheet.Technique.Falha"]</button>
+                                }
+                                else
+                                {
+                                    <span>@L["Sheet.Technique.AwaitingGm"]</span>
+                                }
+                                <button class="btn btn-outline-secondary btn-sm" @onclick="() => RemoveProject(project)">@L["Sheet.RefList.Remove"]</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+}
+
+@code {
+    [Parameter] public CharacterSheetData Data { get; set; } = new();
+    [Parameter] public Guid CampaignId { get; set; }
+    [Parameter] public Guid SheetId { get; set; }
+    [Parameter] public bool IsGameMaster { get; set; }
+
+    private List<CatalogEntryResponse> _allRecipes = [];
+    private bool _loading = true;
+    private Guid _newProjectRecipeId;
+    private bool _validating;
+    private readonly Dictionary<Guid, int> _addDays = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _allRecipes = (await CatalogService.GetByTypeAsync("EquipmentItem", CampaignId, includeArchived: true))?.Data?.ToList() ?? [];
+        _loading = false;
+    }
+
+    private string NameOf(Guid id) => _allRecipes.FirstOrDefault(e => e.Id == id)?.Name ?? id.ToString();
+    private string RarityOf(Guid id) =>
+        CatalogEntryData.Parse(_allRecipes.FirstOrDefault(e => e.Id == id)?.DataJson).GetString("Rarity");
+    private static int ParseInt(object? value) => int.TryParse(value?.ToString(), out var v) && v > 0 ? v : 1;
+
+    // Capture the bound value into a local BEFORE the await — see design spec / [[project-character-interlude]]
+    // decision 4 (sub-project #3's final review caught this exact race: re-reading a @bind field
+    // after an await lets the user change it mid-flight, storing a project the server never validated).
+    private async Task ValidateAndStartAsync()
+    {
+        if (_newProjectRecipeId == Guid.Empty) return;
+        var recipeId = _newProjectRecipeId;
+
+        _validating = true;
+        try
+        {
+            var result = await SheetService.ValidateCraftingProjectStartAsync(SheetId, recipeId);
+            if (result?.Data is null)
+            {
+                Toast.Error(result?.Message ?? L["Common.Error"]);
+                return;
+            }
+            if (!result.Data.CanStart)
+            {
+                Toast.Error(L[$"Sheet.Technique.Blocked.{result.Data.BlockedReason}"]);
+                return;
+            }
+
+            Data.CraftingProjects.Add(new CharacterCraftingProject
+            {
+                Id = Guid.NewGuid(), RecipeCatalogEntryId = recipeId, RequiredDays = result.Data.RequiredDays, DaysInvested = 0
+            });
+            Toast.Success(L["Sheet.Crafting.Started"]);
+            _newProjectRecipeId = Guid.Empty;
+        }
+        finally
+        {
+            _validating = false;
+        }
+    }
+
+    private void RemoveProject(CharacterCraftingProject project)
+    {
+        Data.CraftingProjects.Remove(project);
+        _addDays.Remove(project.Id);
+    }
+
+    private void AdvanceDays(CharacterCraftingProject project)
+    {
+        var days = _addDays.GetValueOrDefault(project.Id, 1);
+        project.DaysInvested = Math.Min(project.RequiredDays, project.DaysInvested + days);
+    }
+
+    private void ResolveSuccessAsync(CharacterCraftingProject project)
+    {
+        var maxDurability = EquipmentReference.MaxDurabilityFor(RarityOf(project.RecipeCatalogEntryId));
+        Data.Equipment.Add(new CharacterEquipmentEntry
+        {
+            CatalogEntryId = project.RecipeCatalogEntryId, Quantity = 1, DurabilityRemaining = maxDurability
+        });
+        Data.CraftingProjects.Remove(project);
+        Toast.Success(L["Sheet.Crafting.Success"]);
+    }
+
+    private async Task ResolveFailureAsync(CharacterCraftingProject project)
+    {
+        var confirmed = await Confirm.AskAsync(
+            L["Sheet.Technique.FailureConfirm.Title"], L["Sheet.Technique.FailureConfirm.Message"],
+            L["Sheet.Technique.Falha"], L["Sheet.Equipment.Cancel"]);
+        if (!confirmed) return;
+
+        project.DaysInvested = 0;
+        Toast.Success(L["Sheet.Technique.Failed"]);
+    }
+}

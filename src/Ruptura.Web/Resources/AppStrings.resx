@@ -327,6 +327,13 @@
   <data name="Sheet.Technique.FailureConfirm.Title"><value>Mark as failure</value></data>
   <data name="Sheet.Technique.FailureConfirm.Message"><value>This resets the project's invested days to 0. The player may try again.</value></data>
   <data name="Sheet.Technique.Failed"><value>Test failed — days reset.</value></data>
+  <data name="Sheet.Crafting.StartProject"><value>Start Crafting Project</value></data>
+  <data name="Sheet.Crafting.SelectRecipe"><value>— select a recipe —</value></data>
+  <data name="Sheet.Crafting.ValidateAndStart"><value>Validate and Start</value></data>
+  <data name="Sheet.Crafting.Started"><value>Project started.</value></data>
+  <data name="Sheet.Crafting.NoProjects"><value>No crafting projects in progress.</value></data>
+  <data name="Sheet.Crafting.Success"><value>Item crafted!</value></data>
+  <data name="Sheet.Technique.Blocked.RecipeNotKnown"><value>This recipe is not known.</value></data>
   <data name="Sheet.Tab.Talents"><value>Talents</value></data>
   <data name="Sheet.Tab.Spells"><value>Spells</value></data>
   <data name="Sheet.Tab.Techniques"><value>Techniques</value></data>
@@ -382,6 +389,7 @@
   <data name="Sheet.Equipment.Equipped"><value>Equipped</value></data>
   <data name="Sheet.Equipment.LinkedSkill"><value>Linked Skill (weapons only)</value></data>
   <data name="Sheet.Equipment.NoneSkill"><value>— none —</value></data>
+  <data name="Sheet.Crafting.KnownRecipes"><value>Known Recipes</value></data>
   <data name="Sheet.Equipment.Damaged"><value>Damaged</value></data>
   <data name="Sheet.Equipment.Repair"><value>Repair</value></data>
   <data name="Sheet.Equipment.Cancel"><value>Cancel</value></data>
