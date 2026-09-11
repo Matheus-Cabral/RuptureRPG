@@ -14,6 +14,8 @@ public class CharacterSheetData
     public CharacterAttributeTrial? AttributeTrial { get; set; }
     public CharacterGuildRegistry GuildRegistry { get; set; } = new();
     public List<CharacterTechniqueProject> TechniqueProjects { get; set; } = [];
+    public List<CharacterCatalogRefEntry> KnownRecipes { get; set; } = [];
+    public List<CharacterCraftingProject> CraftingProjects { get; set; } = [];
 }
 
 // Module 1: Identidade. Origin/Background/Lineage/Aptitude/InitialTalent are CatalogEntry
@@ -125,5 +127,19 @@ public class CharacterTechniqueProject
     public string Category { get; set; } = string.Empty;       // TechniqueReference.Categories value
     public Guid SkillCatalogEntryId { get; set; }               // the arma/estilo Perícia this project is tied to
     public int RequiredDays { get; set; }                        // server-derived at creation, never client-computed
+    public int DaysInvested { get; set; }
+}
+
+// Module: Projetos de Fabricação (GDD §6.7.4, Caminho B). RecipeCatalogEntryId must be
+// present in Data.KnownRecipes at project-start time (validated server-side) — unlike
+// CharacterTechniqueProject, there is no Skill linkage (the GDD states no Perícia mínima gate
+// for crafting) and Sucesso never creates a new catalog entry (the recipe already exists —
+// that's what "knowing" it means). "Ready for test" is DaysInvested >= RequiredDays, same
+// derive-don't-duplicate posture as every other Interlude module.
+public class CharacterCraftingProject
+{
+    public Guid Id { get; set; }
+    public Guid RecipeCatalogEntryId { get; set; }
+    public int RequiredDays { get; set; }
     public int DaysInvested { get; set; }
 }
