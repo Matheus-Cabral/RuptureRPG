@@ -47,6 +47,7 @@ public static class ErrorCodes
         public const string TrainingDaysInvalid = "CharacterSheet.TrainingDaysInvalid";
         public const string CorrelationInvalid = "CharacterSheet.CorrelationInvalid";
         public const string CategoryInvalid = "CharacterSheet.CategoryInvalid";
+        public const string RecipeNotFound = "CharacterSheet.RecipeNotFound";
     }
 
     public static class Guild

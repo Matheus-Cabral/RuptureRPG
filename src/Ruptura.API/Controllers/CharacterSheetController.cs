@@ -156,4 +156,18 @@ public class CharacterSheetController(
 
         return Ok(ApiResponse<TechniqueProjectValidation>.Ok(result.Value!));
     }
+
+    [HttpGet("character-sheets/{id:guid}/crafting-projects/validate-start")]
+    [ProducesResponseType(typeof(ApiResponse<TechniqueProjectValidation>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ValidateCraftingProjectStart(
+        Guid id, [FromQuery] Guid recipeCatalogEntryId, CancellationToken ct)
+    {
+        var callerId = Guid.Parse(User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
+        var result = await characterSheetService.ValidateCraftingProjectStartAsync(callerId, id, recipeCatalogEntryId, ct);
+        if (result.IsFailure)
+            return NotFound(ApiResponse.Fail(localizer[result.Error!]));
+
+        return Ok(ApiResponse<TechniqueProjectValidation>.Ok(result.Value!));
+    }
 }

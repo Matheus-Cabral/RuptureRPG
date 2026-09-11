@@ -325,6 +325,58 @@ public class CharacterSheetService(
         return Result.Success(new TechniqueProjectValidation { CanStart = true, RequiredDays = requiredDays });
     }
 
+    public async Task<Result<TechniqueProjectValidation>> ValidateCraftingProjectStartAsync(
+        Guid callerId, Guid sheetId, Guid recipeCatalogEntryId, CancellationToken ct = default)
+    {
+        var authorized = await AuthorizeAccessAsync(callerId, sheetId, ct);
+        if (authorized.IsFailure)
+            return Result.Failure<TechniqueProjectValidation>(authorized.Error!);
+        var sheet = authorized.Value!;
+
+        var recipeEntry = await catalogRepo.GetByIdAsync(recipeCatalogEntryId, ct);
+        var rarity = recipeEntry is not null ? SafeDeserializeEquipment(recipeEntry.DataJson)?.Rarity ?? string.Empty : string.Empty;
+        if (recipeEntry is null || recipeEntry.Type != CatalogEntryType.EquipmentItem ||
+            (recipeEntry.CampaignId is { } scope && scope != sheet.CampaignId) ||
+            !CraftingReference.IsCraftable(rarity))
+            return Result.Failure<TechniqueProjectValidation>(ErrorCodes.CharacterSheet.RecipeNotFound);
+
+        var data = DeserializeSheetData(sheet.DataJson);
+        var requiredDays = CraftingReference.RequiredDaysByRarity[rarity];
+
+        if (data.KnownRecipes.All(r => r.CatalogEntryId != recipeCatalogEntryId))
+            return Result.Success(new TechniqueProjectValidation
+            {
+                CanStart = false, BlockedReason = "RecipeNotKnown", RequiredDays = requiredDays
+            });
+
+        var (installationId, minLevel) = CraftingReference.InstallationByRarity[rarity];
+        var guild = await guildRepo.GetByCampaignAsync(sheet.CampaignId, ct);
+        var hasInstallation = guild is not null &&
+            (await buildingRepo.GetByGuildAsync(guild.Id, ct)).Any(b =>
+                b.CatalogEntryId == installationId && b.IsActive && b.Level >= minLevel);
+        if (!hasInstallation)
+            return Result.Success(new TechniqueProjectValidation
+            {
+                CanStart = false, BlockedReason = "MissingInstallation", RequiredDays = requiredDays
+            });
+
+        return Result.Success(new TechniqueProjectValidation { CanStart = true, RequiredDays = requiredDays });
+    }
+
+    // Mirrors CharacterStatsCalculator.SafeDeserialize / SafeDeserializeSkill — a GM's
+    // malformed homebrew EquipmentItem DataJson must never 500 a crafting validation.
+    private static EquipmentItemCatalogData? SafeDeserializeEquipment(string json)
+    {
+        try
+        {
+            return JsonSerializer.Deserialize<EquipmentItemCatalogData>(json);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
     // Mirrors CharacterStatsCalculator.SafeDeserialize — a GM's malformed homebrew Skill
     // DataJson must never 500 a training preview.
     private static SkillCatalogData? SafeDeserializeSkill(string json)
@@ -408,6 +460,8 @@ public class CharacterSheetService(
         data.Currency ??= new();
         data.GuildRegistry ??= new();
         data.TechniqueProjects ??= [];
+        data.KnownRecipes ??= [];
+        data.CraftingProjects ??= [];
         return data;
     }
 

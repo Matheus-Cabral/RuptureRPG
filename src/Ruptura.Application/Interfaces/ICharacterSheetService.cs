@@ -35,4 +35,7 @@ public interface ICharacterSheetService
 
     Task<Result<TechniqueProjectValidation>> ValidateTechniqueProjectStartAsync(
         Guid callerId, Guid sheetId, string category, Guid skillCatalogEntryId, CancellationToken ct = default);
+
+    Task<Result<TechniqueProjectValidation>> ValidateCraftingProjectStartAsync(
+        Guid callerId, Guid sheetId, Guid recipeCatalogEntryId, CancellationToken ct = default);
 }
