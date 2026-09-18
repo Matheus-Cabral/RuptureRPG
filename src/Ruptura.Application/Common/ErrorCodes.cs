@@ -9,6 +9,7 @@ public static class ErrorCodes
         public const string InvalidInviteCode = "Auth.InvalidInviteCode";
         public const string InvalidRefreshToken = "Auth.InvalidRefreshToken";
         public const string UserNotFound = "Auth.UserNotFound";
+        public const string InvalidPassword = "Auth.InvalidPassword";
         public const string PasswordChangeNotRequired = "Auth.PasswordChangeNotRequired";
         public const string PasswordChangeRequired = "Auth.PasswordChangeRequired";
     }
@@ -25,6 +26,7 @@ public static class ErrorCodes
     {
         public const string NotFound = "Campaign.NotFound";
         public const string PlayerNotInRoster = "Campaign.PlayerNotInRoster";
+        public const string MemberNotFound = "Campaign.MemberNotFound";
         public const string AlreadyMember = "Campaign.AlreadyMember";
         public const string FloorStateInvalid = "Campaign.FloorStateInvalid";
         public const string CurrentFloorInvalid = "Campaign.CurrentFloorInvalid";

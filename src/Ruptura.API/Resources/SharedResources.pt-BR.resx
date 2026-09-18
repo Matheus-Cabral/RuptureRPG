@@ -27,6 +27,7 @@
   <data name="Auth.InvalidInviteCode"><value>Código de convite inválido ou expirado.</value></data>
   <data name="Auth.InvalidRefreshToken"><value>Token de atualização inválido ou expirado.</value></data>
   <data name="Auth.UserNotFound"><value>Usuário não encontrado.</value></data>
+  <data name="Auth.InvalidPassword"><value>Senha incorreta.</value></data>
   <data name="Auth.GameMasterRegistered"><value>Conta de Mestre criada com sucesso.</value></data>
   <data name="Auth.PlayerRegistered"><value>Conta de Jogador criada com sucesso.</value></data>
   <data name="Auth.LoggedIn"><value>Login realizado com sucesso.</value></data>
@@ -46,6 +47,8 @@
   <!-- Campaign -->
   <data name="Campaign.NotFound"><value>Campanha não encontrada.</value></data>
   <data name="Campaign.PlayerNotInRoster"><value>Este jogador não está no seu roster.</value></data>
+  <data name="Campaign.MemberNotFound"><value>Este jogador não é membro da campanha.</value></data>
+  <data name="Campaign.MemberRemoved"><value>Jogador removido da campanha.</value></data>
   <data name="Campaign.AlreadyMember"><value>Este jogador já é membro desta campanha.</value></data>
   <data name="Campaign.Created"><value>Campanha criada com sucesso.</value></data>
   <data name="Campaign.MemberAssigned"><value>Jogador atribuído à campanha com sucesso.</value></data>

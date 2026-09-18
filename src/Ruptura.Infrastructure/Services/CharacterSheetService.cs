@@ -86,12 +86,20 @@ public class CharacterSheetService(
             return Result.Failure<CharacterSheet>(ErrorCodes.CharacterSheet.NotFound);
 
         var campaign = await campaignRepo.GetByIdAsync(sheet.CampaignId, ct);
-        var authorized = sheet.OwnerId == callerId || campaign?.GameMasterId == callerId;
+        var authorized = campaign?.GameMasterId == callerId || await IsMemberOwnerAsync(sheet, callerId, ct);
         if (!authorized)
             return Result.Failure<CharacterSheet>(ErrorCodes.CharacterSheet.NotFound);
 
         return Result.Success(sheet);
     }
+
+    /// <summary>
+    /// A player owns their sheet only while they are still a member of its campaign. Removing a
+    /// player from a campaign keeps the sheet (the GM still sees it, re-adding restores access)
+    /// but cuts the former member off from it.
+    /// </summary>
+    private async Task<bool> IsMemberOwnerAsync(CharacterSheet sheet, Guid callerId, CancellationToken ct) =>
+        sheet.OwnerId == callerId && await membershipRepo.ExistsAsync(sheet.CampaignId, callerId, ct);
 
     public async Task<Result> SetPortraitPathAsync(Guid sheetId, string? path, CancellationToken ct = default)
     {
@@ -160,7 +168,7 @@ public class CharacterSheetService(
         Guid playerId, Guid campaignId, CancellationToken ct = default)
     {
         var sheet = await sheetRepo.GetAliveByOwnerAndCampaignAsync(playerId, campaignId, ct);
-        if (sheet is null)
+        if (sheet is null || !await IsMemberOwnerAsync(sheet, playerId, ct))
             return Result.Failure<CharacterSheetResponse>(ErrorCodes.CharacterSheet.NotFound);
 
         return Result.Success(await MapToResponseAsync(sheet, ct));
@@ -174,7 +182,7 @@ public class CharacterSheetService(
             return Result.Failure<CharacterSheetResponse>(ErrorCodes.CharacterSheet.NotFound);
 
         var campaign = await campaignRepo.GetByIdAsync(sheet.CampaignId, ct);
-        var isOwner = sheet.OwnerId == callerId;
+        var isOwner = await IsMemberOwnerAsync(sheet, callerId, ct);
         var isGameMaster = campaign?.GameMasterId == callerId;
         if (!isOwner && !isGameMaster)
             return Result.Failure<CharacterSheetResponse>(ErrorCodes.CharacterSheet.NotFound);

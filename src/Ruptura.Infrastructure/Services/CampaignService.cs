@@ -133,6 +133,34 @@ public class CampaignService(
         });
     }
 
+    public async Task<Result> RemoveMemberAsync(
+        Guid gameMasterId,
+        Guid campaignId,
+        Guid playerId,
+        RemoveMemberRequest request,
+        CancellationToken ct = default)
+    {
+        var campaign = await campaignRepo.GetByIdAsync(campaignId, ct);
+        if (campaign is null || campaign.GameMasterId != gameMasterId)
+            return Result.Failure(ErrorCodes.Campaign.NotFound);
+
+        var membership = await membershipRepo.GetAsync(campaignId, playerId, ct);
+        if (membership is null)
+            return Result.Failure(ErrorCodes.Campaign.MemberNotFound);
+
+        var gameMaster = await userManager.FindByIdAsync(gameMasterId.ToString());
+        if (gameMaster is null || !await userManager.CheckPasswordAsync(gameMaster, request.Password))
+            return Result.Failure(ErrorCodes.Auth.InvalidPassword);
+
+        // Only the membership row goes. The player's character sheets and journal stay in the
+        // database (the GM still sees them, and re-adding the player restores access) — the sheet
+        // services gate the owner's access on membership.
+        membershipRepo.Remove(membership);
+        await membershipRepo.SaveChangesAsync(ct);
+
+        return Result.Success();
+    }
+
     public async Task<Result<IEnumerable<CampaignMemberResponse>>> GetMembersAsync(
         Guid gameMasterId,
         Guid campaignId,

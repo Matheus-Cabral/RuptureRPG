@@ -19,7 +19,8 @@ public class CampaignController(
     ICampaignService campaignService,
     IStringLocalizer<SharedResources> localizer,
     IValidator<CreateCampaignRequest> createValidator,
-    IValidator<AssignMemberRequest> assignValidator) : ControllerBase
+    IValidator<AssignMemberRequest> assignValidator,
+    IValidator<RemoveMemberRequest> removeValidator) : ControllerBase
 {
     [HttpPost]
     [Authorize(Roles = "GameMaster")]
@@ -88,6 +89,31 @@ public class CampaignController(
 
         return StatusCode(StatusCodes.Status201Created,
             ApiResponse<CampaignMemberResponse>.Ok(result.Value!, localizer["Campaign.MemberAssigned"]));
+    }
+
+    // POST (not DELETE) because the GM's password confirmation travels in the body.
+    [HttpPost("{campaignId:guid}/members/{playerId:guid}/remove")]
+    [Authorize(Roles = "GameMaster")]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RemoveMember(
+        Guid campaignId, Guid playerId, [FromBody] RemoveMemberRequest request, CancellationToken ct)
+    {
+        var validation = await removeValidator.ValidateAsync(request, ct);
+        if (!validation.IsValid)
+            return BadRequest(ApiResponse.Fail(
+                localizer["Error.ValidationFailed"],
+                validation.Errors.Select(e => e.ErrorMessage).ToArray()));
+
+        var gameMasterId = Guid.Parse(User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
+        var result = await campaignService.RemoveMemberAsync(gameMasterId, campaignId, playerId, request, ct);
+        if (result.IsFailure)
+            return result.Error is ErrorCodes.Campaign.NotFound or ErrorCodes.Campaign.MemberNotFound
+                ? NotFound(ApiResponse.Fail(localizer[result.Error!]))
+                : BadRequest(ApiResponse.Fail(localizer[result.Error!]));
+
+        return Ok(ApiResponse.Ok(localizer["Campaign.MemberRemoved"]));
     }
 
     [HttpGet("mine")]
