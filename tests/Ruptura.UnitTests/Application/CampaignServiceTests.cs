@@ -90,6 +90,77 @@ public class CampaignServiceTests
         result.Value!.Should().ContainSingle(p => p.Id == mine.Id);
     }
 
+    // ── ResetPlayerPasswordAsync ─────────────────────────────────────────────
+
+    [Fact]
+    public async Task ResetPlayerPasswordAsync_ForRecruitedPlayer_AppliesTemporaryPasswordAndForcesChange()
+    {
+        var gmId = Guid.NewGuid();
+        var player = BuildPlayer(gmId);
+        player.RefreshToken = "old-session";
+        player.RefreshTokenExpiresAt = DateTime.UtcNow.AddDays(3);
+        _userManagerMock.Setup(m => m.FindByIdAsync(player.Id.ToString())).ReturnsAsync(player);
+        _userManagerMock.Setup(m => m.GeneratePasswordResetTokenAsync(player)).ReturnsAsync("reset-token");
+        string? appliedPassword = null;
+        _userManagerMock.Setup(m => m.ResetPasswordAsync(player, "reset-token", It.IsAny<string>()))
+            .Callback<ApplicationUser, string, string>((_, _, pwd) => appliedPassword = pwd)
+            .ReturnsAsync(IdentityResult.Success);
+
+        var result = await _sut.ResetPlayerPasswordAsync(gmId, player.Id);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.TemporaryPassword.Should().NotBeNullOrEmpty()
+            .And.Be(appliedPassword);
+        player.MustChangePassword.Should().BeTrue();
+        player.RefreshToken.Should().BeNull();
+        player.RefreshTokenExpiresAt.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task ResetPlayerPasswordAsync_ForPlayerRecruitedByAnotherGameMaster_ReturnsNotInRosterAndChangesNothing()
+    {
+        var player = BuildPlayer(Guid.NewGuid());
+        _userManagerMock.Setup(m => m.FindByIdAsync(player.Id.ToString())).ReturnsAsync(player);
+
+        var result = await _sut.ResetPlayerPasswordAsync(Guid.NewGuid(), player.Id);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(ErrorCodes.Campaign.PlayerNotInRoster);
+        player.MustChangePassword.Should().BeFalse();
+        _userManagerMock.Verify(m => m.ResetPasswordAsync(
+            It.IsAny<ApplicationUser>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ResetPlayerPasswordAsync_ForUnknownUser_ReturnsNotInRoster()
+    {
+        _userManagerMock.Setup(m => m.FindByIdAsync(It.IsAny<string>()))
+            .ReturnsAsync((ApplicationUser?)null);
+
+        var result = await _sut.ResetPlayerPasswordAsync(Guid.NewGuid(), Guid.NewGuid());
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(ErrorCodes.Campaign.PlayerNotInRoster);
+    }
+
+    [Fact]
+    public async Task ResetPlayerPasswordAsync_WhenIdentityRejectsPassword_ReturnsFailureAndLeavesAccountUntouched()
+    {
+        var gmId = Guid.NewGuid();
+        var player = BuildPlayer(gmId);
+        player.RefreshToken = "old-session";
+        _userManagerMock.Setup(m => m.FindByIdAsync(player.Id.ToString())).ReturnsAsync(player);
+        _userManagerMock.Setup(m => m.GeneratePasswordResetTokenAsync(player)).ReturnsAsync("reset-token");
+        _userManagerMock.Setup(m => m.ResetPasswordAsync(player, "reset-token", It.IsAny<string>()))
+            .ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "boom" }));
+
+        var result = await _sut.ResetPlayerPasswordAsync(gmId, player.Id);
+
+        result.IsFailure.Should().BeTrue();
+        player.MustChangePassword.Should().BeFalse();
+        player.RefreshToken.Should().Be("old-session");
+    }
+
     // ── AssignMemberAsync ────────────────────────────────────────────────────
 
     [Fact]

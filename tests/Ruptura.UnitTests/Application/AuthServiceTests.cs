@@ -11,6 +11,7 @@ using Ruptura.Infrastructure.Services;
 using Ruptura.Infrastructure.Settings;
 using Ruptura.Shared.Auth;
 using Microsoft.Extensions.Options;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace Ruptura.UnitTests.Application;
 
@@ -301,6 +302,122 @@ public class AuthServiceTests
 
         result.IsFailure.Should().BeTrue();
         result.Error.Should().Be(ErrorCodes.Auth.InvalidRefreshToken);
+    }
+
+    // ── Forced password change flag ───────────────────────────────────────────
+
+    [Fact]
+    public async Task LoginAsync_WhenUserMustChangePassword_ExposesFlagInResponseAndTokenClaim()
+    {
+        var user = BuildUser(UserRole.Player);
+        user.MustChangePassword = true;
+        _userManagerMock.Setup(m => m.FindByEmailAsync(user.Email!)).ReturnsAsync(user);
+        _userManagerMock.Setup(m => m.CheckPasswordAsync(user, "TempPass1")).ReturnsAsync(true);
+        _userManagerMock.Setup(m => m.UpdateAsync(user)).ReturnsAsync(IdentityResult.Success);
+
+        var result = await _sut.LoginAsync(new LoginRequest { Email = user.Email!, Password = "TempPass1" });
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.User.MustChangePassword.Should().BeTrue();
+        var jwt = new JwtSecurityTokenHandler().ReadJwtToken(result.Value.AccessToken);
+        jwt.Claims.Should().Contain(c => c.Type == "must_change_password" && c.Value == "true");
+    }
+
+    [Fact]
+    public async Task LoginAsync_WhenUserDoesNotNeedToChangePassword_OmitsFlagAndClaim()
+    {
+        var user = BuildUser(UserRole.Player);
+        _userManagerMock.Setup(m => m.FindByEmailAsync(user.Email!)).ReturnsAsync(user);
+        _userManagerMock.Setup(m => m.CheckPasswordAsync(user, "ValidPass1")).ReturnsAsync(true);
+        _userManagerMock.Setup(m => m.UpdateAsync(user)).ReturnsAsync(IdentityResult.Success);
+
+        var result = await _sut.LoginAsync(new LoginRequest { Email = user.Email!, Password = "ValidPass1" });
+
+        result.Value!.User.MustChangePassword.Should().BeFalse();
+        var jwt = new JwtSecurityTokenHandler().ReadJwtToken(result.Value.AccessToken);
+        jwt.Claims.Should().NotContain(c => c.Type == "must_change_password");
+    }
+
+    // ── ChangePasswordAsync ───────────────────────────────────────────────────
+
+    [Fact]
+    public async Task ChangePasswordAsync_WhenUserHasTemporaryPassword_SetsNewPasswordClearsFlagAndIssuesCleanTokens()
+    {
+        var user = BuildUser(UserRole.Player);
+        user.MustChangePassword = true;
+        _userManagerMock.Setup(m => m.FindByIdAsync(user.Id.ToString())).ReturnsAsync(user);
+        _userManagerMock.Setup(m => m.GeneratePasswordResetTokenAsync(user)).ReturnsAsync("reset-token");
+        _userManagerMock.Setup(m => m.ResetPasswordAsync(user, "reset-token", "NewPass123"))
+            .ReturnsAsync(IdentityResult.Success);
+        _userManagerMock.Setup(m => m.UpdateAsync(user)).ReturnsAsync(IdentityResult.Success);
+
+        var result = await _sut.ChangePasswordAsync(user.Id, new ChangePasswordRequest
+        {
+            NewPassword = "NewPass123",
+            ConfirmNewPassword = "NewPass123"
+        });
+
+        result.IsSuccess.Should().BeTrue();
+        user.MustChangePassword.Should().BeFalse();
+        result.Value!.User.MustChangePassword.Should().BeFalse();
+        new JwtSecurityTokenHandler().ReadJwtToken(result.Value.AccessToken)
+            .Claims.Should().NotContain(c => c.Type == "must_change_password");
+        _userManagerMock.Verify(m => m.ResetPasswordAsync(user, "reset-token", "NewPass123"), Times.Once);
+    }
+
+    [Fact]
+    public async Task ChangePasswordAsync_WhenUserDoesNotHaveTemporaryPassword_ReturnsNotRequiredWithoutTouchingPassword()
+    {
+        var user = BuildUser(UserRole.Player); // MustChangePassword = false
+        _userManagerMock.Setup(m => m.FindByIdAsync(user.Id.ToString())).ReturnsAsync(user);
+
+        var result = await _sut.ChangePasswordAsync(user.Id, new ChangePasswordRequest
+        {
+            NewPassword = "NewPass123",
+            ConfirmNewPassword = "NewPass123"
+        });
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(ErrorCodes.Auth.PasswordChangeNotRequired);
+        _userManagerMock.Verify(m => m.ResetPasswordAsync(
+            It.IsAny<ApplicationUser>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ChangePasswordAsync_WhenUserNotFound_ReturnsUserNotFound()
+    {
+        _userManagerMock.Setup(m => m.FindByIdAsync(It.IsAny<string>()))
+            .ReturnsAsync((ApplicationUser?)null);
+
+        var result = await _sut.ChangePasswordAsync(Guid.NewGuid(), new ChangePasswordRequest
+        {
+            NewPassword = "NewPass123",
+            ConfirmNewPassword = "NewPass123"
+        });
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(ErrorCodes.Auth.UserNotFound);
+    }
+
+    [Fact]
+    public async Task ChangePasswordAsync_WhenIdentityRejectsPassword_ReturnsFailureAndKeepsFlag()
+    {
+        var user = BuildUser(UserRole.Player);
+        user.MustChangePassword = true;
+        _userManagerMock.Setup(m => m.FindByIdAsync(user.Id.ToString())).ReturnsAsync(user);
+        _userManagerMock.Setup(m => m.GeneratePasswordResetTokenAsync(user)).ReturnsAsync("reset-token");
+        _userManagerMock.Setup(m => m.ResetPasswordAsync(user, "reset-token", It.IsAny<string>()))
+            .ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "Too weak." }));
+
+        var result = await _sut.ChangePasswordAsync(user.Id, new ChangePasswordRequest
+        {
+            NewPassword = "weak",
+            ConfirmNewPassword = "weak"
+        });
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Contain("Too weak.");
+        user.MustChangePassword.Should().BeTrue();
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

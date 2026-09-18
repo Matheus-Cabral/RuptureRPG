@@ -43,6 +43,15 @@ public class AuthClientService(
         return result;
     }
 
+    public async Task<ApiResponse<AuthResponse>?> ChangePasswordAsync(ChangePasswordRequest request)
+    {
+        var response = await Http.PostAsJsonAsync("api/auth/change-password", request);
+        var result = await response.Content.ReadFromJsonAsync<ApiResponse<AuthResponse>>();
+        if (result?.Data is not null)
+            await PersistAsync(result.Data);
+        return result;
+    }
+
     public async Task LogoutAsync()
     {
         var refreshToken = await localStorage.GetItemAsync<string>(RefreshKey);

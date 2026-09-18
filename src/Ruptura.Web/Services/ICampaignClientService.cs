@@ -6,6 +6,7 @@ namespace Ruptura.Web.Services;
 public interface ICampaignClientService
 {
     Task<ApiResponse<IEnumerable<PlayerRosterResponse>>?> GetRosterAsync();
+    Task<ApiResponse<ResetPlayerPasswordResponse>?> ResetPlayerPasswordAsync(Guid playerId);
     Task<ApiResponse<CampaignResponse>?> CreateAsync(CreateCampaignRequest request);
     Task<ApiResponse<IEnumerable<CampaignResponse>>?> GetAllAsync();
     Task<ApiResponse<IEnumerable<CampaignResponse>>?> GetMineAsync();

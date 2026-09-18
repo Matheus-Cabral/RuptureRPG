@@ -100,6 +100,37 @@ public class AuthService(
         return Result.Success(await IssueTokensAsync(user));
     }
 
+    public async Task<Result<AuthResponse>> ChangePasswordAsync(
+        Guid userId,
+        ChangePasswordRequest request,
+        CancellationToken ct = default)
+    {
+        var user = await userManager.FindByIdAsync(userId.ToString());
+        if (user is null)
+            return Result.Failure<AuthResponse>(ErrorCodes.Auth.UserNotFound);
+
+        // No current-password check here (the player only knows the temporary one), so this is
+        // only allowed while a GM-issued temporary password is in effect — otherwise any stolen
+        // access token could silently take over the account.
+        if (!user.MustChangePassword)
+            return Result.Failure<AuthResponse>(ErrorCodes.Auth.PasswordChangeNotRequired);
+
+        // Token-based reset validates the password policy *before* writing the hash, so a
+        // rejected password never leaves the account without one. The flag is cleared on the
+        // tracked entity first so ResetPasswordAsync's single save persists both together.
+        user.MustChangePassword = false;
+        var token = await userManager.GeneratePasswordResetTokenAsync(user);
+        var reset = await userManager.ResetPasswordAsync(user, token, request.NewPassword);
+        if (!reset.Succeeded)
+        {
+            user.MustChangePassword = true;
+            return Result.Failure<AuthResponse>(
+                string.Join("; ", reset.Errors.Select(e => e.Description)));
+        }
+
+        return Result.Success(await IssueTokensAsync(user));
+    }
+
     public async Task<Result> RevokeTokenAsync(
         string refreshToken,
         CancellationToken ct = default)
@@ -139,7 +170,8 @@ public class AuthService(
                 Id = user.Id,
                 DisplayName = user.DisplayName,
                 Email = user.Email!,
-                Role = user.Role.ToString()
+                Role = user.Role.ToString(),
+                MustChangePassword = user.MustChangePassword
             }
         };
     }

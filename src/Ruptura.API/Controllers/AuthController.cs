@@ -18,7 +18,8 @@ public class AuthController(
     IStringLocalizer<SharedResources> localizer,
     IValidator<LoginRequest> loginValidator,
     IValidator<RegisterRequest> registerValidator,
-    IValidator<RegisterPlayerRequest> registerPlayerValidator) : ControllerBase
+    IValidator<RegisterPlayerRequest> registerPlayerValidator,
+    IValidator<ChangePasswordRequest> changePasswordValidator) : ControllerBase
 {
     [HttpPost("login")]
     [ProducesResponseType(typeof(ApiResponse<AuthResponse>), StatusCodes.Status200OK)]
@@ -94,6 +95,28 @@ public class AuthController(
             return Unauthorized(ApiResponse.Fail(localizer[result.Error!]));
 
         return Ok(ApiResponse<AuthResponse>.Ok(result.Value!));
+    }
+
+    [HttpPost("change-password")]
+    [Authorize]
+    [ProducesResponseType(typeof(ApiResponse<AuthResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ChangePassword(
+        [FromBody] ChangePasswordRequest request,
+        CancellationToken ct)
+    {
+        var validation = await changePasswordValidator.ValidateAsync(request, ct);
+        if (!validation.IsValid)
+            return BadRequest(ApiResponse.Fail(
+                localizer["Error.ValidationFailed"],
+                validation.Errors.Select(e => e.ErrorMessage).ToArray()));
+
+        var userId = Guid.Parse(User.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
+        var result = await authService.ChangePasswordAsync(userId, request, ct);
+        if (result.IsFailure)
+            return BadRequest(ApiResponse.Fail(localizer[result.Error!]));
+
+        return Ok(ApiResponse<AuthResponse>.Ok(result.Value!, localizer["Auth.PasswordChanged"]));
     }
 
     [HttpPost("revoke")]

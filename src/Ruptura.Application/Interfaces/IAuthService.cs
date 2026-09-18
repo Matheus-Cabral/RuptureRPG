@@ -9,5 +9,6 @@ public interface IAuthService
     Task<Result<AuthResponse>> RegisterGameMasterAsync(RegisterRequest request, CancellationToken ct = default);
     Task<Result<AuthResponse>> RegisterPlayerAsync(RegisterPlayerRequest request, CancellationToken ct = default);
     Task<Result<AuthResponse>> RefreshTokenAsync(RefreshTokenRequest request, CancellationToken ct = default);
+    Task<Result<AuthResponse>> ChangePasswordAsync(Guid userId, ChangePasswordRequest request, CancellationToken ct = default);
     Task<Result> RevokeTokenAsync(string refreshToken, CancellationToken ct = default);
 }

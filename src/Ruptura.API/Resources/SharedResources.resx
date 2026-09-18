@@ -31,6 +31,10 @@
   <data name="Auth.PlayerRegistered"><value>Player account created successfully.</value></data>
   <data name="Auth.LoggedIn"><value>Logged in successfully.</value></data>
   <data name="Auth.LoggedOut"><value>Logged out successfully.</value></data>
+  <data name="Auth.PasswordChangeRequired"><value>You must set a new password before continuing.</value></data>
+  <data name="Auth.PasswordChangeNotRequired"><value>Your password does not need to be changed this way.</value></data>
+  <data name="Auth.PasswordChanged"><value>Password changed successfully.</value></data>
+  <data name="Campaign.PlayerPasswordReset"><value>Temporary password generated.</value></data>
 
   <!-- Invite -->
   <data name="Invite.NotFound"><value>Invite code not found.</value></data>

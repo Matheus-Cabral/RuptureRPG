@@ -14,6 +14,9 @@ public interface ICampaignService
     Task<Result<IEnumerable<PlayerRosterResponse>>> GetRosterAsync(
         Guid gameMasterId, CancellationToken ct = default);
 
+    Task<Result<ResetPlayerPasswordResponse>> ResetPlayerPasswordAsync(
+        Guid gameMasterId, Guid playerId, CancellationToken ct = default);
+
     Task<Result<CampaignMemberResponse>> AssignMemberAsync(
         Guid gameMasterId, Guid campaignId, AssignMemberRequest request, CancellationToken ct = default);
 

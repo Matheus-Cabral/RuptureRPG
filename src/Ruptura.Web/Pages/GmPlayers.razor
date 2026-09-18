@@ -5,6 +5,9 @@
 @using Ruptura.Shared.Campaigns
 @inject IStringLocalizer<AppStrings> L
 @inject ICampaignClientService CampaignService
+@inject ConfirmService Confirm
+@inject ToastService Toast
+@inject IJSRuntime JS
 
 <PageTitle>@L["Gm.Players.Title"] — RUPTURA</PageTitle>
 
@@ -42,6 +45,7 @@
                             <th>@L["Gm.Players.Col.Name"]</th>
                             <th>@L["Gm.Players.Col.Email"]</th>
                             <th>@L["Gm.Players.Col.RecruitedAt"]</th>
+                            <th>@L["Gm.Players.Col.Actions"]</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -53,6 +57,13 @@
                                 <td data-label="@L["Gm.Players.Col.RecruitedAt"]" style="color:var(--text-muted);font-size:var(--text-xs);white-space:nowrap">
                                     @player.RecruitedAt.ToLocalTime().ToString("dd/MM/yy HH:mm")
                                 </td>
+                                <td data-label="@L["Gm.Players.Col.Actions"]">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm"
+                                            disabled="@(_resettingId == player.Id)"
+                                            @onclick="() => ResetPasswordAsync(player)">
+                                        @L["Gm.Players.ResetPassword"]
+                                    </button>
+                                </td>
                             </tr>
                         }
                     </tbody>
@@ -62,10 +73,33 @@
     }
 </div>
 
+@if (_tempPassword is not null)
+{
+    @* No click-outside-to-close: the password is shown once, so closing must be deliberate. *@
+    <div class="confirm-overlay">
+        <div class="confirm-box" role="dialog" aria-modal="true" aria-labelledby="temp-pw-title">
+            <h2 class="confirm-title" id="temp-pw-title">@L["Gm.Players.TempPassword.Title"]</h2>
+            <p class="confirm-message">@L["Gm.Players.TempPassword.Message", _tempPasswordPlayerName]</p>
+            <code class="temp-password">@_tempPassword</code>
+            <div class="confirm-actions">
+                <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="CopyTempPasswordAsync">
+                    @L["Gm.Players.TempPassword.Copy"]
+                </button>
+                <button type="button" class="btn btn-primary btn-sm" @onclick="CloseTempPassword">
+                    @L["Common.Close"]
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private List<PlayerRosterResponse> _players = [];
     private bool _loading = true;
     private string _searchTerm = string.Empty;
+    private Guid? _resettingId;
+    private string? _tempPassword;
+    private string _tempPasswordPlayerName = string.Empty;
 
     private List<PlayerRosterResponse> FilteredPlayers =>
         _players.Where(p => TableFilter.Matches(_searchTerm, p.DisplayName, p.Email)).ToList();
@@ -75,5 +109,53 @@
         var result = await CampaignService.GetRosterAsync();
         _players = result?.Data?.ToList() ?? [];
         _loading = false;
+    }
+
+    private async Task ResetPasswordAsync(PlayerRosterResponse player)
+    {
+        var confirmed = await Confirm.AskAsync(
+            L["Gm.Players.ResetConfirm.Title"],
+            L["Gm.Players.ResetConfirm.Message", player.DisplayName],
+            L["Gm.Players.ResetConfirm.Confirm"],
+            L["Gm.Players.ResetConfirm.Cancel"]);
+        if (!confirmed) return;
+
+        _resettingId = player.Id;
+        try
+        {
+            var result = await CampaignService.ResetPlayerPasswordAsync(player.Id);
+            if (result?.Data is null)
+            {
+                Toast.Error(L["Gm.Players.ResetError"]);
+                return;
+            }
+
+            _tempPasswordPlayerName = player.DisplayName;
+            _tempPassword = result.Data.TemporaryPassword;
+        }
+        finally
+        {
+            _resettingId = null;
+        }
+    }
+
+    private async Task CopyTempPasswordAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", _tempPassword);
+            Toast.Success(L["Gm.Players.TempPassword.Copied"]);
+        }
+        catch (JSException)
+        {
+            // Clipboard API needs a secure context / permission; the password stays selectable.
+            Toast.Error(L["Gm.Players.TempPassword.CopyFailed"]);
+        }
+    }
+
+    private void CloseTempPassword()
+    {
+        _tempPassword = null;
+        _tempPasswordPlayerName = string.Empty;
     }
 }
