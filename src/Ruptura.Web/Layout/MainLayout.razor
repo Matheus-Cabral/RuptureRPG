@@ -53,7 +53,15 @@
 
     <!-- Scrollable content area -->
     <main class="main-wrapper">
-        @Body
+        @if (_mustChangePassword)
+        {
+            @* Body is not rendered at all so no page fires requests the API would reject with 403. *@
+            <ForcePasswordChangeDialog />
+        }
+        else
+        {
+            @Body
+        }
     </main>
 
     <ToastContainer />
@@ -67,6 +75,7 @@
     private string _pageTitle = string.Empty;
     private string _displayName = string.Empty;
     private string _role = string.Empty;
+    private bool _mustChangePassword;
     private DotNetObjectReference<MainLayout>? _selfRef;
 
     protected override async Task OnInitializedAsync()
@@ -75,7 +84,22 @@
         var state = await AuthStateProvider.GetAuthenticationStateAsync();
         _displayName = state.User.FindFirst("name")?.Value ?? string.Empty;
         _role        = state.User.FindFirst("role")?.Value ?? string.Empty;
+        _mustChangePassword = RequiresPasswordChange(state);
+
+        // This layout outlives navigation (login -> dashboard reuses the same instance), so the
+        // flag must follow auth-state changes rather than being read once at startup.
+        AuthStateProvider.AuthenticationStateChanged += OnAuthenticationStateChanged;
     }
+
+    private static bool RequiresPasswordChange(AuthenticationState state) =>
+        state.User.HasClaim("must_change_password", "true");
+
+    private void OnAuthenticationStateChanged(Task<AuthenticationState> stateTask) =>
+        _ = InvokeAsync(async () =>
+        {
+            _mustChangePassword = RequiresPasswordChange(await stateTask);
+            StateHasChanged();
+        });
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -102,6 +126,8 @@
 
     public async ValueTask DisposeAsync()
     {
+        AuthStateProvider.AuthenticationStateChanged -= OnAuthenticationStateChanged;
+
         if (_selfRef is not null)
         {
             try

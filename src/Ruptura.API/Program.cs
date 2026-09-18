@@ -143,6 +143,7 @@ try
 
     app.UseCors("BlazorClient");
     app.UseAuthentication();
+    app.UseMiddleware<MustChangePasswordMiddleware>();
     app.UseAuthorization();
     app.MapControllers();
 

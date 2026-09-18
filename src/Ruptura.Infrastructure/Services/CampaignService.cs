@@ -62,6 +62,40 @@ public class CampaignService(
         return Task.FromResult(Result.Success(response));
     }
 
+    public async Task<Result<ResetPlayerPasswordResponse>> ResetPlayerPasswordAsync(
+        Guid gameMasterId,
+        Guid playerId,
+        CancellationToken ct = default)
+    {
+        // Same answer for "no such user" and "someone else's player" so a GM can't probe for accounts.
+        var player = await userManager.FindByIdAsync(playerId.ToString());
+        if (player is null || player.RecruitedByGameMasterId != gameMasterId)
+            return Result.Failure<ResetPlayerPasswordResponse>(ErrorCodes.Campaign.PlayerNotInRoster);
+
+        var temporaryPassword = TemporaryPasswordGenerator.Generate();
+
+        // Mutate the tracked entity first so ResetPasswordAsync's single save persists the new
+        // hash, the forced-change flag and the revoked session together (nothing half-applied).
+        var previousRefreshToken = player.RefreshToken;
+        var previousRefreshExpiry = player.RefreshTokenExpiresAt;
+        player.MustChangePassword = true;
+        player.RefreshToken = null;
+        player.RefreshTokenExpiresAt = null;
+
+        var token = await userManager.GeneratePasswordResetTokenAsync(player);
+        var reset = await userManager.ResetPasswordAsync(player, token, temporaryPassword);
+        if (!reset.Succeeded)
+        {
+            player.MustChangePassword = false;
+            player.RefreshToken = previousRefreshToken;
+            player.RefreshTokenExpiresAt = previousRefreshExpiry;
+            return Result.Failure<ResetPlayerPasswordResponse>(
+                string.Join("; ", reset.Errors.Select(e => e.Description)));
+        }
+
+        return Result.Success(new ResetPlayerPasswordResponse { TemporaryPassword = temporaryPassword });
+    }
+
     public async Task<Result<CampaignMemberResponse>> AssignMemberAsync(
         Guid gameMasterId,
         Guid campaignId,

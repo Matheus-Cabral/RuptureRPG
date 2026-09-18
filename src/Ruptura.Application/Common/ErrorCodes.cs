@@ -9,6 +9,8 @@ public static class ErrorCodes
         public const string InvalidInviteCode = "Auth.InvalidInviteCode";
         public const string InvalidRefreshToken = "Auth.InvalidRefreshToken";
         public const string UserNotFound = "Auth.UserNotFound";
+        public const string PasswordChangeNotRequired = "Auth.PasswordChangeNotRequired";
+        public const string PasswordChangeRequired = "Auth.PasswordChangeRequired";
     }
 
     public static class Invite

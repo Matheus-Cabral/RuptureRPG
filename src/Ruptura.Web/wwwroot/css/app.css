@@ -808,6 +808,21 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 400; color: var(--te
     gap: 0.6rem;
 }
 
+/* One-time temporary password shown to the GM (GmPlayers.razor) */
+.temp-password {
+    display: block;
+    margin-bottom: 1.5rem;
+    padding: 0.85rem 1rem;
+    border: 1px dashed var(--border-strong);
+    font-family: var(--font-mono);
+    font-size: var(--text-lg);
+    letter-spacing: 0.12em;
+    text-align: center;
+    color: var(--accent);
+    user-select: all;
+    overflow-wrap: anywhere;
+}
+
 /* Lightbox (LightboxContainer.razor) */
 .lightbox-overlay {
     position: fixed;

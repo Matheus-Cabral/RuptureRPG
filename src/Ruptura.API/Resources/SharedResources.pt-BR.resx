@@ -31,6 +31,10 @@
   <data name="Auth.PlayerRegistered"><value>Conta de Jogador criada com sucesso.</value></data>
   <data name="Auth.LoggedIn"><value>Login realizado com sucesso.</value></data>
   <data name="Auth.LoggedOut"><value>Logout realizado com sucesso.</value></data>
+  <data name="Auth.PasswordChangeRequired"><value>Você precisa definir uma nova senha antes de continuar.</value></data>
+  <data name="Auth.PasswordChangeNotRequired"><value>Sua senha não precisa ser alterada desta forma.</value></data>
+  <data name="Auth.PasswordChanged"><value>Senha alterada com sucesso.</value></data>
+  <data name="Campaign.PlayerPasswordReset"><value>Senha temporária gerada.</value></data>
 
   <!-- Invite -->
   <data name="Invite.NotFound"><value>Código de convite não encontrado.</value></data>

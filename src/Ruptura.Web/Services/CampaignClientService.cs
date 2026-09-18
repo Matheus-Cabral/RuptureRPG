@@ -15,6 +15,13 @@ public class CampaignClientService(IHttpClientFactory factory) : ICampaignClient
         return await response.Content.ReadFromJsonAsync<ApiResponse<IEnumerable<PlayerRosterResponse>>>();
     }
 
+    public async Task<ApiResponse<ResetPlayerPasswordResponse>?> ResetPlayerPasswordAsync(Guid playerId)
+    {
+        var response = await Http.PostAsync($"api/gamemaster/players/{playerId}/reset-password", null);
+        if (!response.IsSuccessStatusCode) return null;
+        return await response.Content.ReadFromJsonAsync<ApiResponse<ResetPlayerPasswordResponse>>();
+    }
+
     public async Task<ApiResponse<CampaignResponse>?> CreateAsync(CreateCampaignRequest request)
     {
         var response = await Http.PostAsJsonAsync("api/campaigns", request);

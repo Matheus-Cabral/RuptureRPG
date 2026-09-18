@@ -1145,4 +1145,22 @@
   <data name="Manuals.Tab.GameMaster"><value>Manual do Mestre</value></data>
   <data name="Manuals.Tab.Player"><value>Manual do Jogador</value></data>
   <data name="Manuals.LoadError"><value>Não foi possível carregar este manual. Tente novamente mais tarde.</value></data>
+  <data name="ForcePassword.Title"><value>Defina uma nova senha</value></data>
+  <data name="ForcePassword.Message"><value>Você entrou com uma senha temporária. Escolha uma nova senha para continuar.</value></data>
+  <data name="ForcePassword.NewPassword"><value>Nova senha</value></data>
+  <data name="ForcePassword.ConfirmPassword"><value>Confirmação da nova senha</value></data>
+  <data name="ForcePassword.Submit"><value>Salvar nova senha</value></data>
+  <data name="ForcePassword.Success"><value>Senha atualizada.</value></data>
+  <data name="Gm.Players.Col.Actions"><value>Ações</value></data>
+  <data name="Gm.Players.ResetPassword"><value>Recuperar senha</value></data>
+  <data name="Gm.Players.ResetConfirm.Title"><value>Recuperar senha?</value></data>
+  <data name="Gm.Players.ResetConfirm.Message"><value>Isto gera uma senha temporária para {0} e encerra todas as sessões abertas. A senha atual deixa de funcionar imediatamente.</value></data>
+  <data name="Gm.Players.ResetConfirm.Confirm"><value>Gerar senha</value></data>
+  <data name="Gm.Players.ResetConfirm.Cancel"><value>Cancelar</value></data>
+  <data name="Gm.Players.ResetError"><value>Não foi possível recuperar a senha. Tente novamente.</value></data>
+  <data name="Gm.Players.TempPassword.Title"><value>Senha temporária</value></data>
+  <data name="Gm.Players.TempPassword.Message"><value>Entregue esta senha a {0}. Ela é exibida apenas uma vez. No primeiro login, será pedido que escolha uma nova senha.</value></data>
+  <data name="Gm.Players.TempPassword.Copy"><value>Copiar</value></data>
+  <data name="Gm.Players.TempPassword.Copied"><value>Senha copiada.</value></data>
+  <data name="Gm.Players.TempPassword.CopyFailed"><value>Não foi possível copiar. Selecione a senha e copie manualmente.</value></data>
 </root>

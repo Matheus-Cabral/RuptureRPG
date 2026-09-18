@@ -83,6 +83,12 @@ Domain ← Application ← Infrastructure ← API
 - Blazor stores tokens in `localStorage` via `Blazored.LocalStorage`
 - `JwtAuthStateProvider` reads the token and exposes `AuthenticationState`
 
+**Player password recovery (GM-issued temporary password):**
+- GM hits `POST /api/gamemaster/players/{id}/reset-password` (only for players they recruited; anything else is 404). It sets a generated temp password (`TemporaryPasswordGenerator`), `ApplicationUser.MustChangePassword = true`, and clears the refresh token. The plain text is returned once and never stored.
+- While the flag is set the access token carries a `must_change_password` claim and `MustChangePasswordMiddleware` (after `UseAuthentication`) answers 403 to everything except `/api/auth/change-password`, `/api/auth/me` and `/api/auth/revoke`. **Any new endpoint a flagged user must reach has to be added to that allow-list.**
+- `POST /api/auth/change-password` takes no current password, so `AuthService.ChangePasswordAsync` refuses (400) unless `MustChangePassword` is true — otherwise a stolen access token could take over the account. It uses `GeneratePasswordResetTokenAsync` + `ResetPasswordAsync` (validates the password policy before writing the hash) and returns fresh tokens without the claim.
+- Web: `MainLayout` follows `AuthenticationStateChanged` (the layout persists across login → dashboard) and, while flagged, renders `ForcePasswordChangeDialog` *instead of* `@Body`, so no page fires requests the API would 403.
+
 **Player registration requires an invite code:**
 - GM generates `InviteCode` (has `ExpiresAt`, single-use)
 - `InviteCode.IsValid()` checks `!IsUsed && ExpiresAt > UtcNow`

@@ -11,4 +11,7 @@ public class ApplicationUser : IdentityUser<Guid>
     public DateTime? RefreshTokenExpiresAt { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public Guid? RecruitedByGameMasterId { get; set; }
+
+    /// <summary>True while the account is using a GM-issued temporary password.</summary>
+    public bool MustChangePassword { get; set; }
 }
