@@ -14,6 +14,7 @@ public class JournalEntryServiceTests
     private readonly Mock<ICharacterJournalEntryRepository> _journalRepoMock = new();
     private readonly Mock<ICharacterSheetRepository> _sheetRepoMock = new();
     private readonly Mock<ICampaignRepository> _campaignRepoMock = new();
+    private readonly Mock<ICampaignMembershipRepository> _membershipRepoMock = new();
     private readonly Mock<IFileStorageService> _fileStorageMock = new();
     private readonly JournalEntryService _sut;
 
@@ -21,8 +22,87 @@ public class JournalEntryServiceTests
 
     public JournalEntryServiceTests()
     {
+        // Owner access requires campaign membership; most tests assume the owner is a member.
+        _membershipRepoMock
+            .Setup(r => r.ExistsAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
         _sut = new JournalEntryService(
-            _journalRepoMock.Object, _sheetRepoMock.Object, _campaignRepoMock.Object, _fileStorageMock.Object);
+            _journalRepoMock.Object, _sheetRepoMock.Object, _campaignRepoMock.Object,
+            _membershipRepoMock.Object, _fileStorageMock.Object);
+    }
+
+    // ── Owner access requires campaign membership ────────────────────────────
+
+    private (CharacterSheet Sheet, Campaign Campaign, CharacterJournalEntry Entry) SetupJournalOfRemovedPlayer()
+    {
+        var campaign = new Campaign { Id = Guid.NewGuid(), GameMasterId = Guid.NewGuid() };
+        var sheet = new CharacterSheet { Id = Guid.NewGuid(), OwnerId = Guid.NewGuid(), CampaignId = campaign.Id };
+        var entry = new CharacterJournalEntry { Id = Guid.NewGuid(), CharacterSheetId = sheet.Id, Text = "Day one." };
+        _sheetRepoMock.Setup(r => r.GetByIdAsync(sheet.Id, It.IsAny<CancellationToken>())).ReturnsAsync(sheet);
+        _campaignRepoMock.Setup(r => r.GetByIdAsync(campaign.Id, It.IsAny<CancellationToken>())).ReturnsAsync(campaign);
+        _journalRepoMock.Setup(r => r.GetByIdAsync(entry.Id, It.IsAny<CancellationToken>())).ReturnsAsync(entry);
+        _journalRepoMock.Setup(r => r.GetByCharacterSheetAsync(sheet.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[] { entry });
+        _membershipRepoMock
+            .Setup(r => r.ExistsAsync(campaign.Id, sheet.OwnerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false); // the player was removed from the campaign
+        return (sheet, campaign, entry);
+    }
+
+    [Fact]
+    public async Task CreateAsync_AsOwnerWhoLeftTheCampaign_ReturnsNotFound()
+    {
+        var (sheet, _, _) = SetupJournalOfRemovedPlayer();
+
+        var result = await _sut.CreateAsync(sheet.OwnerId, sheet.Id, new CreateJournalEntryRequest { Text = "x" });
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(ErrorCodes.Journal.NotFound);
+        _journalRepoMock.Verify(r => r.AddAsync(It.IsAny<CharacterJournalEntry>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetByCharacterSheetAsync_AsOwnerWhoLeftTheCampaign_ReturnsNotFound()
+    {
+        var (sheet, _, _) = SetupJournalOfRemovedPlayer();
+
+        var result = await _sut.GetByCharacterSheetAsync(sheet.OwnerId, sheet.Id);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(ErrorCodes.Journal.NotFound);
+    }
+
+    [Fact]
+    public async Task GetByCharacterSheetAsync_AsGameMaster_StillSucceedsAfterOwnerWasRemoved()
+    {
+        var (sheet, campaign, _) = SetupJournalOfRemovedPlayer();
+
+        var result = await _sut.GetByCharacterSheetAsync(campaign.GameMasterId, sheet.Id);
+
+        result.IsSuccess.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task AuthorizeReadAsync_AsOwnerWhoLeftTheCampaign_ReturnsNotFound()
+    {
+        var (sheet, _, entry) = SetupJournalOfRemovedPlayer();
+
+        var result = await _sut.AuthorizeReadAsync(sheet.OwnerId, entry.Id);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(ErrorCodes.Journal.NotFound);
+    }
+
+    [Fact]
+    public async Task AuthorizeWriteAsync_AsOwnerWhoLeftTheCampaign_ReturnsNotFound()
+    {
+        var (sheet, _, entry) = SetupJournalOfRemovedPlayer();
+
+        var result = await _sut.AuthorizeWriteAsync(sheet.OwnerId, entry.Id);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(ErrorCodes.Journal.NotFound);
     }
 
     // ── CreateAsync ──────────────────────────────────────────────────────────

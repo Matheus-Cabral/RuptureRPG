@@ -94,6 +94,7 @@
                         <th>@L["Gm.CampaignDetail.Col.Name"]</th>
                         <th>@L["Gm.CampaignDetail.Col.Email"]</th>
                         <th>@L["Gm.CampaignDetail.Col.AssignedAt"]</th>
+                        <th>@L["Gm.CampaignDetail.Col.Actions"]</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -104,6 +105,12 @@
                             <td data-label="@L["Gm.CampaignDetail.Col.Email"]">@member.Email</td>
                             <td data-label="@L["Gm.CampaignDetail.Col.AssignedAt"]" style="color:var(--text-muted);font-size:var(--text-xs);white-space:nowrap">
                                 @member.AssignedAt.ToLocalTime().ToString("dd/MM/yy HH:mm")
+                            </td>
+                            <td data-label="@L["Gm.CampaignDetail.Col.Actions"]">
+                                <button type="button" class="btn btn-outline-secondary btn-sm"
+                                        @onclick="() => OpenRemoveDialog(member)">
+                                    @L["Gm.CampaignDetail.Remove.Button"]
+                                </button>
                             </td>
                         </tr>
                     }
@@ -140,7 +147,7 @@
                     {
                         <tr>
                             <td data-label="@L["Gm.CampaignDetail.Col.Name"]">@sheet.CharacterName</td>
-                            <td data-label="@L["Gm.CampaignDetail.Col.Owner"]">@(_members.FirstOrDefault(m => m.PlayerId == sheet.OwnerId)?.DisplayName ?? sheet.OwnerId.ToString())</td>
+                            <td data-label="@L["Gm.CampaignDetail.Col.Owner"]">@OwnerName(sheet.OwnerId)</td>
                             <td data-label="@L["Gm.CampaignDetail.Col.Status"]">@(sheet.IsDead ? L["Gm.CampaignDetail.Status.Dead"] : sheet.IsRetired ? L["Gm.CampaignDetail.Status.Retired"] : L["Gm.CampaignDetail.Status.Alive"])</td>
                             <td data-label="">
                                 <a class="btn btn-outline-secondary btn-sm" href="/gm/campaigns/@Id/character-sheets/@sheet.Id">
@@ -175,11 +182,47 @@
     }
 </div>
 
+@if (_removeTarget is not null)
+{
+    <div class="confirm-overlay" @onclick="CloseRemoveDialog">
+        <div class="confirm-box" @onclick:stopPropagation="true" role="alertdialog" aria-modal="true"
+             aria-labelledby="remove-member-title">
+            <h2 class="confirm-title" id="remove-member-title">@L["Gm.CampaignDetail.Remove.Title"]</h2>
+            <p class="confirm-message">@L["Gm.CampaignDetail.Remove.Message", _removeTarget.DisplayName]</p>
+
+            @if (!string.IsNullOrEmpty(_removeError))
+            {
+                <div class="alert-danger mb-4" role="alert">@_removeError</div>
+            }
+
+            <EditForm Model="_removeModel" OnValidSubmit="RemoveAsync">
+                <DataAnnotationsValidator />
+                <div class="auth-field">
+                    <label class="form-label" for="remove-member-password">@L["Gm.CampaignDetail.Remove.Password"]</label>
+                    <InputText id="remove-member-password" class="form-control" type="password"
+                               autocomplete="current-password" @bind-Value="_removeModel.Password"
+                               @ref="_removePasswordRef" />
+                    <ValidationMessage For="() => _removeModel.Password" />
+                </div>
+                <div class="confirm-actions">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" disabled="@_removing"
+                            @onclick="CloseRemoveDialog">@L["Gm.CampaignDetail.Remove.Cancel"]</button>
+                    <button type="submit" class="btn btn-danger btn-sm" disabled="@_removing">
+                        @if (_removing) { <span class="spinner-border spinner-border-sm me-2"></span> }
+                        @L["Gm.CampaignDetail.Remove.Confirm"]
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
 @code {
     [Parameter] public Guid Id { get; set; }
 
     private List<CampaignMemberResponse> _members = [];
     private List<PlayerRosterResponse> _availablePlayers = [];
+    private List<PlayerRosterResponse> _roster = [];
     private List<CharacterSheetResponse> _sheets = [];
     private List<BreadcrumbItem> _breadcrumbs = [];
     private bool _loading = true;
@@ -190,6 +233,13 @@
     private string _playerSearch = string.Empty;
     private string _newCharacterName = string.Empty;
     private bool _granting;
+
+    private CampaignMemberResponse? _removeTarget;
+    private readonly RemoveMemberRequest _removeModel = new();
+    private InputText? _removePasswordRef;
+    private string? _removeError;
+    private bool _removing;
+    private bool _focusRemovePassword;
 
     private IEnumerable<PlayerRosterResponse> FilteredAvailablePlayers =>
         string.IsNullOrWhiteSpace(_playerSearch)
@@ -233,14 +283,79 @@
         _members = membersResult?.Data?.ToList() ?? [];
 
         var rosterResult = await CampaignService.GetRosterAsync();
-        var roster = rosterResult?.Data?.ToList() ?? [];
+        _roster = rosterResult?.Data?.ToList() ?? [];
         var memberIds = _members.Select(m => m.PlayerId).ToHashSet();
-        _availablePlayers = roster.Where(p => !memberIds.Contains(p.Id)).ToList();
+        _availablePlayers = _roster.Where(p => !memberIds.Contains(p.Id)).ToList();
 
         var sheetsResult = await SheetService.GetByCampaignAsync(Id);
         _sheets = sheetsResult?.Data?.ToList() ?? [];
 
         _loading = false;
+    }
+
+    // A removed member is no longer in _members, but their sheets stay visible to the GM,
+    // so fall back to the roster (every recruited player) before showing a raw id.
+    private string OwnerName(Guid ownerId) =>
+        _members.FirstOrDefault(m => m.PlayerId == ownerId)?.DisplayName
+        ?? _roster.FirstOrDefault(p => p.Id == ownerId)?.DisplayName
+        ?? ownerId.ToString();
+
+    private void OpenRemoveDialog(CampaignMemberResponse member)
+    {
+        _removeTarget = member;
+        _removeModel.Password = string.Empty;
+        _removeError = null;
+        _focusRemovePassword = true;
+    }
+
+    private void CloseRemoveDialog()
+    {
+        if (_removing) return;
+        _removeTarget = null;
+        _removeModel.Password = string.Empty;
+        _removeError = null;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_focusRemovePassword && _removePasswordRef?.Element is { } element)
+        {
+            _focusRemovePassword = false;
+            await element.FocusAsync();
+        }
+    }
+
+    private async Task RemoveAsync()
+    {
+        if (_removeTarget is null) return;
+
+        var target = _removeTarget;
+        _removing = true;
+        _removeError = null;
+
+        try
+        {
+            var result = await CampaignService.RemoveMemberAsync(
+                Id, target.PlayerId, new RemoveMemberRequest { Password = _removeModel.Password });
+
+            if (result?.Success == true)
+            {
+                _removing = false;
+                CloseRemoveDialog();
+                Toast.Success(L["Gm.CampaignDetail.Remove.Success", target.DisplayName]);
+                await LoadAsync();
+            }
+            else
+            {
+                _removeError = result?.Message ?? L["Common.Error"];
+                _removeModel.Password = string.Empty;   // never keep a rejected password around
+                _focusRemovePassword = true;
+            }
+        }
+        finally
+        {
+            _removing = false;
+        }
     }
 
     private async Task AssignAsync()

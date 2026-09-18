@@ -16,6 +16,12 @@ public class CampaignMembershipRepository(AppDbContext db)
             .OrderBy(m => m.AssignedAt)
             .ToListAsync(ct);
 
+    public async Task<CampaignMembership?> GetAsync(
+        Guid campaignId,
+        Guid playerId,
+        CancellationToken ct = default) =>
+        await Set.FirstOrDefaultAsync(m => m.CampaignId == campaignId && m.PlayerId == playerId, ct);
+
     public async Task<bool> ExistsAsync(
         Guid campaignId,
         Guid playerId,

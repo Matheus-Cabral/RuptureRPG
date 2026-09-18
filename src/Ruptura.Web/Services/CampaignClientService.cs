@@ -22,6 +22,27 @@ public class CampaignClientService(IHttpClientFactory factory) : ICampaignClient
         return await response.Content.ReadFromJsonAsync<ApiResponse<ResetPlayerPasswordResponse>>();
     }
 
+    public async Task<ApiResponse?> RemoveMemberAsync(Guid campaignId, Guid playerId, RemoveMemberRequest request)
+    {
+        var response = await Http.PostAsJsonAsync(
+            $"api/campaigns/{campaignId}/members/{playerId}/remove", request);
+
+        // Read the body on failures too: the API's message ("Incorrect password.") is what the
+        // confirmation dialog shows. A non-JSON body (e.g. a gateway error page) is "no answer".
+        try
+        {
+            return await response.Content.ReadFromJsonAsync<ApiResponse>();
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return null;
+        }
+        catch (NotSupportedException)
+        {
+            return null;
+        }
+    }
+
     public async Task<ApiResponse<CampaignResponse>?> CreateAsync(CreateCampaignRequest request)
     {
         var response = await Http.PostAsJsonAsync("api/campaigns", request);

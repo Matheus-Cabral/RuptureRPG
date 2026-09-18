@@ -31,10 +31,80 @@ public class CharacterSheetServiceTests
             .Setup(c => c.Calculate(It.IsAny<CharacterSheetData>(), It.IsAny<IReadOnlyDictionary<Guid, CatalogEntry>>()))
             .Returns(new CharacterDerivedStats());
 
+        // Owner access requires campaign membership; most tests assume the owner is a member.
+        _membershipRepoMock
+            .Setup(r => r.ExistsAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
         _sut = new CharacterSheetService(
             _sheetRepoMock.Object, _campaignRepoMock.Object, _membershipRepoMock.Object,
             _catalogRepoMock.Object, _guildRepoMock.Object, _buildingRepoMock.Object,
             _staffRepoMock.Object, _trainingCalculatorMock.Object, _calculatorMock.Object);
+    }
+
+    // ── Owner access requires campaign membership ────────────────────────────
+
+    private (CharacterSheet Sheet, Campaign Campaign) SetupSheetOfRemovedPlayer()
+    {
+        var campaign = new Campaign { Id = Guid.NewGuid(), GameMasterId = Guid.NewGuid() };
+        var sheet = new CharacterSheet
+        {
+            Id = Guid.NewGuid(), OwnerId = Guid.NewGuid(), CampaignId = campaign.Id, DataJson = "{}"
+        };
+        _sheetRepoMock.Setup(r => r.GetByIdAsync(sheet.Id, It.IsAny<CancellationToken>())).ReturnsAsync(sheet);
+        _campaignRepoMock.Setup(r => r.GetByIdAsync(campaign.Id, It.IsAny<CancellationToken>())).ReturnsAsync(campaign);
+        _membershipRepoMock
+            .Setup(r => r.ExistsAsync(campaign.Id, sheet.OwnerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false); // the player was removed from the campaign
+        return (sheet, campaign);
+    }
+
+    [Fact]
+    public async Task AuthorizeAccessAsync_AsOwnerWhoLeftTheCampaign_ReturnsNotFound()
+    {
+        var (sheet, _) = SetupSheetOfRemovedPlayer();
+
+        var result = await _sut.AuthorizeAccessAsync(sheet.OwnerId, sheet.Id);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(ErrorCodes.CharacterSheet.NotFound);
+    }
+
+    [Fact]
+    public async Task AuthorizeAccessAsync_AsGameMasterOfTheCampaign_StillSucceedsAfterOwnerWasRemoved()
+    {
+        var (sheet, campaign) = SetupSheetOfRemovedPlayer();
+
+        var result = await _sut.AuthorizeAccessAsync(campaign.GameMasterId, sheet.Id);
+
+        result.IsSuccess.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task UpdateAsync_AsOwnerWhoLeftTheCampaign_ReturnsNotFoundAndSavesNothing()
+    {
+        var (sheet, _) = SetupSheetOfRemovedPlayer();
+
+        var result = await _sut.UpdateAsync(sheet.OwnerId, sheet.Id,
+            new UpdateCharacterSheetRequest { DataJson = "{}" });
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(ErrorCodes.CharacterSheet.NotFound);
+        _sheetRepoMock.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetMineAsync_WhenPlayerLeftTheCampaign_ReturnsNotFound()
+    {
+        var (sheet, campaign) = SetupSheetOfRemovedPlayer();
+        _sheetRepoMock
+            .Setup(r => r.GetAliveByOwnerAndCampaignAsync(sheet.OwnerId, campaign.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(sheet);
+
+        var result = await _sut.GetMineAsync(sheet.OwnerId, campaign.Id);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(ErrorCodes.CharacterSheet.NotFound);
     }
 
     [Fact]

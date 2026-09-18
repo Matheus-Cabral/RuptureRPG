@@ -1163,4 +1163,12 @@
   <data name="Gm.Players.TempPassword.Copy"><value>Copiar</value></data>
   <data name="Gm.Players.TempPassword.Copied"><value>Senha copiada.</value></data>
   <data name="Gm.Players.TempPassword.CopyFailed"><value>Não foi possível copiar. Selecione a senha e copie manualmente.</value></data>
+  <data name="Gm.CampaignDetail.Col.Actions"><value>Ações</value></data>
+  <data name="Gm.CampaignDetail.Remove.Button"><value>Remover</value></data>
+  <data name="Gm.CampaignDetail.Remove.Title"><value>Remover jogador da campanha?</value></data>
+  <data name="Gm.CampaignDetail.Remove.Message"><value>{0} perderá o acesso a esta campanha e às fichas de personagem dela. As fichas são mantidas: você continua vendo-as, e adicionar o jogador de novo restaura o acesso. Digite sua senha para confirmar.</value></data>
+  <data name="Gm.CampaignDetail.Remove.Password"><value>Sua senha</value></data>
+  <data name="Gm.CampaignDetail.Remove.Confirm"><value>Remover jogador</value></data>
+  <data name="Gm.CampaignDetail.Remove.Cancel"><value>Cancelar</value></data>
+  <data name="Gm.CampaignDetail.Remove.Success"><value>Jogador removido da campanha: {0}.</value></data>
 </root>

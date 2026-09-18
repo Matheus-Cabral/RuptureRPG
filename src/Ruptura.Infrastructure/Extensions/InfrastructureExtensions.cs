@@ -112,6 +112,7 @@ public static class InfrastructureExtensions
         services.AddScoped<IValidator<ChangePasswordRequest>, ChangePasswordRequestValidator>();
         services.AddScoped<IValidator<CreateCampaignRequest>, CreateCampaignRequestValidator>();
         services.AddScoped<IValidator<AssignMemberRequest>, AssignMemberRequestValidator>();
+        services.AddScoped<IValidator<RemoveMemberRequest>, RemoveMemberRequestValidator>();
         services.AddScoped<IValidator<CreateCatalogEntryRequest>, CreateCatalogEntryRequestValidator>();
         services.AddScoped<IValidator<UpdateCatalogEntryRequest>, UpdateCatalogEntryRequestValidator>();
         services.AddScoped<IValidator<GrantCharacterSheetRequest>, GrantCharacterSheetRequestValidator>();

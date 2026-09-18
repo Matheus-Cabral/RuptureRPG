@@ -89,6 +89,10 @@ Domain ← Application ← Infrastructure ← API
 - `POST /api/auth/change-password` takes no current password, so `AuthService.ChangePasswordAsync` refuses (400) unless `MustChangePassword` is true — otherwise a stolen access token could take over the account. It uses `GeneratePasswordResetTokenAsync` + `ResetPasswordAsync` (validates the password policy before writing the hash) and returns fresh tokens without the claim.
 - Web: `MainLayout` follows `AuthenticationStateChanged` (the layout persists across login → dashboard) and, while flagged, renders `ForcePasswordChangeDialog` *instead of* `@Body`, so no page fires requests the API would 403.
 
+**Removing a player from a campaign (`POST /api/campaigns/{id}/members/{playerId}/remove`):**
+- The GM confirms with their *own* login password in the body (`RemoveMemberRequest.Password`, checked via `UserManager.CheckPasswordAsync`; wrong → 400 `Auth.InvalidPassword`, nothing changes). Only the `CampaignMembership` row is deleted — character sheets and journal entries are kept.
+- A player owns a sheet/journal **only while still a campaign member**: `CharacterSheetService` and `JournalEntryService` gate owner access through `IsMemberOwnerAsync` (`sheet.OwnerId == caller && membershipRepo.ExistsAsync(sheet.CampaignId, caller)`), while the GM's access is unconditional. Any new code path that authorizes a sheet's *owner* must go through that membership check too, or a removed player keeps access. Re-adding the player restores their sheets.
+
 **Player registration requires an invite code:**
 - GM generates `InviteCode` (has `ExpiresAt`, single-use)
 - `InviteCode.IsValid()` checks `!IsUsed && ExpiresAt > UtcNow`

@@ -161,6 +161,81 @@ public class CampaignServiceTests
         player.RefreshToken.Should().Be("old-session");
     }
 
+    // ── RemoveMemberAsync ────────────────────────────────────────────────────
+
+    private (ApplicationUser Gm, Campaign Campaign, CampaignMembership Membership) SetupRemovableMember()
+    {
+        var gm = BuildPlayer(Guid.NewGuid());
+        var campaign = new Campaign { Id = Guid.NewGuid(), GameMasterId = gm.Id };
+        var membership = new CampaignMembership
+        {
+            Id = Guid.NewGuid(), CampaignId = campaign.Id, PlayerId = Guid.NewGuid()
+        };
+        _campaignRepoMock.Setup(r => r.GetByIdAsync(campaign.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(campaign);
+        _membershipRepoMock.Setup(r => r.GetAsync(campaign.Id, membership.PlayerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(membership);
+        _membershipRepoMock.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+        _userManagerMock.Setup(m => m.FindByIdAsync(gm.Id.ToString())).ReturnsAsync(gm);
+        return (gm, campaign, membership);
+    }
+
+    [Fact]
+    public async Task RemoveMemberAsync_WithCorrectPassword_DeletesTheMembership()
+    {
+        var (gm, campaign, membership) = SetupRemovableMember();
+        _userManagerMock.Setup(m => m.CheckPasswordAsync(gm, "GmPass123")).ReturnsAsync(true);
+
+        var result = await _sut.RemoveMemberAsync(gm.Id, campaign.Id, membership.PlayerId,
+            new RemoveMemberRequest { Password = "GmPass123" });
+
+        result.IsSuccess.Should().BeTrue();
+        _membershipRepoMock.Verify(r => r.Remove(membership), Times.Once);
+        _membershipRepoMock.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task RemoveMemberAsync_WithWrongPassword_ReturnsInvalidPasswordAndKeepsMembership()
+    {
+        var (gm, campaign, membership) = SetupRemovableMember();
+        _userManagerMock.Setup(m => m.CheckPasswordAsync(gm, It.IsAny<string>())).ReturnsAsync(false);
+
+        var result = await _sut.RemoveMemberAsync(gm.Id, campaign.Id, membership.PlayerId,
+            new RemoveMemberRequest { Password = "nope" });
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(ErrorCodes.Auth.InvalidPassword);
+        _membershipRepoMock.Verify(r => r.Remove(It.IsAny<CampaignMembership>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task RemoveMemberAsync_WhenCampaignNotOwnedByCaller_ReturnsNotFoundWithoutCheckingPassword()
+    {
+        var (_, campaign, membership) = SetupRemovableMember();
+        var otherGm = BuildPlayer(Guid.NewGuid());
+
+        var result = await _sut.RemoveMemberAsync(otherGm.Id, campaign.Id, membership.PlayerId,
+            new RemoveMemberRequest { Password = "GmPass123" });
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(ErrorCodes.Campaign.NotFound);
+        _userManagerMock.Verify(m => m.CheckPasswordAsync(
+            It.IsAny<ApplicationUser>(), It.IsAny<string>()), Times.Never);
+        _membershipRepoMock.Verify(r => r.Remove(It.IsAny<CampaignMembership>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task RemoveMemberAsync_WhenPlayerIsNotAMember_ReturnsMemberNotFound()
+    {
+        var (gm, campaign, _) = SetupRemovableMember();
+
+        var result = await _sut.RemoveMemberAsync(gm.Id, campaign.Id, Guid.NewGuid(),
+            new RemoveMemberRequest { Password = "GmPass123" });
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(ErrorCodes.Campaign.MemberNotFound);
+    }
+
     // ── AssignMemberAsync ────────────────────────────────────────────────────
 
     [Fact]

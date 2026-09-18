@@ -9,8 +9,16 @@ public class JournalEntryService(
     ICharacterJournalEntryRepository journalRepo,
     ICharacterSheetRepository sheetRepo,
     ICampaignRepository campaignRepo,
+    ICampaignMembershipRepository membershipRepo,
     IFileStorageService fileStorage) : IJournalEntryService
 {
+    /// <summary>
+    /// A player owns their journal only while they are still a member of the sheet's campaign
+    /// (removal keeps the data for the GM and for a later re-add, but cuts the former member off).
+    /// </summary>
+    private async Task<bool> IsMemberOwnerAsync(CharacterSheet sheet, Guid callerId, CancellationToken ct) =>
+        sheet.OwnerId == callerId && await membershipRepo.ExistsAsync(sheet.CampaignId, callerId, ct);
+
     public async Task<Result<JournalEntryResponse>> CreateAsync(
         Guid callerId,
         Guid characterSheetId,
@@ -18,7 +26,7 @@ public class JournalEntryService(
         CancellationToken ct = default)
     {
         var sheet = await sheetRepo.GetByIdAsync(characterSheetId, ct);
-        if (sheet is null || sheet.OwnerId != callerId)
+        if (sheet is null || !await IsMemberOwnerAsync(sheet, callerId, ct))
             return Result.Failure<JournalEntryResponse>(ErrorCodes.Journal.NotFound);
 
         var entry = new CharacterJournalEntry
@@ -47,7 +55,7 @@ public class JournalEntryService(
             return Result.Failure<IEnumerable<JournalEntryResponse>>(ErrorCodes.Journal.NotFound);
 
         var campaign = await campaignRepo.GetByIdAsync(sheet.CampaignId, ct);
-        var authorized = sheet.OwnerId == callerId || campaign?.GameMasterId == callerId;
+        var authorized = campaign?.GameMasterId == callerId || await IsMemberOwnerAsync(sheet, callerId, ct);
         if (!authorized)
             return Result.Failure<IEnumerable<JournalEntryResponse>>(ErrorCodes.Journal.NotFound);
 
@@ -67,7 +75,7 @@ public class JournalEntryService(
             return Result.Failure<CharacterJournalEntry>(ErrorCodes.Journal.NotFound);
 
         var campaign = await campaignRepo.GetByIdAsync(sheet.CampaignId, ct);
-        var authorized = sheet.OwnerId == callerId || campaign?.GameMasterId == callerId;
+        var authorized = campaign?.GameMasterId == callerId || await IsMemberOwnerAsync(sheet, callerId, ct);
         if (!authorized)
             return Result.Failure<CharacterJournalEntry>(ErrorCodes.Journal.NotFound);
 
@@ -82,7 +90,7 @@ public class JournalEntryService(
             return Result.Failure<CharacterJournalEntry>(ErrorCodes.Journal.NotFound);
 
         var sheet = await sheetRepo.GetByIdAsync(entry.CharacterSheetId, ct);
-        if (sheet is null || sheet.OwnerId != callerId)
+        if (sheet is null || !await IsMemberOwnerAsync(sheet, callerId, ct))
             return Result.Failure<CharacterJournalEntry>(ErrorCodes.Journal.NotFound);
 
         return Result.Success(entry);

@@ -20,6 +20,9 @@ public interface ICampaignService
     Task<Result<CampaignMemberResponse>> AssignMemberAsync(
         Guid gameMasterId, Guid campaignId, AssignMemberRequest request, CancellationToken ct = default);
 
+    Task<Result> RemoveMemberAsync(
+        Guid gameMasterId, Guid campaignId, Guid playerId, RemoveMemberRequest request, CancellationToken ct = default);
+
     Task<Result<IEnumerable<CampaignMemberResponse>>> GetMembersAsync(
         Guid gameMasterId, Guid campaignId, CancellationToken ct = default);
 
