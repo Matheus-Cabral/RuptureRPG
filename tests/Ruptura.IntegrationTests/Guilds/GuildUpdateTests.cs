@@ -383,4 +383,85 @@ public class GuildUpdateTests(IntegrationTestFactory factory)
         final.Should().NotBeNull();
         final.Data.Resources.Materials.Should().NotBeNull();
     }
+
+    // Strategic Assets are treated exactly like Materials: VE is clamped to 0..5 on write and the
+    // clamped VE feeds DerivedStats.CgRecursos.
+    [Fact]
+    public async Task Update_WithStrategicAssets_PersistsClampsVeAndFeedsCgRecursos()
+    {
+        var (client, campaign, _, _, gmToken) = await SetUpCampaignWithMemberAsync();
+        AuthHelper.SetBearerToken(client, gmToken);
+
+        var current = await GetGuildAsync(client, campaign.Id);
+        current.Data.Resources.PactCoins = 0;
+        current.Data.Resources.Materials = [];
+        current.Data.Resources.StrategicAssets =
+        [
+            new StrategicAsset { Name = "Mina", Quantity = 2, StrategicValue = 3 },
+            new StrategicAsset { Name = "Portal", Quantity = 1, StrategicValue = 99 },
+            new StrategicAsset { Name = "Ruína", Quantity = 1, StrategicValue = -4 }
+        ];
+
+        var request = new UpdateGuildSheetRequest
+        {
+            GuildName = current.GuildName,
+            DataJson = Serialize(current.Data),
+            Version = current.Version
+        };
+
+        var response = await client.PutAsJsonAsync($"api/campaigns/{campaign.Id}/guild", request);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var final = await GetGuildAsync(client, campaign.Id);
+        var mina = final.Data.Resources.StrategicAssets.Single(a => a.Name == "Mina");
+        mina.Quantity.Should().Be(2);
+        mina.StrategicValue.Should().Be(3);
+        final.Data.Resources.StrategicAssets.Single(a => a.Name == "Portal").StrategicValue.Should().Be(5);
+        final.Data.Resources.StrategicAssets.Single(a => a.Name == "Ruína").StrategicValue.Should().Be(0);
+        // CG Recursos = PactCoins (0) + 3 + clamp(99,0,5) + clamp(-4,0,5) = 8.
+        final.DerivedStats.CgRecursos.Should().Be(8);
+    }
+
+    // Backward-compat: a blob saved before Strategic Assets existed has no such property and must
+    // load with an empty list, contributing nothing to CgRecursos.
+    [Fact]
+    public async Task Update_WithLegacyBlobMissingStrategicAssets_LoadsEmptyList()
+    {
+        var (client, campaign, _, _, gmToken) = await SetUpCampaignWithMemberAsync();
+        AuthHelper.SetBearerToken(client, gmToken);
+
+        var current = await GetGuildAsync(client, campaign.Id);
+        var request = new UpdateGuildSheetRequest
+        {
+            GuildName = current.GuildName,
+            DataJson = """{"resources":{"pactCoins":7}}""",
+            Version = current.Version
+        };
+
+        var response = await client.PutAsJsonAsync($"api/campaigns/{campaign.Id}/guild", request);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var final = await GetGuildAsync(client, campaign.Id);
+        final.Data.Resources.StrategicAssets.Should().BeEmpty();
+        final.DerivedStats.CgRecursos.Should().Be(7);
+    }
+
+    [Fact]
+    public async Task Update_WithNullStrategicAssetElement_Returns400()
+    {
+        var (client, campaign, _, _, gmToken) = await SetUpCampaignWithMemberAsync();
+        AuthHelper.SetBearerToken(client, gmToken);
+
+        var current = await GetGuildAsync(client, campaign.Id);
+        var request = new UpdateGuildSheetRequest
+        {
+            GuildName = current.GuildName,
+            DataJson = """{"resources":{"strategicAssets":[null]}}""",
+            Version = current.Version
+        };
+
+        var response = await client.PutAsJsonAsync($"api/campaigns/{campaign.Id}/guild", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
 }

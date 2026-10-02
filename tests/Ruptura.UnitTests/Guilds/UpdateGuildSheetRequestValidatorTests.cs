@@ -40,6 +40,7 @@ public class UpdateGuildSheetRequestValidatorTests
 
     [Theory]
     [InlineData("""{"resources":{"materials":[null]}}""")]
+    [InlineData("""{"resources":{"strategicAssets":[null]}}""")]
     [InlineData("""{"influence":[null]}""")]
     [InlineData("""{"legado":[null]}""")]
     public void WithNullListElements_Fails(string dataJson)
@@ -50,6 +51,7 @@ public class UpdateGuildSheetRequestValidatorTests
     [Theory]
     [InlineData("""{"identity":null}""")]
     [InlineData("""{"resources":null}""")]
+    [InlineData("""{"resources":{"strategicAssets":null}}""")]
     [InlineData("""{"knowledge":{"maps":null}}""")]
     [InlineData("""{"influence":null}""")]
     public void WithNullModulesOrLists_Fails(string dataJson)

@@ -352,6 +352,35 @@ public class GuildStatsCalculatorTests
     }
 
     [Fact]
+    public void CgRecursos_IncludesStrategicAssetsStrategicValue_ClampedLikeMaterials()
+    {
+        var data = new GuildSheetData
+        {
+            Resources = new GuildResources
+            {
+                PactCoins = 10,
+                Materials = [new MaterialStock { Name = "Ferro", Quantity = 10, StrategicValue = 2 }],
+                StrategicAssets =
+                [
+                    new StrategicAsset { Name = "Mina", Quantity = 10_000, StrategicValue = 3 }, // huge qty, VE 3
+                    new StrategicAsset { Name = "Portal", Quantity = 1, StrategicValue = 99 },   // clamped to 5
+                    new StrategicAsset { Name = "Ruína", Quantity = 1, StrategicValue = -4 },    // clamped to 0
+                ]
+            }
+        };
+        var r = _calc.Calculate(data, [], [], 0, new Dictionary<Guid, CatalogEntry>());
+        r.CgRecursos.Should().Be(20); // 10 + 2 (material) + 3 + clamp(99->5) + clamp(-4->0)
+    }
+
+    [Fact]
+    public void CgRecursos_WithNullStrategicAssets_DoesNotThrow()
+    {
+        var data = new GuildSheetData { Resources = new GuildResources { PactCoins = 4, StrategicAssets = null! } };
+        var r = _calc.Calculate(data, [], [], 0, new Dictionary<Guid, CatalogEntry>());
+        r.CgRecursos.Should().Be(4);
+    }
+
+    [Fact]
     public void ActiveDoctrineOverflow_When_Active_Exceeds_Limit()
     {
         // No Câmara do Conselho → DoctrineLimit = min(4, 2+0) = 2. Three active doctrines → overflow.

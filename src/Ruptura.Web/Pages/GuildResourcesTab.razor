@@ -62,6 +62,43 @@
     </div>
 
     <div>
+        <span class="section-title" style="display:block;margin-bottom:.5rem">@L["Guild.Resources.StrategicAssets"]</span>
+        <div class="dash-label" style="margin-bottom:.5rem">@L["Guild.Resources.StrategicAssetVEHint"]</div>
+        <div class="ledger-table-wrap">
+            <table class="ledger-table stack-mobile">
+                <thead>
+                    <tr>
+                        <th>@L["Guild.Resources.StrategicAssetName"]</th>
+                        <th>@L["Guild.Resources.StrategicAssetQty"]</th>
+                        <th>@L["Guild.Resources.StrategicAssetVE"]</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var asset in Data.Resources.StrategicAssets)
+                    {
+                        <tr>
+                            <td data-label="@L["Guild.Resources.StrategicAssetName"]">
+                                <input class="form-control" @bind="asset.Name" @bind:event="oninput" />
+                            </td>
+                            <td data-label="@L["Guild.Resources.StrategicAssetQty"]">
+                                <input type="number" class="form-control" @bind="asset.Quantity" />
+                            </td>
+                            <td data-label="@L["Guild.Resources.StrategicAssetVE"]">
+                                <input type="number" class="form-control" min="0" max="5" @bind="asset.StrategicValue" />
+                            </td>
+                            <td data-label="">
+                                <button class="btn btn-outline-secondary btn-sm" @onclick="() => Data.Resources.StrategicAssets.Remove(asset)">@L["Guild.Remove"]</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <button class="btn btn-primary btn-sm" style="margin-top:.75rem" @onclick="() => Data.Resources.StrategicAssets.Add(new StrategicAsset())">@L["Guild.Resources.AddStrategicAsset"]</button>
+    </div>
+
+    <div>
         <span class="section-title" style="display:block;margin-bottom:.5rem">@L["Guild.Resources.Artifacts"]</span>
         <div style="display:flex;flex-direction:column;gap:.5rem;max-width:600px">
             @for (var i = 0; i < Data.Resources.Artifacts.Count; i++)

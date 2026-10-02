@@ -523,6 +523,12 @@
   <data name="Guild.Resources.MaterialVE"><value>VE</value></data>
   <data name="Guild.Resources.MaterialVEHint"><value>O Valor Estratégico (0–5) é o que conta para a CG da guilda — não a quantidade.</value></data>
   <data name="Guild.Resources.AddMaterial"><value>Adicionar material</value></data>
+  <data name="Guild.Resources.StrategicAssets"><value>Ativos Estratégicos</value></data>
+  <data name="Guild.Resources.StrategicAssetName"><value>Ativo</value></data>
+  <data name="Guild.Resources.StrategicAssetQty"><value>Quantidade</value></data>
+  <data name="Guild.Resources.StrategicAssetVE"><value>VE</value></data>
+  <data name="Guild.Resources.StrategicAssetVEHint"><value>O Valor Estratégico (0–5) é o que conta para a CG da guilda — não a quantidade.</value></data>
+  <data name="Guild.Resources.AddStrategicAsset"><value>Adicionar ativo</value></data>
   <data name="Guild.Resources.Artifacts"><value>Artefatos</value></data>
   <data name="Guild.Resources.AddArtifact"><value>Adicionar artefato</value></data>
   <data name="Guild.Influence.PrestigeValue"><value>Prestígio</value></data>

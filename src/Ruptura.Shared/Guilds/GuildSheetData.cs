@@ -43,6 +43,7 @@ public class GuildResources
     public int Silver { get; set; }
     public int PactCoins { get; set; }
     public List<MaterialStock> Materials { get; set; } = [];
+    public List<StrategicAsset> StrategicAssets { get; set; } = [];
     public int DimensionalFragments { get; set; }
     public List<string> Artifacts { get; set; } = [];
     public string StrategicReserveNotes { get; set; } = string.Empty;
@@ -52,6 +53,13 @@ public class MaterialStock
 {
     public string Name { get; set; } = string.Empty;
     public int Quantity { get; set; }             // inventory only — no longer feeds CG
+    public int StrategicValue { get; set; }       // VE 0..5 — the CG Recursos contribution
+}
+
+public class StrategicAsset
+{
+    public string Name { get; set; } = string.Empty;
+    public int Quantity { get; set; }             // inventory only — does not feed CG
     public int StrategicValue { get; set; }       // VE 0..5 — the CG Recursos contribution
 }
 

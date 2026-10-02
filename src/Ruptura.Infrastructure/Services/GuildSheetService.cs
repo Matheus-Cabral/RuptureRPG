@@ -59,6 +59,8 @@ public class GuildSheetService(
         // server-side (mirrors the reputation/Points clamps); out-of-range is clamped, never trusted.
         foreach (var material in incoming.Resources.Materials)
             material.StrategicValue = Math.Clamp(material.StrategicValue, 0, 5);
+        foreach (var asset in incoming.Resources.StrategicAssets)
+            asset.StrategicValue = Math.Clamp(asset.StrategicValue, 0, 5);
 
         // PactCoins is the other CG Recursos term — floor at 0 so a negative can't drive CgRecursos
         // negative. Kept at face value otherwise (no upper cap here by design).
@@ -980,6 +982,7 @@ public class GuildSheetService(
         data.Influence ??= [];
         data.Resources ??= new GuildResources();
         data.Resources.Materials ??= [];
+        data.Resources.StrategicAssets ??= [];
         data.Resources.Artifacts ??= [];
         data.ActiveDoctrineIds ??= [];
         data.Knowledge ??= new GuildKnowledge();
