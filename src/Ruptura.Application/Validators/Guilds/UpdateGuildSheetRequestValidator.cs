@@ -37,6 +37,7 @@ public class UpdateGuildSheetRequestValidator : AbstractValidator<UpdateGuildShe
             && data.ActiveDoctrineIds is not null
             && data.Legado is not null
             && data.Resources.Materials is not null
+            && data.Resources.StrategicAssets is not null
             && data.Resources.Artifacts is not null
             && data.Knowledge.Maps is not null
             && data.Knowledge.Recipes is not null
@@ -47,6 +48,7 @@ public class UpdateGuildSheetRequestValidator : AbstractValidator<UpdateGuildShe
             // whose single entry is null, which then NREs in mapping/rendering.
             && data.Influence.All(x => x is not null)
             && data.Legado.All(x => x is not null)
-            && data.Resources.Materials.All(x => x is not null);
+            && data.Resources.Materials.All(x => x is not null)
+            && data.Resources.StrategicAssets.All(x => x is not null);
     }
 }
