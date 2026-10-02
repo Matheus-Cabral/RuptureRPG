@@ -347,7 +347,7 @@ CG = Infraestrutura + Pesquisa + Logística + Recursos
 - Infraestrutura = Σ (nível de cada construção × peso: Fundação=1, Produção=2, Especialização=3, Institucional=5, Monumental=8)
 - Pesquisa = pontos acumulados em projetos concluídos
 - Logística = Capacidade de Suporte (CS) + nº de trabalhadores qualificados × 2
-- Recursos = reservas de Moedas de Pacto + materiais estratégicos convertidos
+- Recursos = reservas de Moedas de Pacto + Σ VE dos materiais estratégicos + Σ VE dos Ativos Estratégicos da Ficha da Guilda (VE 0-5 de cada um; a quantidade não conta)
 
 **Tabela oficial por estágio** (marco a cada 5 andares):
 

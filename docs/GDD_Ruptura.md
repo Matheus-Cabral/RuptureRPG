@@ -1320,7 +1320,7 @@ onde:
 - **Infraestrutura** = Σ (nível de cada construção × peso da categoria: Fundação=1, Produção=2, Especialização=3, Institucional=5, Monumental=8)
 - **Pesquisa** = pontos acumulados em projetos concluídos
 - **Logística** = Capacidade de Suporte (CS) + nº de trabalhadores qualificados × 2
-- **Recursos** = reservas de Moedas de Pacto + materiais estratégicos (valor convertido)
+- **Recursos** = reservas de Moedas de Pacto + Σ VE dos materiais estratégicos + Σ VE dos Ativos Estratégicos (§9.10) registrados na Ficha da Guilda — cada material/ativo contribui com seu Valor Estratégico (0-5), nunca com a quantidade. Os Ativos Estratégicos continuam sendo um pilar próprio de progressão da campanha; aqui conta apenas o que a Guilda efetivamente mantém.
 
 **Tabela oficial de CG por estágio da Guilda** (marco a cada 5 andares conquistados, acompanhando os Andares Especiais):
 

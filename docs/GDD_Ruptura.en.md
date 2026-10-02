@@ -1320,7 +1320,7 @@ where:
 - **Infrastructure** = Σ (level of each building × category weight: Foundation=1, Production=2, Specialization=3, Institutional=5, Monumental=8)
 - **Research** = points accumulated in completed projects
 - **Logistics** = Support Capacity (CS) + number of qualified workers × 2
-- **Resources** = Pact Coin reserves + strategic materials (converted value)
+- **Resources** = Pact Coin reserves + Σ VE of strategic materials + Σ VE of the Strategic Assets (§9.10) recorded on the Guild Sheet — each material/asset contributes its Strategic Value (0-5), never its quantity. Strategic Assets remain their own pillar of campaign progression; only what the Guild actually holds counts here.
 
 **Official CG table by Guild Stage** (a milestone every 5 floors conquered, tracking the Special Floors):
 

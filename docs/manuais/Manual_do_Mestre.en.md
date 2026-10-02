@@ -347,7 +347,7 @@ CG = Infrastructure + Research + Logistics + Resources
 - Infrastructure = Σ (level of each building × weight: Foundation=1, Production=2, Specialization=3, Institutional=5, Monumental=8)
 - Research = points accumulated in completed projects
 - Logistics = Support Capacity (CS) + number of qualified workers × 2
-- Resources = Pact Coin reserves + converted strategic materials
+- Resources = Pact Coin reserves + Σ VE of strategic materials + Σ VE of the Guild Sheet's Strategic Assets (each one's VE 0-5; quantity does not count)
 
 **Official table by stage** (a milestone every 5 floors):
 
