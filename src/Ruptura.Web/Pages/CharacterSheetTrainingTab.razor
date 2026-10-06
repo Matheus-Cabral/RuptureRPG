@@ -17,20 +17,7 @@ else
 <div style="display:flex;flex-direction:column;gap:1rem;max-width:640px">
     <div>
         <label class="form-label">@L["Sheet.Training.Skill"]</label>
-        <select class="form-select" @bind="_selectedSkillId">
-            <optgroup label="@L["Sheet.Training.KnownSkills"]">
-                @foreach (var skill in Data.Skills)
-                {
-                    <option value="@skill.CatalogEntryId">@NameOf(skill.CatalogEntryId)</option>
-                }
-            </optgroup>
-            <optgroup label="@L["Sheet.Training.OtherSkills"]">
-                @foreach (var entry in _available)
-                {
-                    <option value="@entry.Id">@entry.Name</option>
-                }
-            </optgroup>
-        </select>
+        <SearchableSelect TValue="Guid" Placeholder="@L["Common.Search"]" Options="SkillOptions" @bind-Value="_selectedSkillId" />
     </div>
 
     @if (IsGameMaster)
@@ -124,6 +111,10 @@ else
         _all = (await CatalogService.GetByTypeAsync("Skill", CampaignId, includeArchived: true))?.Data?.ToList() ?? [];
         _loading = false;
     }
+
+    private IEnumerable<SearchableOption<Guid>> SkillOptions =>
+        Data.Skills.Select(s => new SearchableOption<Guid>(s.CatalogEntryId, NameOf(s.CatalogEntryId), L["Sheet.Training.KnownSkills"]))
+            .Concat(_available.Select(e => new SearchableOption<Guid>(e.Id, e.Name, L["Sheet.Training.OtherSkills"])));
 
     private string NameOf(Guid id) => _all.FirstOrDefault(e => e.Id == id)?.Name ?? id.ToString();
 

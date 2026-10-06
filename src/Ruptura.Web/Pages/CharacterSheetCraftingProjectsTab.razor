@@ -17,13 +17,9 @@ else
 <div style="display:flex;flex-direction:column;gap:1.5rem">
     <div style="border:1px solid var(--border);border-radius:6px;padding:1rem;max-width:640px;display:flex;flex-direction:column;gap:.5rem">
         <h4>@L["Sheet.Crafting.StartProject"]</h4>
-        <select class="form-select" @bind="_newProjectRecipeId">
-            <option value="">@L["Sheet.Crafting.SelectRecipe"]</option>
-            @foreach (var recipe in Data.KnownRecipes)
-            {
-                <option value="@recipe.CatalogEntryId">@NameOf(recipe.CatalogEntryId)</option>
-            }
-        </select>
+        <SearchableSelect TValue="Guid" NoneLabel="@L["Sheet.Crafting.SelectRecipe"]"
+                          Options="@Data.KnownRecipes.Select(r => new SearchableOption<Guid>(r.CatalogEntryId, NameOf(r.CatalogEntryId)))"
+                          @bind-Value="_newProjectRecipeId" />
         <button class="btn btn-primary btn-sm" @onclick="ValidateAndStartAsync" disabled="@(_validating || _newProjectRecipeId == Guid.Empty)">
             @if (_validating) { <span class="spinner-border spinner-border-sm me-1"></span> }
             @L["Sheet.Crafting.ValidateAndStart"]
