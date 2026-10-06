@@ -18,13 +18,9 @@ else
 <div style="display:flex;flex-direction:column;gap:1.5rem">
     <div style="border:1px solid var(--border);border-radius:6px;padding:1rem;max-width:640px;display:flex;flex-direction:column;gap:.5rem">
         <h4>@L["Sheet.Technique.StartProject"]</h4>
-        <select class="form-select" @bind="_newProjectSkillId">
-            <option value="">@L["Sheet.Technique.SelectSkill"]</option>
-            @foreach (var skill in Data.Skills)
-            {
-                <option value="@skill.CatalogEntryId">@NameOf(skill.CatalogEntryId)</option>
-            }
-        </select>
+        <SearchableSelect TValue="Guid" NoneLabel="@L["Sheet.Technique.SelectSkill"]"
+                          Options="@Data.Skills.Select(s => new SearchableOption<Guid>(s.CatalogEntryId, NameOf(s.CatalogEntryId)))"
+                          @bind-Value="_newProjectSkillId" />
         <select class="form-select" @bind="_newProjectCategory">
             @foreach (var category in TechniqueReference.Categories)
             {

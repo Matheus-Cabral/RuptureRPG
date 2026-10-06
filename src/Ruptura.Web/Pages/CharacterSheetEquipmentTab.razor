@@ -79,14 +79,9 @@ else
                             </td>
                             <td data-label="@L["Sheet.Equipment.Equipped"]" @onclick:stopPropagation="true"><input type="checkbox" checked="@item.IsEquipped" @onchange="e => item.IsEquipped = (bool)(e.Value ?? false)" /></td>
                             <td data-label="@L["Sheet.Equipment.LinkedSkill"]" @onclick:stopPropagation="true">
-                                <select class="form-select form-select-sm" value="@item.LinkedSkillEntryId"
-                                        @onchange="e => item.LinkedSkillEntryId = ParseGuid(e.Value)">
-                                    <option value="">@L["Sheet.Equipment.NoneSkill"]</option>
-                                    @foreach (var skill in _skills)
-                                    {
-                                        <option value="@skill.CatalogEntryId">@SkillNameOf(skill.CatalogEntryId)</option>
-                                    }
-                                </select>
+                                <SearchableSelect TValue="Guid?" Small="true" NoneLabel="@L["Sheet.Equipment.NoneSkill"]"
+                                                  Options="@_skills.Select(s => new SearchableOption<Guid?>(s.CatalogEntryId, SkillNameOf(s.CatalogEntryId)))"
+                                                  Value="item.LinkedSkillEntryId" ValueChanged="v => item.LinkedSkillEntryId = v" />
                             </td>
                             <td data-label="" @onclick:stopPropagation="true"><button class="btn btn-outline-secondary btn-sm" @onclick="() => RemoveItem(item)">@L["Sheet.RefList.Remove"]</button></td>
                         </tr>
@@ -113,12 +108,8 @@ else
 </div>
 
 <div style="display:flex;gap:.5rem;margin-top:1rem">
-    <select class="form-select" style="max-width:320px" @bind="_selectedId">
-        @foreach (var entry in _availableItems)
-        {
-            <option value="@entry.Id">@entry.Name</option>
-        }
-    </select>
+    <SearchableSelect TValue="Guid" Style="flex:1 1 auto;max-width:320px" Placeholder="@L["Common.Search"]"
+                      Options="@_availableItems.Select(e => new SearchableOption<Guid>(e.Id, e.Name))" @bind-Value="_selectedId" />
     <button class="btn btn-primary btn-sm" @onclick="AddItem" disabled="@(_selectedId == Guid.Empty)">@L["Sheet.RefList.Add"]</button>
 </div>
 }
@@ -130,7 +121,7 @@ else
 
     // Full lists (including archived) — used for resolving the NAME of an already-referenced
     // item/skill, so an archived-but-referenced entry still shows its real name instead of a
-    // raw GUID. The linked-skill <select>'s OPTIONS themselves come from Data.Skills (the
+    // raw GUID. The linked-skill picker's OPTIONS themselves come from Data.Skills (the
     // character's own invested skills), not this catalog list, so they need no archived
     // filtering — only SkillNameOf's lookup does.
     private List<CatalogEntryResponse> _allItems = [];
@@ -204,7 +195,6 @@ else
     }
 
     private static int ParseInt(object? value, int fallback) => int.TryParse(value?.ToString(), out var v) ? v : fallback;
-    private static Guid? ParseGuid(object? value) => Guid.TryParse(value?.ToString(), out var id) ? id : null;
 
     private void AddItem()
     {

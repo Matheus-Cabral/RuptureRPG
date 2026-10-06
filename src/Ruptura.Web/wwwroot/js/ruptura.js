@@ -125,6 +125,49 @@ window.ruptura = {
         }
         window._rupturaLightboxContainer = null;
         window._rupturaLightboxTrap = null;
+    },
+
+    // ── Searchable select ─────────────────────────────────────────────────────
+    // Pins the open option list to its input with position:fixed, so it isn't
+    // clipped by a scrolling ancestor (.ledger-table-wrap is overflow-x:auto),
+    // flips it above the input when there's no room below, and keeps the
+    // keyboard-active option scrolled into view. Called after every render while
+    // the list is open; the scroll/resize listeners remove themselves once the
+    // list element has left the DOM.
+
+    placeSearchableList: function (input, list) {
+        if (!input || !list) return;
+
+        if (!list._rupturaPlace) {
+            list._rupturaPlace = function () {
+                if (!list.isConnected) {
+                    window.removeEventListener('scroll', list._rupturaPlace, true);
+                    window.removeEventListener('resize', list._rupturaPlace);
+                    return;
+                }
+                const rect = input.getBoundingClientRect();
+                const below = window.innerHeight - rect.bottom;
+                const above = below < list.offsetHeight + 4 && rect.top > below;
+                list.style.position = 'fixed';
+                list.style.marginTop = '0';
+                list.style.left = rect.left + 'px';
+                list.style.right = 'auto';
+                list.style.width = rect.width + 'px';
+                list.style.top = above ? 'auto' : (rect.bottom + 2) + 'px';
+                list.style.bottom = above ? (window.innerHeight - rect.top + 2) + 'px' : 'auto';
+            };
+            window.addEventListener('scroll', list._rupturaPlace, true);
+            window.addEventListener('resize', list._rupturaPlace);
+        }
+        list._rupturaPlace();
+
+        const active = list.querySelector('.autocomplete-item.active');
+        if (!active) return;
+        if (active.offsetTop < list.scrollTop) {
+            list.scrollTop = active.offsetTop;
+        } else if (active.offsetTop + active.offsetHeight > list.scrollTop + list.clientHeight) {
+            list.scrollTop = active.offsetTop + active.offsetHeight - list.clientHeight;
+        }
     }
 };
 

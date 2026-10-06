@@ -14,33 +14,18 @@ else
 <div style="display:flex;flex-direction:column;gap:1rem;max-width:480px">
     <div>
         <label class="form-label">@L["Sheet.Identity.Origin"]</label>
-        <select class="form-select" value="@Data.Identity.OriginId" @onchange="e => Data.Identity.OriginId = ParseGuid(e.Value)">
-            <option value="">@L["Sheet.Identity.None"]</option>
-            @foreach (var entry in _originOptions)
-            {
-                <option value="@entry.Id">@entry.Name</option>
-            }
-        </select>
+        <SearchableSelect TValue="Guid?" Options="@ToOptions(_originOptions)" NoneLabel="@L["Sheet.Identity.None"]"
+                          Value="Data.Identity.OriginId" ValueChanged="v => Data.Identity.OriginId = v" />
     </div>
     <div>
         <label class="form-label">@L["Sheet.Identity.Background"]</label>
-        <select class="form-select" value="@Data.Identity.BackgroundId" @onchange="e => Data.Identity.BackgroundId = ParseGuid(e.Value)">
-            <option value="">@L["Sheet.Identity.None"]</option>
-            @foreach (var entry in _backgroundOptions)
-            {
-                <option value="@entry.Id">@entry.Name</option>
-            }
-        </select>
+        <SearchableSelect TValue="Guid?" Options="@ToOptions(_backgroundOptions)" NoneLabel="@L["Sheet.Identity.None"]"
+                          Value="Data.Identity.BackgroundId" ValueChanged="v => Data.Identity.BackgroundId = v" />
     </div>
     <div>
         <label class="form-label">@L["Sheet.Identity.Lineage"]</label>
-        <select class="form-select" value="@Data.Identity.LineageId" @onchange="e => Data.Identity.LineageId = ParseGuid(e.Value)">
-            <option value="">@L["Sheet.Identity.None"]</option>
-            @foreach (var entry in _lineageOptions)
-            {
-                <option value="@entry.Id">@entry.Name</option>
-            }
-        </select>
+        <SearchableSelect TValue="Guid?" Options="@ToOptions(_lineageOptions)" NoneLabel="@L["Sheet.Identity.None"]"
+                          Value="Data.Identity.LineageId" ValueChanged="v => Data.Identity.LineageId = v" />
     </div>
     <div>
         <label class="form-label">@L["Sheet.Identity.Aptitudes"]</label>
@@ -56,13 +41,8 @@ else
     </div>
     <div>
         <label class="form-label">@L["Sheet.Identity.InitialTalent"]</label>
-        <select class="form-select" value="@Data.Identity.InitialTalentId" @onchange="e => Data.Identity.InitialTalentId = ParseGuid(e.Value)">
-            <option value="">@L["Sheet.Identity.None"]</option>
-            @foreach (var entry in _initialTalentOptions)
-            {
-                <option value="@entry.Id">@entry.Name</option>
-            }
-        </select>
+        <SearchableSelect TValue="Guid?" Options="@ToOptions(_initialTalentOptions)" NoneLabel="@L["Sheet.Identity.None"]"
+                          Value="Data.Identity.InitialTalentId" ValueChanged="v => Data.Identity.InitialTalentId = v" />
     </div>
     <div>
         <label class="form-label">@L["Sheet.Identity.Patron"]</label>
@@ -77,9 +57,9 @@ else
 
     // Full lists (including archived) fetched once. Each *Options computed property below
     // filters archived entries OUT except for whichever one is currently selected on this
-    // sheet — otherwise a <select> bound to an archived id has no matching <option> and the
-    // browser silently falls back to displaying the first option ("— none —"), which looks
-    // like nothing is set even though Data still holds the real (archived) id underneath.
+    // sheet — otherwise a picker bound to an archived id has no matching option and displays
+    // "— none —", which looks like nothing is set even though Data still holds the real
+    // (archived) id underneath.
     private List<CatalogEntryResponse> _origins = [];
     private List<CatalogEntryResponse> _backgrounds = [];
     private List<CatalogEntryResponse> _lineages = [];
@@ -108,8 +88,8 @@ else
         _loading = false;
     }
 
-    private static Guid? ParseGuid(object? value) =>
-        Guid.TryParse(value?.ToString(), out var id) ? id : null;
+    private static IEnumerable<SearchableOption<Guid?>> ToOptions(IEnumerable<CatalogEntryResponse> entries) =>
+        entries.Select(e => new SearchableOption<Guid?>(e.Id, e.Name));
 
     private void ToggleAptitude(Guid id, bool isChecked)
     {

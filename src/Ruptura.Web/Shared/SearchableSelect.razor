@@ -1,0 +1,144 @@
+@typeparam TValue
+@inject IJSRuntime JS
+@inject IStringLocalizer<AppStrings> L
+
+<div class="autocomplete searchable-select" style="@Style">
+    <input @ref="_inputRef"
+           class="form-control @(Small ? "form-control-sm" : null)"
+           role="combobox" aria-autocomplete="list" aria-expanded="@(_open ? "true" : "false")"
+           autocomplete="off"
+           placeholder="@(_open ? SelectedLabel ?? Placeholder : Placeholder)"
+           value="@(_open ? _query : SelectedLabel)"
+           @oninput="OnInput" @onfocus="Open" @onclick="Open" @onfocusout="Close"
+           @onkeydown="OnKeyDownAsync" />
+    @if (_open)
+    {
+        var filtered = Filtered;
+        string? lastGroup = null;
+
+        @* preventDefault on the list itself keeps focus in the input while its scrollbar is dragged. *@
+        <div @ref="_listRef" class="autocomplete-list" role="listbox" @onmousedown:preventDefault>
+            @if (filtered.Count == 0)
+            {
+                <div class="autocomplete-empty">@L["Common.NoResults"]</div>
+            }
+            @for (var i = 0; i < filtered.Count; i++)
+            {
+                var option = filtered[i];
+                var isActive = i == _activeIndex;
+
+                if (option.Group != lastGroup)
+                {
+                    lastGroup = option.Group;
+                    if (lastGroup is not null)
+                    {
+                        <div class="autocomplete-group">@lastGroup</div>
+                    }
+                }
+
+                <div class="autocomplete-item @(isActive ? "active" : null)" role="option"
+                     aria-selected="@(IsSelected(option) ? "true" : "false")"
+                     @onmousedown="() => SelectAsync(option)" @onmousedown:preventDefault>
+                    @option.Label
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public IEnumerable<SearchableOption<TValue>> Options { get; set; } = [];
+    [Parameter] public TValue? Value { get; set; }
+    [Parameter] public EventCallback<TValue?> ValueChanged { get; set; }
+    [Parameter] public string? Placeholder { get; set; }
+
+    // When set, a first item with this label selects default(TValue) — the "— none —" entry.
+    [Parameter] public string? NoneLabel { get; set; }
+
+    [Parameter] public bool Small { get; set; }
+    [Parameter] public string? Style { get; set; }
+
+    private ElementReference _inputRef;
+    private ElementReference _listRef;
+    private bool _open;
+    private string _query = string.Empty;
+    private int _activeIndex;
+
+    private IEnumerable<SearchableOption<TValue?>> AllOptions
+    {
+        get
+        {
+            if (NoneLabel is not null) yield return new SearchableOption<TValue?>(default, NoneLabel);
+            foreach (var option in Options) yield return new SearchableOption<TValue?>(option.Value, option.Label, option.Group);
+        }
+    }
+
+    private List<SearchableOption<TValue?>> Filtered => SearchableSelectFilter.Filter(AllOptions, _query);
+
+    private string? SelectedLabel => AllOptions.FirstOrDefault(IsSelected)?.Label;
+
+    private bool IsSelected(SearchableOption<TValue?> option) =>
+        EqualityComparer<TValue?>.Default.Equals(option.Value, Value);
+
+    private void Open()
+    {
+        if (_open) return;
+
+        _open = true;
+        _query = string.Empty;
+        _activeIndex = Math.Max(0, Filtered.FindIndex(IsSelected));
+    }
+
+    // Typed text is only ever a filter: leaving without picking an item keeps the previous value.
+    private void Close() => _open = false;
+
+    private void OnInput(ChangeEventArgs e)
+    {
+        _query = e.Value?.ToString() ?? string.Empty;
+        _open = true;
+        _activeIndex = 0;
+    }
+
+    private async Task OnKeyDownAsync(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape")
+        {
+            Close();
+            return;
+        }
+
+        if (!_open)
+        {
+            if (e.Key is "ArrowDown" or "ArrowUp") Open();
+            return;
+        }
+
+        var filtered = Filtered;
+        switch (e.Key)
+        {
+            case "ArrowDown":
+                _activeIndex = Math.Min(_activeIndex + 1, filtered.Count - 1);
+                break;
+            case "ArrowUp":
+                _activeIndex = Math.Max(_activeIndex - 1, 0);
+                break;
+            case "Enter" when _activeIndex >= 0 && _activeIndex < filtered.Count:
+                await SelectAsync(filtered[_activeIndex]);
+                break;
+        }
+    }
+
+    private Task SelectAsync(SearchableOption<TValue?> option)
+    {
+        _open = false;
+        return ValueChanged.InvokeAsync(option.Value);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_open)
+        {
+            await JS.InvokeVoidAsync("ruptura.placeSearchableList", _inputRef, _listRef);
+        }
+    }
+}

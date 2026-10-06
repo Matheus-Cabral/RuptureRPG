@@ -51,12 +51,8 @@ else
 </div>
 
 <div style="display:flex;gap:.5rem;margin-top:1rem">
-    <select class="form-select" style="max-width:320px" @bind="_selectedId">
-        @foreach (var entry in Available)
-        {
-            <option value="@entry.Id">@entry.Name</option>
-        }
-    </select>
+    <SearchableSelect TValue="Guid" Style="flex:1 1 auto;max-width:320px" Placeholder="@L["Common.Search"]"
+                      Options="@Available.Select(e => new SearchableOption<Guid>(e.Id, e.Name))" @bind-Value="_selectedId" />
     <button class="btn btn-primary btn-sm" @onclick="AddEntry" disabled="@(_selectedId == Guid.Empty)">@L["Sheet.RefList.Add"]</button>
 </div>
 }

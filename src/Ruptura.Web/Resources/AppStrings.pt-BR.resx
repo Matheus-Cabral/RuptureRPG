@@ -132,6 +132,8 @@
   <data name="Register.PasswordHint"><value>Senha: mín. 8 caracteres, com maiúscula, minúscula e número.</value></data>
 
   <!-- Comum -->
+  <data name="Common.NoResults"><value>Nenhum resultado.</value></data>
+  <data name="Common.Search"><value>Buscar…</value></data>
   <data name="Common.Loading"><value>Carregando…</value></data>
   <data name="Common.Error"><value>Algo deu errado. Por favor, tente novamente.</value></data>
   <data name="Common.UnknownCampaign"><value>Campanha desconhecida</value></data>

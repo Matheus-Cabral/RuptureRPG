@@ -132,6 +132,8 @@
   <data name="Register.PasswordHint"><value>Password: min. 8 characters, with uppercase, lowercase and a number.</value></data>
 
   <!-- Common -->
+  <data name="Common.NoResults"><value>No results.</value></data>
+  <data name="Common.Search"><value>Search…</value></data>
   <data name="Common.Loading"><value>Loading…</value></data>
   <data name="Common.Error"><value>Something went wrong. Please try again.</value></data>
   <data name="Common.UnknownCampaign"><value>Unknown campaign</value></data>
